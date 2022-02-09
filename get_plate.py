@@ -50,16 +50,46 @@ def _make_edge(n):
     return edge
 
 
-def getPlatev2(n, a=0, b=1):
+def _make_p(a, b, n):
     """
-    Get the plate (a,b)^2, version 2
+    Get the points
 
     Parameters
     ----------
     n : int
         Number of nodes in each spatial direction (n^2 total nodes).
     a : float, optional
-        Lower limit for x and y. The default is 0.
+        Lower limit for x and y. The default is -1.
+    b : float, optional
+        Upper limit for x and y. The default is 1.
+
+    Returns
+    -------
+    p : np.array
+        Nodal points, (x,y)-coordinates for point i given in row i.
+    """
+    # Defining auxiliary variables.
+    l = np.linspace(a, b, n)
+    y, x = np.meshgrid(l, l)
+
+    # Generating nodal points.
+    n2 = n * n
+    p = np.zeros((n2, 2))
+    p[:, 0] = x.T.ravel()
+    p[:, 1] = y.T.ravel()
+    return p
+
+
+def getPlateTri(n, a=-1, b=1):
+    """
+    Get the plate (a,b)^2, Triangular elements
+
+    Parameters
+    ----------
+    n : int
+        Number of nodes in each spatial direction (n^2 total nodes).
+    a : float, optional
+        Lower limit for x and y. The default is -1.
     b : float, optional
         Upper limit for x and y. The default is 1.
 
@@ -73,55 +103,8 @@ def getPlatev2(n, a=0, b=1):
         Index list of all nodal points on the outer edge.
 
     """
-    # Defining auxiliary variables.
-    l = np.linspace(a, b, n)
-    y, x = np.meshgrid(l, l)
-
     # Generating nodal points.
-    n2 = n * n
-    p = np.zeros((n2, 2))
-    p[:, 0] = x.T.ravel()
-    p[:, 1] = y.T.ravel()
-
-    # Generating delaunay elements.
-    mesh = spsa.Delaunay(p)
-    tri = mesh.simplices
-    edge = _make_edge(n)
-    return p, tri, edge
-
-
-def getPlatev3(n, a=0, b=1):
-    """
-    Get the plate (a,b)^2, version 3
-
-    Parameters
-    ----------
-    n : int
-        Number of nodes in each spatial direction (n^2 total nodes).
-    a : float, optional
-        Lower limit for x and y. The default is 0.
-    b : float, optional
-        Upper limit for x and y. The default is 1.
-
-    Returns
-    -------
-    p : np.array
-        Nodal points, (x,y)-coordinates for point i given in row i.
-    tri : np.array
-        Elements. Index to the three corners of element i given in row i.
-    edge : np.array
-        Index list of all nodal points on the outer edge.
-
-    """
-    # Defining auxiliary variables.
-    l = np.linspace(a, b, n)
-    y, x = np.meshgrid(l, l)
-
-    # Generating nodal points.
-    n2 = n * n
-    p = np.zeros((n2, 2))
-    p[:, 0] = x.T.ravel()
-    p[:, 1] = y.T.ravel()
+    p = _make_p(a, b, n)
 
     # Generating elements.
 
@@ -141,6 +124,55 @@ def getPlatev3(n, a=0, b=1):
             tri[k, 0] = index_map(i, j)
             tri[k, 1] = index_map(i + 1, j + 1)
             tri[k, 2] = index_map(i, j + 1)
+            k += 1
+
+    arg = np.argsort(tri[:, 0])
+    tri = tri[arg]
+    edge = _make_edge(n)
+    return p, tri, edge
+
+
+def getPlateRec(n, a=-1, b=1):
+    """
+    Get the plate (a,b)^2, Rectangle Elements
+
+    Parameters
+    ----------
+    n : int
+        Number of nodes in each spatial direction (n^2 total nodes).
+    a : float, optional
+        Lower limit for x and y. The default is -1.
+    b : float, optional
+        Upper limit for x and y. The default is 1.
+
+    Returns
+    -------
+    p : np.array
+        Nodal points, (x,y)-coordinates for point i given in row i.
+    tri : np.array
+        Elements. Index to the three corners of element i given in row i.
+    edge : np.array
+        Index list of all nodal points on the outer edge.
+
+    """
+    # Generating nodal points.
+    p = _make_p(a, b, n)
+
+    # Generating elements.
+
+    n12 = (n - 1) * (n - 1)
+    tri = np.zeros((n12, 4), dtype=int)
+
+    def index_map(i, j):
+        return i + n * j
+
+    k = 0
+    for i in range(n - 1):
+        for j in range(n - 1):
+            tri[k, 0] = index_map(i, j)
+            tri[k, 1] = index_map(i + 1, j)
+            tri[k, 2] = index_map(i + 1, j + 1)
+            tri[k, 3] = index_map(i, j + 1)
             k += 1
 
     arg = np.argsort(tri[:, 0])

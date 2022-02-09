@@ -13,10 +13,10 @@ def lagrange_1D_const(x1, x2):
 
 
 def lagrange_2D_mat(x_vec, y_vec):
-    pc_mat = np.array([[1, -1, 1, -1],
+    pc_mat = np.array([[x_vec[2] * y_vec[2], -x_vec[3] * y_vec[3], x_vec[0] * y_vec[0], -x_vec[1] * y_vec[1]],
                        [-y_vec[2], y_vec[3], -y_vec[0], y_vec[1]],
                        [-x_vec[2], x_vec[3], -x_vec[0], x_vec[1]],
-                       [x_vec[2] * y_vec[2], -x_vec[3] * y_vec[3], x_vec[0] * y_vec[0], -x_vec[1] * y_vec[1]]]) / (
+                       [1, -1, 1, -1]]) / (
                          (x_vec[1] - x_vec[0]) * (y_vec[3] - y_vec[0]))
 
     """lxc1 = lagrange_1D_const(x_vec[0], x_vec[1])
@@ -98,7 +98,7 @@ def check2_2d():
     print("pk")
     print(pk)
     s = perf_counter()
-    mk = np.column_stack((x_vec * y_vec, x_vec, y_vec, np.ones(4)))
+    mk = np.column_stack((np.ones(4), x_vec, y_vec, x_vec * y_vec))
     ck = np.linalg.inv(mk)
     print("time.", perf_counter() - s)
     print("ck")

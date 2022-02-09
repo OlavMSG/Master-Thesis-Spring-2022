@@ -6,6 +6,7 @@ from Specialization-Project-fall-2021
 
 import numpy as np
 from scipy.special import roots_legendre
+from itertools import product
 
 
 def line_integral_with_basis(a, b, nq, g):
@@ -72,7 +73,7 @@ def line_integral_with_basis(a, b, nq, g):
     return line_ints
 
 
-def quadrature2D(p1, p2, p3, nq, g):
+def quadrature2D_tri(p1, p2, p3, nq, g):
     """
     Integral over the triangle with vertices in p1, p2 and p3
 
@@ -96,18 +97,18 @@ def quadrature2D(p1, p2, p3, nq, g):
 
     """
     # Weights and gaussian quadrature points
-    z, rho = get_points_and_weights_quad_2D(nq)
-    # calculate the area of the triangle
-    area = get_area_triangle(p1, p2, p3)
+    z, rho = get_points_and_weights_quad_2D_tri(nq)
 
-    # Calculating the physical points
-    # mapping (xhi1, xhi2, xhi3) to (x, y) given matrix of xhi-s Z
-    xy = np.multiply.outer(p1, z[:, 0]) + np.multiply.outer(p2, z[:, 1]) + np.multiply.outer(p3, z[:, 2])
     # Calculating the Gaussian quadrature summation formula
-    return area * np.sum(rho * g(*xy))
+    return get_area_triangle(p1, p2, p3) * np.sum(rho * g(*barycentric_to_r2(p1, p2, p3, z)))
 
 
-def get_points_and_weights_quad_2D(nq):
+def barycentric_to_r2(p1, p2, p3, z):
+    # mapping (xhi1, xhi2, xhi3) to (x, y) given matrix of xhi-s Z
+    return np.multiply.outer(p1, z[:, 0]) + np.multiply.outer(p2, z[:, 1]) + np.multiply.outer(p3, z[:, 2])
+
+
+def get_points_and_weights_quad_2D_tri(nq):
     """
     Get Gauss quadrature points and weighs in 2D
 
@@ -175,3 +176,129 @@ def get_area_triangle(p1, p2, p3):
     """
     det_jac = (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
     return 0.5 * abs(det_jac)
+
+
+def quadrature2D_rec(p1, p2, p3, p4, g, nq_x, nq_y=None):
+    """
+    Integral over the triangle with vertices in p1, p2 and p3
+
+    Parameters
+    ----------
+    p1 : np.array
+        point p1.
+    p2 : np.array
+        point p2.
+    p3 : np.array
+        point p3.
+    p4 : np.array
+        point p4.
+    g : function
+        the function to integrate.
+    nq_x : int
+        scheme order in x.
+    nq_y : int
+        scheme order in y, equal to nq_x if None. Default None.
+
+    Returns
+    -------
+    float
+        value of integral.
+
+    """
+    if nq_y is None:
+        nq_y = nq_x
+    # Weights and gaussian quadrature points
+    z, rho = get_points_and_weights_quad_2D_rec(nq_x, nq_y)
+
+    # Calculating the Gaussian quadrature summation formula
+    return get_area_quadrilateral(p1, p2, p3, p4) * np.sum(rho * g(*minus_one_one_to_r2(p1, p2, p3, p4, z)))
+
+
+def minus_one_one_to_r2(p1, p2, p3, p4, z):
+    # mapping (xhi1, xhi2) to (x, y) given matrix of xhi-s Z
+    return np.multiply.outer(p1, np.ones_like(z[:, 0])) \
+           + 0.25 * (np.multiply.outer(p2 - p1, (1 + z[:, 0]) * (1 - z[:, 1]))
+                     + np.multiply.outer(p3 - p1, (1 + z[:, 0]) * (1 + z[:, 1]))
+                     + np.multiply.outer(p4 - p1, (1 - z[:, 0]) * (1 + z[:, 1])))
+
+
+def get_points_and_weights_quad_2D_rec(nq_x, nq_y):
+    """
+    Get Gauss quadrature points and weighs in 2D
+
+    Parameters
+    ----------
+    nq_x : int
+        scheme order in x.
+    nq_y : int
+        scheme order in y.
+
+
+    Returns
+    -------
+    z : np.array
+        quadrature points.
+    rho : np.array
+        quadrature weights.
+
+    """
+    z_x, rho_x = roots_legendre(nq_x)
+    z_y, rho_y = roots_legendre(nq_y)
+
+    z = np.array(list(product(z_x, z_y)))
+    rho = np.kron(rho_x, rho_y)
+    return z, rho
+
+
+def get_area_quadrilateral(p1, p2, p3, p4):
+    """
+    Get the area of the quadrilateral with vertices in p1, p2, p3 and p4
+
+    Parameters
+    ----------
+    p1 : np.array
+        point p1.
+    p2 : np.array
+        point p2.
+    p3 : np.array
+        point p3.
+    p4 : np.array
+        point p4.
+
+    Returns
+    -------
+    float
+        area of quadrilateral.
+
+    """
+    return 0.5 * abs((p1[0] - p3[0]) * (p2[1] - p4[1]) - (p2[0] - p4[0]) * (p1[1] - p3[0]))
+
+
+if __name__ == "__main__":
+    p = np.array([[-2, -2],
+                  [2, -2],
+                  [2, 2]])
+    area = get_area_triangle(*p)
+    print(area)
+    z = np.array([[1, 0, 0],
+                  [0, 1, 0],
+                  [0, 0, 1]])
+    xy = barycentric_to_r2(*p, z)
+    print(xy)
+
+    p = np.array([[-2, -2],
+                  [2, -2],
+                  [2, 2],
+                  [-2, 2]])
+    area = get_area_quadrilateral(*p)
+    print(area)
+    z = np.array([[-1, -1],
+                  [1, -1],
+                  [1, 1],
+                  [-1, 1]])
+    xy = minus_one_one_to_r2(*p, z)
+    print(xy)
+
+    z, rho = get_points_and_weights_quad_2D_rec(2, 3)
+    print(z)
+    print(rho)

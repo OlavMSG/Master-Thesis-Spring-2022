@@ -7,21 +7,21 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from base_assembly import get_basis_coef_tri, assemble_f_local_tri
-from gauss_quadrature import get_area_triangle
+from base_assembly import get_basis_coef_rec, assemble_f_local_rec, ddx_phi_rec, ddy_phi_rec
+from gauss_quadrature import get_area_quadrilateral, quadrature2D_rec
 from helpers import expand_index, index_map
 
 
-def assemble_ints_local(area, ck):
+def assemble_ints_local(ck, p_vec):
     """
     Assemble the local contributions to the 6 integrals on an element.
 
     Parameters
     ----------
-    area : float
-        area of the triangle element.
     ck : np.array
         basis function coef. matrix.
+    p_vec : np.array
+        vertexes of the rectangle element.
 
     Returns
     -------
@@ -39,60 +39,77 @@ def assemble_ints_local(area, ck):
         local contribution to matrix int5.
 
     """
-    int11_local = np.zeros((6, 6), dtype=float)
-    int12_local = np.zeros((6, 6), dtype=float)
-    int21_local = np.zeros((6, 6), dtype=float)
-    int22_local = np.zeros((6, 6), dtype=float)
-    int4_local = np.zeros((6, 6), dtype=float)
-    int5_local = np.zeros((6, 6), dtype=float)
+    int11_local = np.zeros((8, 8), dtype=float)
+    int12_local = np.zeros((8, 8), dtype=float)
+    int21_local = np.zeros((8, 8), dtype=float)
+    int22_local = np.zeros((8, 8), dtype=float)
+    int4_local = np.zeros((8, 8), dtype=float)
+    int5_local = np.zeros((8, 8), dtype=float)
 
     # matrices are symmetric by construction, so only compute on part.
-    for i in range(3):
+    for i in range(4):
         ki0 = index_map(i, 0)  # di = 0
         ki1 = index_map(i, 1)  # di = 1
         for j in range(i + 1):
             kj0 = index_map(j, 0)  # dj = 0
             kj1 = index_map(j, 1)  # dj = 1
             # [u_i1*v_j1, u_i1*v_j2, u_i2*v_j1, u_i2*v_j2]
-            cij = area * np.kron(ck[1:3, i], ck[1:3, j])
+
+            def cij_func0(x, y):
+                return ddx_phi_rec(x, y, ck, i) * ddx_phi_rec(x, y, ck, j)
+
+            def cij_func1(x, y):
+                return ddx_phi_rec(x, y, ck, i) * ddy_phi_rec(x, y, ck, j)
+
+            def cij_func2(x, y):
+                return ddy_phi_rec(x, y, ck, i) * ddx_phi_rec(x, y, ck, j)
+
+            def cij_func3(x, y):
+                return ddy_phi_rec(x, y, ck, i) * ddy_phi_rec(x, y, ck, j)
+
+            nq = 2
+            cij0 = quadrature2D_rec(*p_vec, cij_func0, nq)
+            cij1 = quadrature2D_rec(*p_vec, cij_func1, nq)
+            cij2 = quadrature2D_rec(*p_vec, cij_func2, nq)
+            cij3 = quadrature2D_rec(*p_vec, cij_func3, nq)
 
             # construct local ints
 
             # u 1-comp is nonzero, di = 0
             # v 1-comp is nonzero, dj = 0
             # [u_11*v_11, u_11*v_12, u_12*v_11, u_12*v_12]
-            int11_local[ki0, kj0] = cij[0]
-            int22_local[ki0, kj0] = cij[3]
+            int11_local[ki0, kj0] = cij0
+            int22_local[ki0, kj0] = cij3
             if ki0 != kj0:
-                int11_local[kj0, ki0] = cij[0]
-                int22_local[kj0, ki0] = cij[3]
+                int11_local[kj0, ki0] = cij0
+                int22_local[kj0, ki0] = cij3
 
             # u 1-comp is nonzero, di = 0
             # v 2-comp is nonzero, dj = 1
             # [u_11*v_21, u_11*v_22, u_12*v_21, u_12*v_22]
-            int4_local[ki0, kj1] = cij[2]
-            int5_local[ki0, kj1] = cij[1]
+            int4_local[ki0, kj1] = cij2
+            int5_local[ki0, kj1] = cij1
             if ki0 != kj1:
-                int4_local[kj1, ki0] = cij[2]
-                int5_local[kj1, ki0] = cij[1]
+                int4_local[kj1, ki0] = cij2
+                int5_local[kj1, ki0] = cij1
 
             # u 2-comp is nonzero, di = 1
             # v 1-comp is nonzero, dj = 0
             # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
-            int4_local[ki1, kj0] = cij[1]
-            int5_local[ki1, kj0] = cij[2]
+            int4_local[ki1, kj0] = cij1
+            int5_local[ki1, kj0] = cij2
             if ki1 != kj0:
-                int4_local[kj0, ki1] = cij[1]
-                int5_local[kj0, ki1] = cij[2]
+                int4_local[kj0, ki1] = cij1
+                int5_local[kj0, ki1] = cij2
 
             # u 2-comp is nonzero, di = 1
             # v 2-comp is nonzero, dj = 1
             # [u_21*v_21, u_21*v_22, u_22*v_21, u_22*v_22]
-            int12_local[ki1, kj1] = cij[3]
-            int21_local[ki1, kj1] = cij[0]
+            int12_local[ki1, kj1] = cij3
+            int21_local[ki1, kj1] = cij0
             if ki1 != kj1:
-                int12_local[kj1, ki1] = cij[3]
-                int21_local[kj1, ki1] = cij[0]
+                int12_local[kj1, ki1] = cij3
+                int21_local[kj1, ki1] = cij0
 
     return int11_local, int12_local, int21_local, int22_local, int4_local, int5_local
 
@@ -144,6 +161,8 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
     # Allows for efficient O(1) access of individual elements
     # load vector
     f_load_lv = np.zeros(n2d, dtype=float)
+    print(tri)
+    print(p[tri, :])
     for nk in tri:
         # nk : node-numbers for the k'th triangle
         # the points of the triangle
@@ -153,10 +172,9 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         # using indexmap k = 2 * i + d, d=0 for x, 1 for y, i is the node number
         # calculate the area of the triangle
         # and basis functions coef. or Jacobin inverse
-        ck = get_basis_coef_tri(p[nk, :])
-        area = get_area_triangle(*p[nk, :])
+        ck = get_basis_coef_rec(p[nk, :])
         # assemble local contributions
-        ints = assemble_ints_local(area, ck)
+        ints = assemble_ints_local(ck, p[nk, :])
         # expand the index
         expanded_nk = expand_index(nk)
         index = np.ix_(expanded_nk, expanded_nk)
@@ -167,8 +185,12 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         int22[index] += ints[3]
         int4[index] += ints[4]
         int5[index] += ints[5]
+        expanded_nk2 = expand_index(np.array([4]))
+        index2 = np.ix_(expanded_nk2, expanded_nk2)
+        print((int11 + int12 + 0.5 * (int21 + int22 + int4))[index2].A, "a1")
+        print((int11 + int12 + int5)[index2].A, "a2")
         if f_func_is_not_zero:
-            f_local = assemble_f_local_tri(ck, f_func, *p[nk, :])
+            f_local = assemble_f_local_rec(ck, f_func, *p[nk, :])
             f_load_lv[expanded_nk] += f_local
     return (int11, int12, int21, int22, int4, int5), f_load_lv
 
