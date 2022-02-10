@@ -6,7 +6,7 @@ based on Specialization-Project-fall-2021
 
 import numpy as np
 
-from gauss_quadrature import quadrature2D_tri, line_integral_with_basis, quadrature2D_rec
+from gauss_quadrature import quadrature2D_tri, line_integral_with_basis, quadrature2D_quad
 from helpers import inv_index_map, expand_index
 
 
@@ -96,14 +96,14 @@ def assemble_f_local_tri(ck, f_func, p1, p2, p3):
     return f_local
 
 
-def get_basis_coef_rec(p_vec):
+def get_basis_coef_quad(p_vec):
     """
-    Calculate the basis function coef. matrix. for rectangle element
+    Calculate the basis function coef. matrix. for quadrilateral element
 
     Parameters
     ----------
     p_vec : np.array
-        vertexes of the rectangle element.
+        vertexes of the quadrilateral element.
 
     Returns
     -------
@@ -116,9 +116,9 @@ def get_basis_coef_rec(p_vec):
     return np.linalg.inv(mk)  # here faster than solving Mk @ Ck = I_4
 
 
-def phi_rec(x, y, ck, i):
+def phi_quad(x, y, ck, i):
     """
-    The linear basis functions on a rectangle
+    The linear basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -149,9 +149,9 @@ def phi_rec(x, y, ck, i):
     return ck[0, i] + ck[1, i] * x + ck[2, i] * y + ck[3, i] * x * y
 
 
-def ddx_phi_rec(x, y, ck, i):
+def ddx_phi_quad(x, y, ck, i):
     """
-    The linear basis functions on a rectangle
+    The linear basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -182,9 +182,9 @@ def ddx_phi_rec(x, y, ck, i):
     return ck[1, i] + ck[3, i] * y
 
 
-def ddy_phi_rec(x, y, ck, i):
+def ddy_phi_quad(x, y, ck, i):
     """
-    The linear basis functions on a rectangle
+    The linear basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -246,9 +246,9 @@ def assemble_f_local_rec(ck, f_func, p1, p2, p3, p4):
         i, di = inv_index_map(ki)
 
         def f_phi(x, y):
-            return f_func(x, y)[:, di] * phi_rec(x, y, ck, i)
+            return f_func(x, y)[:, di] * phi_quad(x, y, ck, i)
 
-        f_local[ki] = quadrature2D_rec(p1, p2, p3, p4, f_phi, 4)
+        f_local[ki] = quadrature2D_quad(p1, p2, p3, p4, f_phi, 4)
     return f_local
 
 

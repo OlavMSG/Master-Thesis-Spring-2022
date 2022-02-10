@@ -110,8 +110,6 @@ def main():
     f_load_lv_free = f_load_lv_full[expanded_free_index]
 
     f_load = f_load_lv_free - a_dirichlet @ u_exact.flatt_values[expanded_dirichlet_edge_index]
-    print(a_free.A)
-    print(f_load)
 
     uh_full = np.zeros_like(u_exact.flatt_values)
     uh_full[expanded_free_index] = spsolve(a_free, f_load)
@@ -122,10 +120,6 @@ def main():
 
     print(test_res)
 
-    print(np.abs(uh_full - u_exact.flatt_values))
-    print(uh_full.reshape(n * n, 2))
-    print(u_exact)
-    print(p)
 
 if __name__ == '__main__':
     main()

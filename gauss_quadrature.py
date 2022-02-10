@@ -178,7 +178,7 @@ def get_area_triangle(p1, p2, p3):
     return 0.5 * abs(det_jac)
 
 
-def quadrature2D_rec(p1, p2, p3, p4, g, nq_x, nq_y=None):
+def quadrature2D_quad(p1, p2, p3, p4, g, nq_x, nq_y=None):
     """
     Integral over the triangle with vertices in p1, p2 and p3
 
@@ -208,10 +208,10 @@ def quadrature2D_rec(p1, p2, p3, p4, g, nq_x, nq_y=None):
     if nq_y is None:
         nq_y = nq_x
     # Weights and gaussian quadrature points
-    z, rho = get_points_and_weights_quad_2D_rec(nq_x, nq_y)
+    z, rho = get_points_and_weights_quad_2D_quad(nq_x, nq_y)
 
     # Calculating the Gaussian quadrature summation formula
-    return get_area_quadrilateral(p1, p2, p3, p4) * np.sum(rho * g(*minus_one_one_to_r2(p1, p2, p3, p4, z)))
+    return np.sum(rho * g(*minus_one_one_to_r2(p1, p2, p3, p4, z)) * det_jac_minus_one_one_to_r2(p1, p2, p3, p4, z))
 
 
 def minus_one_one_to_r2(p1, p2, p3, p4, z):
@@ -222,7 +222,13 @@ def minus_one_one_to_r2(p1, p2, p3, p4, z):
                      + np.multiply.outer(p4 - p1, (1 - z[:, 0]) * (1 + z[:, 1])))
 
 
-def get_points_and_weights_quad_2D_rec(nq_x, nq_y):
+def det_jac_minus_one_one_to_r2(p1, p2, p3, p4, z):
+    jac0 = ((p1 - p2 + p3 - p4) * z - p1 + p2 + p3 - p4).T
+    jac1 = (p1 * (z - 1) + z * (-p2 + p3 - p4) - p2 + p3 + p4).T
+    return 0.0625 * (jac0[0, :] * jac1[1, :] - jac1[0, :] * jac0[1, :])
+
+
+def get_points_and_weights_quad_2D_quad(nq_x, nq_y):
     """
     Get Gauss quadrature points and weighs in 2D
 
@@ -286,10 +292,10 @@ if __name__ == "__main__":
     xy = barycentric_to_r2(*p, z)
     print(xy)
 
-    p = np.array([[-2, -2],
-                  [2, -2],
+    p = np.array([[-1, -3],
+                  [2, -3],
                   [2, 2],
-                  [-2, 2]])
+                  [-1, 2]])
     area = get_area_quadrilateral(*p)
     print(area)
     z = np.array([[-1, -1],
@@ -299,6 +305,17 @@ if __name__ == "__main__":
     xy = minus_one_one_to_r2(*p, z)
     print(xy)
 
-    z, rho = get_points_and_weights_quad_2D_rec(2, 3)
+    z, rho = get_points_and_weights_quad_2D_quad(2, 3)
     print(z)
     print(rho)
+
+
+    def func1(x, y):
+        return (2 - x) * (2 - y)
+
+
+    true_a = 56.25
+    a = quadrature2D_quad(*p, func1, 2)
+    print(a, true_a, abs(true_a - a))
+
+    print(det_jac_minus_one_one_to_r2(*p, z))
