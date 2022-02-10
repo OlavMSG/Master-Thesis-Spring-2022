@@ -2,15 +2,13 @@
 """
 @author: Olav M.S. Gran
 """
+from time import perf_counter
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse.linalg import spsolve
-
-
-from helpers import compute_a, expand_index, get_u_exact
+from helpers import VectorizedFunction2D, compute_a, expand_index, get_u_exact
 from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
-from time import perf_counter
 
 
 def plot_mesh(n, p, tri):
@@ -31,23 +29,27 @@ def plot_mesh(n, p, tri):
     None.
 
     """
+    def get_line(p1, p2):
+        return np.array([p1[0], p2[0]]), np.array([p1[1], p2[1]])
+
     plt.figure("Mesh plot", figsize=(7, 7))
     plt.title(f"Mesh {n - 1}x{n - 1}")
-    plt.triplot(p[:, 0], p[:, 1], tri)
+    for nk in tri:
+        p1 = p[nk[0], :]
+        p2 = p[nk[1], :]
+        p3 = p[nk[2], :]
+        p4 = p[nk[3], :]
+
+        plt.plot(*get_line(p1, p2), color="C0")
+        plt.plot(*get_line(p2, p3), color="C0")
+        plt.plot(*get_line(p3, p4), color="C0")
+        plt.plot(*get_line(p4, p1), color="C0")
+
     plt.grid()
 
 
-def compute_a1_and_a2_from_ints(z, int11, int12, int21, int22, int4, int5):
-    # ints = (int11, int12, int21, int22, int4, int5)
-    # int 3 = 0
-
-    int1 = z[0, 0] * int11 + z[3, 3] * int12
-    int2 = z[0, 0] * int21 + z[3, 3] * int22
-
-    a1 = int1 + 0.5 * (int2 + int4)
-    a2 = int1 + int5
-
-    return a1, a2
+def f_func(x, y):
+    return 0, 0
 
 
 def u_exact_func(x, y):
@@ -57,7 +59,7 @@ def u_exact_func(x, y):
 def main():
     n = 3
     lx, ly = 3, 1
-    rec = ScalableRectangle(n, "lt")
+    rec = ScalableRectangle(n, "bq")
     rec.set_param(lx, ly)
     e_young, nu_poisson = 2.1e5, 0.3
     tol = 1e-14

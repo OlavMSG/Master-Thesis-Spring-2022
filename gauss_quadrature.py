@@ -73,9 +73,14 @@ def line_integral_with_basis(a, b, nq, g):
     return line_ints
 
 
-def quadrature2D_tri(p1, p2, p3, nq, g):
+def barycentric_to_r2(p1, p2, p3, z):
+    # mapping (xhi1, xhi2, xhi3) to (x, y) given matrix of xhi-s Z
+    return np.multiply.outer(p1, z[:, 0]) + np.multiply.outer(p2, z[:, 1]) + np.multiply.outer(p3, z[:, 2])
+
+
+def get_area_triangle(p1, p2, p3):
     """
-    Integral over the triangle with vertices in p1, p2 and p3
+    Get the area of the triangle with vertices in p1, p2 and p3
 
     Parameters
     ----------
@@ -85,27 +90,15 @@ def quadrature2D_tri(p1, p2, p3, nq, g):
         point p2.
     p3 : np.array
         point p3.
-    nq : int
-        scheme order.
-    g : function
-        the function to integrate.
 
     Returns
     -------
     float
-        value of integral.
+        area of triangle.
 
     """
-    # Weights and gaussian quadrature points
-    z, rho = get_points_and_weights_quad_2D_tri(nq)
-
-    # Calculating the Gaussian quadrature summation formula
-    return get_area_triangle(p1, p2, p3) * np.sum(rho * g(*barycentric_to_r2(p1, p2, p3, z)))
-
-
-def barycentric_to_r2(p1, p2, p3, z):
-    # mapping (xhi1, xhi2, xhi3) to (x, y) given matrix of xhi-s Z
-    return np.multiply.outer(p1, z[:, 0]) + np.multiply.outer(p2, z[:, 1]) + np.multiply.outer(p3, z[:, 2])
+    det_jac = (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+    return 0.5 * abs(det_jac)
 
 
 def get_points_and_weights_quad_2D_tri(nq):
@@ -155,30 +148,7 @@ def get_points_and_weights_quad_2D_tri(nq):
     return z, rho
 
 
-def get_area_triangle(p1, p2, p3):
-    """
-    Get the area of the triangle with vertices in p1, p2 and p3
-
-    Parameters
-    ----------
-    p1 : np.array
-        point p1.
-    p2 : np.array
-        point p2.
-    p3 : np.array
-        point p3.
-
-    Returns
-    -------
-    float
-        area of triangle.
-
-    """
-    det_jac = (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
-    return 0.5 * abs(det_jac)
-
-
-def quadrature2D_quad(p1, p2, p3, p4, g, nq_x, nq_y=None):
+def quadrature2D_tri(p1, p2, p3, nq, g):
     """
     Integral over the triangle with vertices in p1, p2 and p3
 
@@ -190,14 +160,10 @@ def quadrature2D_quad(p1, p2, p3, p4, g, nq_x, nq_y=None):
         point p2.
     p3 : np.array
         point p3.
-    p4 : np.array
-        point p4.
+    nq : int
+        scheme order.
     g : function
         the function to integrate.
-    nq_x : int
-        scheme order in x.
-    nq_y : int
-        scheme order in y, equal to nq_x if None. Default None.
 
     Returns
     -------
@@ -205,13 +171,11 @@ def quadrature2D_quad(p1, p2, p3, p4, g, nq_x, nq_y=None):
         value of integral.
 
     """
-    if nq_y is None:
-        nq_y = nq_x
     # Weights and gaussian quadrature points
-    z, rho = get_points_and_weights_quad_2D_quad(nq_x, nq_y)
+    z, rho = get_points_and_weights_quad_2D_tri(nq)
 
     # Calculating the Gaussian quadrature summation formula
-    return np.sum(rho * g(*minus_one_one_to_r2(p1, p2, p3, p4, z)) * det_jac_minus_one_one_to_r2(p1, p2, p3, p4, z))
+    return get_area_triangle(p1, p2, p3) * np.sum(rho * g(*barycentric_to_r2(p1, p2, p3, z)))
 
 
 def minus_one_one_to_r2(p1, p2, p3, p4, z):
@@ -254,6 +218,42 @@ def get_points_and_weights_quad_2D_quad(nq_x, nq_y):
     z = np.array(list(product(z_x, z_y)))
     rho = np.kron(rho_x, rho_y)
     return z, rho
+
+
+def quadrature2D_quad(p1, p2, p3, p4, g, nq_x, nq_y=None):
+    """
+    Integral over the triangle with vertices in p1, p2 and p3
+
+    Parameters
+    ----------
+    p1 : np.array
+        point p1.
+    p2 : np.array
+        point p2.
+    p3 : np.array
+        point p3.
+    p4 : np.array
+        point p4.
+    g : function
+        the function to integrate.
+    nq_x : int
+        scheme order in x.
+    nq_y : int
+        scheme order in y, equal to nq_x if None. Default None.
+
+    Returns
+    -------
+    float
+        value of integral.
+
+    """
+    if nq_y is None:
+        nq_y = nq_x
+    # Weights and gaussian quadrature points
+    z, rho = get_points_and_weights_quad_2D_quad(nq_x, nq_y)
+
+    # Calculating the Gaussian quadrature summation formula
+    return np.sum(rho * g(*minus_one_one_to_r2(p1, p2, p3, p4, z)) * det_jac_minus_one_one_to_r2(p1, p2, p3, p4, z))
 
 
 def get_area_quadrilateral(p1, p2, p3, p4):

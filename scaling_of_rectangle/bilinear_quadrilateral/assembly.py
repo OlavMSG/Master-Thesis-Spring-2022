@@ -7,7 +7,7 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from base_assembly import get_basis_coef_quad, assemble_f_local_rec, ddx_phi_quad, ddy_phi_quad
+from assembly_quadrilatrial import get_basis_coef, ddx_phi, ddy_phi
 from gauss_quadrature import quadrature2D_quad
 from helpers import expand_index, index_map
 
@@ -56,16 +56,16 @@ def assemble_ints_local(ck, p_vec):
             # [u_i1*v_j1, u_i1*v_j2, u_i2*v_j1, u_i2*v_j2]
 
             def cij_func0(x, y):
-                return ddx_phi_quad(x, y, ck, i) * ddx_phi_quad(x, y, ck, j)
+                return ddx_phi(x, y, ck, i) * ddx_phi(x, y, ck, j)
 
             def cij_func1(x, y):
-                return ddx_phi_quad(x, y, ck, i) * ddy_phi_quad(x, y, ck, j)
+                return ddx_phi(x, y, ck, i) * ddy_phi(x, y, ck, j)
 
             def cij_func2(x, y):
-                return ddy_phi_quad(x, y, ck, i) * ddx_phi_quad(x, y, ck, j)
+                return ddy_phi(x, y, ck, i) * ddx_phi(x, y, ck, j)
 
             def cij_func3(x, y):
-                return ddy_phi_quad(x, y, ck, i) * ddy_phi_quad(x, y, ck, j)
+                return ddy_phi(x, y, ck, i) * ddy_phi(x, y, ck, j)
 
             nq = 2
             cij0 = quadrature2D_quad(*p_vec, cij_func0, nq)
@@ -114,9 +114,9 @@ def assemble_ints_local(ck, p_vec):
     return int11_local, int12_local, int21_local, int22_local, int4_local, int5_local
 
 
-def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
+def assemble_ints_quad(n, p, tri):
     """
-    Assemble the matrices a1 and a2, and the load vector f_load_lv
+    Assemble the matrices for ints
 
     Parameters
     ----------
@@ -126,10 +126,6 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         list of points.
     tri : np.array
         triangulation of the points in p.
-    f_func : function
-        load function.
-    f_func_is_not_zero : bool
-        True if f_func does not return (0,0) for all (x,y)
 
     Returns
     -------
@@ -145,9 +141,6 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         matrix int4 for the bilinear form.
     int5 : sparse.dok_matrix
         matrix int5 for the bilinear form.
-    f_load_lv : np.array
-        load vector for the linear form.
-
     """
     n2d = n * n * 2
     # Stiffness matrices
@@ -159,8 +152,6 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
     int5 = sparse.dok_matrix((n2d, n2d), dtype=float)
     # dok_matrix
     # Allows for efficient O(1) access of individual elements
-    # load vector
-    f_load_lv = np.zeros(n2d, dtype=float)
     for nk in tri:
         # nk : node-numbers for the k'th triangle
         # the points of the triangle
@@ -170,7 +161,7 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         # using indexmap k = 2 * i + d, d=0 for x, 1 for y, i is the node number
         # calculate the area of the triangle
         # and basis functions coef. or Jacobin inverse
-        ck = get_basis_coef_quad(p[nk, :])
+        ck = get_basis_coef(p[nk, :])
         # assemble local contributions
         ints = assemble_ints_local(ck, p[nk, :])
         # expand the index
@@ -183,8 +174,5 @@ def assemble_a1_a2_f(n, p, tri, f_func, f_func_is_not_zero):
         int22[index] += ints[3]
         int4[index] += ints[4]
         int5[index] += ints[5]
-        if f_func_is_not_zero:
-            f_local = assemble_f_local_rec(ck, f_func, *p[nk, :])
-            f_load_lv[expanded_nk] += f_local
-    return (int11, int12, int21, int22, int4, int5), f_load_lv
+    return int11, int12, int21, int22, int4, int5
 
