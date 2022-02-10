@@ -4,24 +4,31 @@
 """
 
 import numpy as np
+from itertools import product
+
 from get_plate import getPlateRec, getPlateTri
 from .bilinear_quadrilateral.assembly import assemble_ints_quad
-from helpers import VectorizedFunction2D
+from helpers import VectorizedFunction2D, get_vec_from_range, compute_a, get_lambda_mu
 from .linear_triangle.assembly import assemble_ints_tri
 from assembly_quadrilatrial import assemble_f as assemble_f_quad
 from assembly_triangle import assemble_f as assemble_f_tri
+from default_constants import e_young_range, nu_poisson_range, rec_scale_range
 
 
 class ScalableRectangle:
     ref_plate = (-1, 1)
     is_jac_constant = True
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
-    ly = 1
-    lx = 1
-    f_load_lv_full = None
-    ints = None
 
     def __init__(self, n, element="linear triangle"):
+        self.ly = None
+        self.lx = None
+        self.f_load_lv_full = None
+        self.ints = None
+        self.e_young_range = e_young_range
+        self.nu_poisson_range = nu_poisson_range
+        self.rec_scale_range = rec_scale_range
+
         self.n = n + 1
         if element.lower() in self.implemented_elements:
             self.element = element.lower()
@@ -80,6 +87,41 @@ class ScalableRectangle:
         a2 = int1 + self.ints[5]
 
         return a1, a2
+
+    def compute_a(self, lx, ly, e_young, nu_poisson):
+        self.set_param(lx, ly)
+        a1, a2 = self.compute_a1_and_a2_from_ints()
+        return compute_a(e_young, nu_poisson, a1, a2)
+
+    def compute_matrix_least_squares_m_and_b(self, m, rec_scale_range=None, e_young_range=None,
+                                             nu_poisson_range=None, mode="uniform"):
+        if rec_scale_range is not None:
+            self.rec_scale_range = rec_scale_range
+        if e_young_range is not None:
+            self.e_young_range = e_young_range
+        if nu_poisson_range is not None:
+            self.nu_poisson_range = nu_poisson_range
+
+        rec_scale_vec = get_vec_from_range(self.rec_scale_range, m, mode)
+        e_young_vec = get_vec_from_range(self.e_young_range, m, mode)
+        nu_poisson_vec = get_vec_from_range(self.nu_poisson_range, m, mode)
+
+        n2d = self.n * self.n * 2
+        m4 = m ** 4
+        m_mat = np.zeros((m4, 6), dtype=float)
+        # m_mat[:, 0] = 1 # 6->7 above
+        b_mat = np.zeros((m4, n2d, n2d), dtype=float)
+        for i, (lx, ly, e_young, nu_poisson) in \
+                enumerate(product(rec_scale_vec, rec_scale_vec, e_young_vec, nu_poisson_vec)):
+            self.set_param(lx, ly)
+            mu, lam = get_lambda_mu(e_young, nu_poisson)
+            m_mat[i, 0:3] = 2 * mu * self.unique_z_comp
+            m_mat[i, 3:] = lam * self.unique_z_comp
+
+            a1, a2 = self.compute_a1_and_a2_from_ints()
+            b_mat[i, :, :] = 2 * mu * a1.A + lam * a2.A
+
+        return m_mat, b_mat
 
     @property
     def jac(self):

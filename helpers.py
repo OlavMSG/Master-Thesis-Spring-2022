@@ -202,6 +202,37 @@ def check_and_make_folder(n, folder_path, n_counts_nodes=False):
     return folder_path
 
 
+def get_vec_from_range(range_, m, mode):
+    """
+    Get vector of m uniform or Gauss-Lobatto points from range_
+    Parameters
+    ----------
+    range_ : tuple
+        the range of numbers to consider.
+    m : int
+        number of points in vector.
+    mode : str
+        sampling mode, uniform or Gauss-Lobatto.
+    Raises
+    ------
+    NotImplementedError
+        if mode is not uniform or Gauss-Lobatto.
+    Returns
+    -------
+    np.array
+        array of sampling points.
+    """
+    if mode.lower() == "uniform":
+        return np.linspace(range_[0], range_[1], m)
+
+    elif mode.lower() == "gauss-lobatto":
+        from quadpy.c1 import gauss_lobatto
+        return 0.5 * ((range_[1] - range_[0]) * gauss_lobatto(m).points + (range_[1] + range_[0]))
+    else:
+        raise NotImplementedError(
+            f"Mode {mode} is not implemented. The implemented modes are uniform and gauss lobatto.")
+
+
 # class to vectorized input functions
 class VectorizedFunction2D:
 

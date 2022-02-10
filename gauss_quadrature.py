@@ -292,10 +292,10 @@ if __name__ == "__main__":
     xy = barycentric_to_r2(*p, z)
     print(xy)
 
-    p = np.array([[-1, -3],
-                  [2, -3],
+    p = np.array([[-2, -2],
+                  [2, -2],
                   [2, 2],
-                  [-1, 2]])
+                  [-2, 2]])
     area = get_area_quadrilateral(*p)
     print(area)
     z = np.array([[-1, -1],

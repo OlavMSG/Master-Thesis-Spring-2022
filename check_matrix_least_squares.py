@@ -4,83 +4,51 @@
 """
 from time import perf_counter
 
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.sparse.linalg import spsolve
 
-from get_plate import getPlateRec
-from scaling_of_rectangle.bilinear_quadrilateral.assembly import assemble_ints_quad
-from helpers import VectorizedFunction2D, compute_a, expand_index, get_u_exact
 from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
-
-
-def plot_mesh(n, p, tri):
-    """
-    Plot the mesh
-
-    Parameters
-    ----------
-    n : int
-        number of nodes along the axes.
-    p : np.array
-        Nodal points, (x,y)-coordinates for point i given in row i.
-    tri : np.array
-        Elements. Index to the three corners of element i given in row i.
-
-    Returns
-    -------
-    None.
-
-    """
-    def get_line(p1, p2):
-        return np.array([p1[0], p2[0]]), np.array([p1[1], p2[1]])
-
-    plt.figure("Mesh plot", figsize=(7, 7))
-    plt.title(f"Mesh {n - 1}x{n - 1}")
-    for nk in tri:
-        p1 = p[nk[0], :]
-        p2 = p[nk[1], :]
-        p3 = p[nk[2], :]
-        p4 = p[nk[3], :]
-
-        plt.plot(*get_line(p1, p2), color="C0")
-        plt.plot(*get_line(p2, p3), color="C0")
-        plt.plot(*get_line(p3, p4), color="C0")
-        plt.plot(*get_line(p4, p1), color="C0")
-
-    plt.grid()
-
-
-def f_func(x, y):
-    return 0, 0
-
-
-def u_exact_func(x, y):
-    return x, 0.
-
+from matrix_least_squares import matrix_least_squares
 
 def main():
-    n = 2
-    lx, ly = 3, 1
-    rec = ScalableRectangle(lx, ly)
+    n = 3
+    m = 3
+    # lx, ly = 3, 1
+    rec = ScalableRectangle(n, "bq")
+    # rec.set_param(lx, ly)
     e_young, nu_poisson = 2.1e5, 0.3
     tol = 1e-14
 
-    n += 1
-    p, tri, edge = getPlateRec(n, -1, 1)
-    plot_mesh(n, p, tri)
-    plt.show()
-
-    def f_func_comp_phi(x, y):
-        return f_func(*rec.phi(x, y))
-
-    f_func1 = VectorizedFunction2D(f_func_comp_phi)
-    u_exact = get_u_exact(p, u_exact_func)
+    s = perf_counter()
+    rec.assemble_ints()
+    # rec.assemble_f()
+    print("time assemble:", perf_counter() - s)
 
     s = perf_counter()
-    ints, f_load_lv_full = assemble_ints_quad(n, p, tri, f_func1, True)
-    print("time:", perf_counter() - s)
+    m_mat, b_mat = rec.compute_matrix_least_squares_m_and_b(m)
+    print("time m_mat b_mat:", perf_counter() - s)
+    # a1_full, a2_full = rec.compute_a1_and_a2_from_ints()
+    # a_full = compute_a(e_young, nu_poisson, a1_full, a2_full)
+    s = perf_counter()
+    x_mats = matrix_least_squares(m_mat, b_mat)
+    print("time matrix least squares:", perf_counter() - s)
+    print("checking np.max(np.abs(...))")
+    print(x_mats.shape)
+    rec.set_param(1, 1)
+
+    # a = rec.compute_a1_and_a2_from_ints()
+
+    # print(np.max(np.abs(x_mats[0])))
+    # print(np.max(np.abs(a[0] - x_mats[0])) < 1e-14)
+    # print(np.max(np.abs(a[1] - x_mats[1])) < 1e-14)
+    print("mu")
+    print(np.max(np.abs(rec.ints[0] + 0.5 * rec.ints[2] - x_mats[0])))
+    print(np.max(np.abs(rec.ints[1] + 0.5 * rec.ints[3] - x_mats[1])))
+    print(np.max(np.abs(0.5 * rec.ints[4] - x_mats[2])))
+    print("lambda")
+    print(np.max(np.abs(rec.ints[0] - x_mats[3])))
+    print(np.max(np.abs(rec.ints[1] - x_mats[4])))
+    print(np.max(np.abs(rec.ints[5] - x_mats[5])))
 
 
-
-
+if __name__ == "__main__":
+    main()
