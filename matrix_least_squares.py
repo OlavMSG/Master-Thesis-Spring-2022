@@ -13,97 +13,121 @@ from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 import default_constants
 
 
-def get_param_matrix(rec_scale_vec, e_young_vec, nu_poisson_vec):
-    return np.array(list(product(rec_scale_vec, rec_scale_vec, e_young_vec, nu_poisson_vec)))
+def get_parameter_vecs(m, mu_params, rec: ScalableRectangle,
+                       e_young_range=None, nu_poisson_range=None, sample_mode="uniform"):
+    parameter_vecs = []
+
+    for mu in mu_params:
+        if mu in rec.geo_mu_params:
+            parameter_vecs.append(get_vec_from_range(rec.geo_mu_params_range[mu], m, sample_mode))
+        else:
+            # mu == "material_e_nu
+            if e_young_range is None:
+                e_young_range = default_constants.e_young_range
+            else:
+                e_young_range = e_young_range
+            parameter_vecs.append(get_vec_from_range(e_young_range, m, sample_mode))
+
+            if nu_poisson_range is None:
+                nu_poisson_range = default_constants.nu_poisson_range
+            else:
+                nu_poisson_range = nu_poisson_range
+            parameter_vecs.append(get_vec_from_range(nu_poisson_range, m, sample_mode))
+    return parameter_vecs
 
 
-def compute_m_mat(m, rec: ScalableRectangle, rec_scale_vec, e_young_vec, nu_poisson_vec):
+def get_param_matrix(parameter_vecs):
+    return np.array(list(product(*parameter_vecs)))
+
+
+def compute_m_mat(m, mu_params, rec: ScalableRectangle, parameter_vecs):
     m4 = m ** 4
-    m_mat = np.zeros((m4, 6), dtype=float)
-    # m_mat[:, 0] = 1 # 6->7 above
-    for i, (lx, ly, e_young, nu_poisson) in \
-            enumerate(product(rec_scale_vec, rec_scale_vec, e_young_vec, nu_poisson_vec)):
-        mu, lam = get_lambda_mu(e_young, nu_poisson)
-        mls_funcs = rec.mls_funcs(lx, ly)  # use this for now, more general needed later in the other examples...
-        m_mat[i, 0:3] = 2 * mu * mls_funcs
-        m_mat[i, 3:] = lam * mls_funcs
-        # m_mat[i, 7] = lam * 2 * mu
-        # m_mat[i, 8] = lx * ly
+
+    if "material_e_nu" in mu_params:
+        m_mat = np.zeros((m4, 2 * len(mu_params)), dtype=float)
+        # m_mat[:, 0] = 1 # 6->7 above
+        for i, params in enumerate(product(*parameter_vecs)):
+            mu, lam = get_lambda_mu(*params[-2:])
+            mls_funcs = rec.mls_funcs(*params[:-2])  # use this for now, more general needed later in the other examples...
+            m_mat[i, 0:3] = 2 * mu * mls_funcs
+            m_mat[i, 3:] = lam * mls_funcs
+            # m_mat[i, 7] = lam * 2 * mu
+            # m_mat[i, 8] = lx * ly
+    else:
+        m_mat = np.zeros((m4, len(mu_params) + 1), dtype=float)
+        # m_mat[:, 0] = 1 # 6->7 above
+        for i, params in enumerate(product(*parameter_vecs)):
+            m_mat[i, :] = rec.mls_funcs(*params)
+            # m_mat[i, 7] = lam * 2 * mu
+            # m_mat[i, 8] = lx * ly
+
     return m_mat
 
 
-def compute_b_mats_array(m, rec: ScalableRectangle, rec_scale_vec, e_young_vec, nu_poisson_vec):
-    n2d = rec.n * rec.n * 2
+def compute_b_mats_array(m, n, parameter_vecs, compute_a):
+    n2d = n * n * 2
     m4 = m ** 4
     b_mats = np.zeros((m4, n2d, n2d), dtype=float)
-    for i, (lx, ly, e_young, nu_poisson) in \
-            enumerate(product(rec_scale_vec, rec_scale_vec, e_young_vec, nu_poisson_vec)):
-        mu, lam = get_lambda_mu(e_young, nu_poisson)
-        a1, a2 = rec.compute_a1_and_a2_from_ints(lx, ly)
-        b_mats[i] = 2 * mu * a1.A + lam * a2.A
+    for i, params in enumerate(product(*parameter_vecs)):
+        b_mats[i] = compute_a(*params).A
     return b_mats
 
 
-def load_b_mats(file_directory):
+def load_b_mats_array(file_directory):
     # load b_mats similar to as they are computed above
     ...
 
 
 def load_a_mat(file_directory):
-    # load one a_mat in b_mats similar to as they are computed above in the for loop
+    # load one a_mat in b_mats similar to as they are computed above in the for loop,
+    # should be done via class...
     ...
 
 
-def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=None,
+def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=None, compute_a_str=None,
                          e_young_range=None, nu_poisson_range=None, sample_mode="uniform"):
     # It should be possible to get the a-matrices (in b_mats) from saves here...
     if mls_mode is None:
         mls_mode = default_constants.mls_mode
+
     if mu_params is None:
         mu_params = rec.geo_mu_params.copy()
-        mu_params.append("e_young")
-        mu_params.append("nu_poisson")
-        print(mu_params)
 
-
-    if e_young_range is None:
-        e_young_range = default_constants.e_young_range
+    if compute_a_str == "a1":
+        compute_a = rec.compute_a1
+    elif compute_a_str == "a2":
+        compute_a = rec.compute_a2
     else:
-        e_young_range = e_young_range
-    if nu_poisson_range is None:
-        nu_poisson_range = default_constants.nu_poisson_range
-    else:
-        nu_poisson_range = nu_poisson_range
+        compute_a = rec.compute_a
+        if "material_e_nu" not in mu_params:
+            mu_params.append("material_e_nu")
 
-    rec_scale_vec = get_vec_from_range(rec.rec_scale_range, m, sample_mode)
-    e_young_vec = get_vec_from_range(e_young_range, m, sample_mode)
-    nu_poisson_vec = get_vec_from_range(nu_poisson_range, m, sample_mode)
+    parameter_vecs = get_parameter_vecs(m, mu_params, rec, e_young_range, nu_poisson_range, sample_mode)
 
     s = perf_counter()
-    m_mat = compute_m_mat(m, rec, rec_scale_vec, e_young_vec, nu_poisson_vec)
+    m_mat = compute_m_mat(m, mu_params, rec, parameter_vecs)
     print("time m_mat:", perf_counter() - s)
     s = perf_counter()
     c_mat = np.linalg.solve(m_mat.T @ m_mat, m_mat.T)
     print("time c_mat:", perf_counter() - s)
 
-    n, q_max = m_mat.shape
-    n2d = rec.n * rec.n * 2
-
     if mls_mode == "sparse":
         # default sample_mode
         # use sparse matrices and get the a-matrices (in b_mats) just in time.
         # the slowest method, but uses the least memory of the method.
+        n, q_max = m_mat.shape
+        n2d = rec.n * rec.n * 2
         ind = np.arange(n2d)
         c_mat = sparse.csr_matrix(c_mat)
 
         s = perf_counter()
-        param_mat = get_param_matrix(rec_scale_vec, e_young_vec, nu_poisson_vec)
+        param_mat = get_param_matrix(parameter_vecs)
         print("time param_mat:", perf_counter() - s)
 
         s = perf_counter()
         x_mats = sparse.dok_matrix((n2d * q_max, n2d))
         for k in range(n):
-            x_mats += sparse.kron(c_mat[:, k], rec.compute_a(*param_mat[k]))
+            x_mats += sparse.kron(c_mat[:, k], compute_a(*param_mat[k]))
         print("time x_mats:", perf_counter() - s)
         x_mats = np.array([x_mats[np.ix_(ind + n2d * q, ind)] for q in range(q_max)])
 
@@ -111,7 +135,7 @@ def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=Non
         # use arrays and get the all the a-matrices (in b_mats) before computing.
         # the fastest, but uses the most memory
         s = perf_counter()
-        b_mats = compute_b_mats_array(m, rec, rec_scale_vec, e_young_vec, nu_poisson_vec)
+        b_mats = compute_b_mats_array(m, rec.n, parameter_vecs, compute_a)
         print("time b_mats:", perf_counter() - s)
 
         s = perf_counter()

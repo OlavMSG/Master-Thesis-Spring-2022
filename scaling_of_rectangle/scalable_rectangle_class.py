@@ -99,6 +99,34 @@ class ScalableRectangle:
 
         return a1, a2
 
+    def compute_a1(self, lx=None, ly=None):
+        # ints = (int11, int12, int21, int22, int4, int5)
+        # int 3 = 0
+        if lx is None:
+            lx = self.lx
+        if ly is None:
+            ly = self.ly
+
+        alpha0 = ly / lx
+        alpha1 = lx / ly
+
+        int1 = alpha0 * self.ints[0] + alpha1 * self.ints[1]
+        int2 = alpha0 * self.ints[2] + alpha1 * self.ints[3]
+        a1 = int1 + 0.5 * (int2 + self.ints[4])
+        return a1
+
+    def compute_a2(self, lx=None, ly=None):
+        # ints = (int11, int12, int21, int22, int4, int5)
+        # int 3 = 0
+        if lx is None:
+            lx = self.lx
+        if ly is None:
+            ly = self.ly
+
+        int1 = ly / lx * self.ints[0] + lx / ly * self.ints[1]
+        a2 = int1 + self.ints[5]
+        return a2
+
     def compute_a(self, lx, ly, e_young, nu_poisson):
         a1, a2 = self.compute_a1_and_a2_from_ints(lx, ly)
         return compute_a(e_young, nu_poisson, a1, a2)
@@ -132,8 +160,10 @@ class ScalableRectangle:
     def unique_z_comp(self):
         return np.array([self.ly / self.lx, self.lx / self.ly, 1])
 
+    @property
+    def geo_mu_params_range(self):
+        return {"lx": self.rec_scale_range, "ly": self.rec_scale_range}
+
     @staticmethod
     def mls_funcs(lx, ly):
         return np.array([ly / lx, lx / ly, 1])
-
-

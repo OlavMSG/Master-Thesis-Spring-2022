@@ -26,29 +26,43 @@ def main():
 
     # a1_full, a2_full = rec.compute_a1_and_a2_from_ints()
     # a_full = compute_a(e_young, nu_poisson, a1_full, a2_full)
+    print("-" * 50)
     s = perf_counter()
-    x_mats = matrix_least_squares(m, rec, mls_mode="array")
+    x_mats = matrix_least_squares(m, rec, mls_mode="sparse")
     print("time matrix least squares:", perf_counter() - s)
-    print(x_mats.shape)
     print("checking np.max(np.abs(...))")
-    rec.set_geo_mu_params(1, 1)
 
-    # a = rec.compute_a1_and_a2_from_ints()
-
-    # print(np.max(np.abs(x_mats[0])))
-    # print(np.max(np.abs(a[0] - x_mats[0])) < 1e-14)
-    # print(np.max(np.abs(a[1] - x_mats[1])) < 1e-14)
-    print("mu")
+    print("mu part")
     print(np.max(np.abs(rec.ints[0] + 0.5 * rec.ints[2] - x_mats[0])))
     print(np.max(np.abs(rec.ints[1] + 0.5 * rec.ints[3] - x_mats[1])))
     print(np.max(np.abs(0.5 * rec.ints[4] - x_mats[2])))
-    print("lambda")
+    print("lambda part")
     print(np.max(np.abs(rec.ints[0] - x_mats[3])))
     print(np.max(np.abs(rec.ints[1] - x_mats[4])))
     print(np.max(np.abs(rec.ints[5] - x_mats[5])))
-    # print("mu * lambda")
-    # print(np.max(np.abs(x_mats[7])))
-    # print(np.max(np.abs(x_mats[8])))
+
+    print("-" * 50)
+    s = perf_counter()
+    x_mats = matrix_least_squares(m, rec, mls_mode="array", compute_a_str="a1")
+    print("time matrix least squares:", perf_counter() - s)
+    print("checking np.max(np.abs(...))")
+
+    print("do only mu part")
+    print(np.max(np.abs(rec.ints[0] + 0.5 * rec.ints[2] - x_mats[0])))
+    print(np.max(np.abs(rec.ints[1] + 0.5 * rec.ints[3] - x_mats[1])))
+    print(np.max(np.abs(0.5 * rec.ints[4] - x_mats[2])))
+
+    print("-"*50)
+    s = perf_counter()
+    x_mats = matrix_least_squares(m, rec, mls_mode="array", compute_a_str="a2")
+    print("time matrix least squares:", perf_counter() - s)
+    print("checking np.max(np.abs(...))")
+
+    print("do only lambda part")
+    print(np.max(np.abs(rec.ints[0] - x_mats[0])))
+    print(np.max(np.abs(rec.ints[1] - x_mats[1])))
+    print(np.max(np.abs(rec.ints[5] - x_mats[2])))
+
 
 
 if __name__ == "__main__":
