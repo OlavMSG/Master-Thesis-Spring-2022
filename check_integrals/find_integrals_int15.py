@@ -70,11 +70,11 @@ def print_ints(ints, unique_z, det_j=None, print_latex=False):
                         print("+ {", form, "} * (", comp, ")" + det_j_string)
                         if print_latex:
                             if len(latex_string) == 0:
-                                latex_string += f"\\displaystyle \n I_{n+1}="
+                                latex_string += f"\\displaystyle \n I_{n + 1}="
                             else:
                                 latex_string += "\\\\\\\\ \n \\displaystyle \n +"
                             latex_string += "\\int_{\\Tilde{\\Omega}}\n" \
-                                            + det_j_latex1 + pplatex(comp) + det_j_latex2 + "\n"  \
+                                            + det_j_latex1 + pplatex(comp) + det_j_latex2 + "\n" \
                                             + "\\left(" + pplatex(form) + "\\right)" \
                                             + "\n \\,d \\Tilde{\\Omega} \n"
                     if intn.equals(S.Zero):
@@ -123,7 +123,7 @@ def get_from_int_1_5_terms(z_mat):
 def print_sympy_matrix(mat):
     n = mat.shape[0]
     for i in range(n):
-        print(simplify(mat[i, :]))
+        print(mat[i, :])
 
 
 def pplatex(expr):
@@ -154,13 +154,17 @@ def compute_terms(phi_func, scale_det_j=True, print_latex=False):
         print_sympy_matrix(z_mat * det_j)
         if print_latex:
             print(pplatex(z_mat * det_j))
-        unique_z = Matrix(list(set(flatten(z_mat * det_j))))
         print("det(j):")
         print(factor(det_j))
+        unique_z = Matrix(list(set(flatten(z_mat * det_j))))
+        unique_z2 = []
+        for el in unique_z:
+            unique_z2.append(factor(simplify(el)))
+        print("Unique values in Z * det(j): count:", len(unique_z))
+        print(unique_z2)
+        print("ints:")
         for i in range(5):
             ints[i] = simplify(ints[i] * det_j)
-        print("Unique values in Z * det(j): count:", len(unique_z))
-        print(unique_z)
         if print_latex:
             print(pplatex(unique_z))
         print_ints(ints, unique_z, det_j=det_j, print_latex=print_latex)
@@ -179,6 +183,7 @@ def compute_terms(phi_func, scale_det_j=True, print_latex=False):
         print(factor(det_j))
         print("Unique values in Z: count:", len(unique_z))
         print(unique_z)
+        print("ints:")
         if print_latex:
             print(pplatex(unique_z))
         print_ints(ints, unique_z, print_latex=print_latex)
@@ -197,6 +202,14 @@ def scaling_of_rectangle():
     print(phi.evalf(subs={x1: 1, x2: -1}))
     print(phi.evalf(subs={x1: 1, x2: 1}))
     print(phi.evalf(subs={x1: -1, x2: 1}))
+    """phi = Matrix([
+        lx * x1,
+        ly * x2
+    ])
+    print(phi.evalf(subs={x1: 0., x2: 0.}))
+    print(phi.evalf(subs={x1: 1., x2: 0.}))
+    print(phi.evalf(subs={x1: 1., x2: 1.}))
+    print(phi.evalf(subs={x1: 0., x2: 1.}))"""
     print("-" * 40)
     return phi
 
@@ -226,6 +239,22 @@ def dragging_all_corners_of_rectangle():
         x1 + a1 * (1. - x1) * (1. - x2) + (a2 - 1.) * x1 * (1. - x2) + (a3 - 1.) * x1 * x2 + a4 * (1. - x1) * x2,
         x2 + b1 * (1. - x1) * (1. - x2) + b2 * x1 * (1. - x2) + (b3 - 1.) * x1 * x2 + (b4 - 1) * (1. - x1) * x2
     ])
+    mu1, mu2, mu3, mu4 = symbols("mu1, mu2, mu3, mu4")
+    nu1, nu2, nu3, nu4 = symbols("nu1, nu2, nu3, nu4")
+
+    print(phi.evalf(subs={x1: 0., x2: 0.}))
+    print(phi.evalf(subs={x1: 1., x2: 0.}))
+    print(phi.evalf(subs={x1: 1., x2: 1.}))
+    print(phi.evalf(subs={x1: 0., x2: 1.}))
+    mu_nu_dict = {a1: mu1, b1: nu1,
+                  a2: mu2 + 1, b2: nu2,
+                  a3: mu3 + 1, b3: nu3 + 1,
+                  a4: mu4, b4: nu4 + 1}
+    to_scaling_dict = {a1: 0, b1: 0,
+                       a2: lx, b2: 0,
+                       a3: lx, b3: ly,
+                       a4: 0, b4: ly}
+    phi = phi.evalf(subs=mu_nu_dict)
     print(phi.evalf(subs={x1: 0., x2: 0.}))
     print(phi.evalf(subs={x1: 1., x2: 0.}))
     print(phi.evalf(subs={x1: 1., x2: 1.}))
