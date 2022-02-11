@@ -212,11 +212,11 @@ def get_vec_from_range(range_, m, mode):
     m : int
         number of points in vector.
     mode : str
-        sampling mode, uniform or Gauss-Lobatto.
+        sampling sample_mode, uniform or Gauss-Lobatto.
     Raises
     ------
     NotImplementedError
-        if mode is not uniform or Gauss-Lobatto.
+        if sample_mode is not uniform or Gauss-Lobatto.
     Returns
     -------
     np.array

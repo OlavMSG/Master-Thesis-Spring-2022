@@ -58,7 +58,7 @@ def main():
     n = 3
     lx, ly = 3, 1
     rec = ScalableRectangle(n, "lt")
-    rec.set_param(lx, ly)
+    rec.set_geo_mu_params(lx, ly)
     e_young, nu_poisson = 2.1e5, 0.3
     tol = 1e-14
 

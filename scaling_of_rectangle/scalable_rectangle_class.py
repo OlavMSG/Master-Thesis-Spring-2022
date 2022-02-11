@@ -17,6 +17,7 @@ class ScalableRectangle:
     ref_plate = (-1, 1)
     is_jac_constant = True
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
+    geo_mu_params = ["lx", "ly"]
 
     def __init__(self, n, element="linear triangle"):
         self.ly = None
@@ -44,7 +45,7 @@ class ScalableRectangle:
 
         self.p, self.tri, self.edge = self._get_plate(n, *self.ref_plate)
 
-    def set_param(self, lx, ly):
+    def set_geo_mu_params(self, lx, ly):
         self.lx = lx
         self.ly = ly
 

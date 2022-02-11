@@ -27,11 +27,11 @@ def main():
     # a1_full, a2_full = rec.compute_a1_and_a2_from_ints()
     # a_full = compute_a(e_young, nu_poisson, a1_full, a2_full)
     s = perf_counter()
-    x_mats = matrix_least_squares(m, rec)
+    x_mats = matrix_least_squares(m, rec, mls_mode="array")
     print("time matrix least squares:", perf_counter() - s)
     print(x_mats.shape)
     print("checking np.max(np.abs(...))")
-    rec.set_param(1, 1)
+    rec.set_geo_mu_params(1, 1)
 
     # a = rec.compute_a1_and_a2_from_ints()
 
