@@ -14,6 +14,9 @@ rb_grid = (5, 5)
 # default pod mode
 pod_sampling_mode = "Uniform"
 implemented_pod_modes = ("Uniform", "Gauss-Lobatto")
+# default mls mode
+mls_mode = "sparse jit"
+implemented_mls_modes = ("sparse jit", "sparse", "array")
 # Ranges for parameters
 e_young_range = (10e3, 310e3)  # MPa
 e_young_unit = "MPa"
