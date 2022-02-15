@@ -24,6 +24,7 @@ class ScalableRectangle:
     geo_mu_params = ["lx", "ly"]
 
     def __init__(self, n, f_func, get_dirichlet_edge_func=None, element="lt"):
+        self.uh_rom = None
         self.last_n_rom = None
         self.v = None
         self.n_rom_max = None
@@ -408,7 +409,7 @@ class ScalableRectangle:
                 param_mat = self.param_mat(m, pod_mode)
                 index = np.argwhere((param_mat[:, 0] == lx) & (param_mat[:, 1] == ly) &
                                     (param_mat[:, 2] == e_young) & (param_mat[:, 3] == nu_poisson)).ravel()
-                # check if e_young and nu_poisson where not used in pod alfgorithm
+                # check if e_young and nu_poisson where not used in pod algorithm
                 if len(index) == 0:
                     # solve new
                     self.hfsolve(lx, ly, e_young, nu_poisson)

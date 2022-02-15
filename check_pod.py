@@ -63,7 +63,7 @@ def make_plots(n, save, q=None, do_errors=True):
         mean_err_dict[mode] = {}
         max_err_dict[mode] = {}
         n_rom_dict[mode] = {}
-        grid = 5
+        grid = 3
         txt += line + newline + f"mode={mode}, gird={grid}" + newline
         s = perf_counter()
         rec.build_rb_model(grid=grid, mode=mode)
@@ -93,14 +93,14 @@ def make_plots(n, save, q=None, do_errors=True):
     # make singular values plot
     plt.figure("Singular values")
     plt.title(f"Singular values, scaled to $\\sigma_1$, $n={n}$")
-    grid = 5
+    grid = 3
     for mode in ("Gauss-Lobatto", "Uniform"):
         sigma2_vec = sigma2_dict[mode][grid]
         arg0 = np.argwhere(sigma2_vec >= 0)
         sigma_vec = np.sqrt(sigma2_vec[arg0])
         rel_sigma_vec = sigma_vec / sigma_vec[0]
         plt.semilogy(np.arange(len(rel_sigma_vec)) + 1, rel_sigma_vec, "D-",
-                     label=f"{mode} ${grid}\\times{grid}$", alpha=.8)
+                     label=f"{mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
     plt.xlabel("$i$")
     plt.ylabel("$\\sigma_i$")
     plt.grid()
@@ -113,13 +113,14 @@ def make_plots(n, save, q=None, do_errors=True):
     plt.figure("Relative information content")
     plt.title(f"Relative information content, $I(N)$, $n={n}$")
     k = 5
-    grid = 5
+    grid = 3
     for mode in ("Gauss-Lobatto", "Uniform"):
         n_rom = n_rom_dict[mode][grid]
         sigma2_vec = sigma2_dict[mode][grid]
         arg0 = np.argwhere(sigma2_vec >= 0)
         i_n = np.cumsum(sigma2_vec[arg0]) / np.sum(sigma2_vec[arg0])
-        plt.plot(np.arange(len(i_n)) + 1, i_n, "D-", label=f"{mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
+        plt.plot(np.arange(len(i_n)) + 1, i_n, "D-",
+                 label=f"{mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
         plt.plot(n_rom, i_n[n_rom - 1], "b.", alpha=.7, zorder=k)
         k += 1
     plt.xlabel("$N$")
@@ -133,7 +134,7 @@ def make_plots(n, save, q=None, do_errors=True):
 
     if do_errors:
         # make error plots
-        grid = 5
+        grid = 3
         fig, ax = plt.subplots(1, 1, num="Reduced order errors v. $N$" + f"{grid}, $n={n}$", figsize=(12, 7))
         fig.suptitle("Reduced order errors v. $N$" + f", $n={n}$")
         for mode in ("Gauss-Lobatto", "Uniform"):
@@ -187,7 +188,7 @@ def main():
     do_errors = True
     # !!! Set to True to save the plots!!!
     save = True
-    n_vec = [20]
+    n_vec = [10, 20]
     text_n_vec = "_".join(str(n) for n in n_vec)
     if do_errors:
         extra = ""
