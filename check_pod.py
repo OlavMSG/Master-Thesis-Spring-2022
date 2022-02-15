@@ -119,7 +119,7 @@ def make_plots(n, save, q=None, do_errors=True):
         sigma2_vec = sigma2_dict[mode][grid]
         arg0 = np.argwhere(sigma2_vec >= 0)
         i_n = np.cumsum(sigma2_vec[arg0]) / np.sum(sigma2_vec[arg0])
-        plt.plot(np.arange(len(i_n)) + 1, i_n, "D-", label=f"{mode} ${grid}\\times{grid}$", alpha=.8)
+        plt.plot(np.arange(len(i_n)) + 1, i_n, "D-", label=f"{mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
         plt.plot(n_rom, i_n[n_rom - 1], "b.", alpha=.7, zorder=k)
         k += 1
     plt.xlabel("$N$")
@@ -139,11 +139,11 @@ def make_plots(n, save, q=None, do_errors=True):
         for mode in ("Gauss-Lobatto", "Uniform"):
             mean_err = mean_err_dict[mode][grid]
             ax.semilogy(np.arange(len(mean_err)) + 1, mean_err, "D-",
-                        label=f"mean: {mode} ${grid}\\times{grid}$", alpha=.8)
+                        label=f"mean: {mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
         for mode in ("Gauss-Lobatto", "Uniform"):
             max_err = max_err_dict[mode][grid]
             ax.semilogy(np.arange(len(max_err)) + 1, max_err, "D-",
-                        label=f"max: {mode} ${grid}\\times{grid}$", alpha=.8)
+                        label=f"max: {mode} ${grid}\\times{grid}\\times{grid}\\times{grid}$", alpha=.8)
         ax.set_xlabel("$N$")
         ax.set_ylabel("$\\|\\|u_h(\\mu) - Vu_N(\\mu)\\|\\|_a/\\|\\|u_h(\\mu)\\|\\|_a$")
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
