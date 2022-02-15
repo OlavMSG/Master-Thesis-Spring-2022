@@ -59,7 +59,7 @@ def u_exact_func(x, y):
 def main():
     n = 3
     lx, ly = 3, 1
-    rec = ScalableRectangle(n, "bq")
+    rec = ScalableRectangle(n, 0, element="bq")
     rec.set_geo_mu_params(lx, ly)
     e_young, nu_poisson = 2.1e5, 0.3
     tol = 1e-14

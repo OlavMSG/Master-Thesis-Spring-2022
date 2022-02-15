@@ -24,7 +24,7 @@ nu_poisson_range = (0, 0.4)
 nu_poisson_unit = "1"
 rec_scale_range = (1, 5)
 # epsilon for pod
-eps_pod = 1e-3
+eps_pod = 1e-2
 # max cut value for n_rom
 n_rom_cut = "rank"  # = 1e-12
 # default names for saved files

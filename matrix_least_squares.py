@@ -40,27 +40,29 @@ def get_param_matrix(parameter_vecs):
     return np.array(list(product(*parameter_vecs)))
 
 
-def compute_m_mat(m, mu_params, rec: ScalableRectangle, parameter_vecs):
-    m4 = m ** 4
-
+def compute_m_mat(m, mu_params, rec: ScalableRectangle, parameter_vecs, do_exrta=True):
+    m4 = m ** len(parameter_vecs)
     if "material_e_nu" in mu_params:
-        m_mat = np.zeros((m4, 2 * len(mu_params)), dtype=float)
-        # m_mat[:, 0] = 1 # 6->7 above
+        c_extra = 0
+        if do_exrta:
+            c_extra = 3
+        m_mat = np.zeros((m4, 2 * len(mu_params) + c_extra), dtype=float)
         for i, params in enumerate(product(*parameter_vecs)):
             mu, lam = get_lambda_mu(*params[-2:])
             mls_funcs = rec.mls_funcs(*params[:-2])  # use this for now, more general needed later in the other examples...
             m_mat[i, 0:3] = 2 * mu * mls_funcs
-            m_mat[i, 3:] = lam * mls_funcs
-            # m_mat[i, 7] = lam * 2 * mu
-            # m_mat[i, 8] = lx * ly
+            m_mat[i, 3:6] = lam * mls_funcs
+
+            if do_exrta:
+                # extra + 3
+                m_mat[i, 6] = 1  # +3
+                m_mat[i, 7] = lam * 2 * mu
+                m_mat[i, 8] = params[-2] * params[-1]
     else:
         m_mat = np.zeros((m4, len(mu_params) + 1), dtype=float)
         # m_mat[:, 0] = 1 # 6->7 above
         for i, params in enumerate(product(*parameter_vecs)):
-            m_mat[i, :] = rec.mls_funcs(*params)
-            # m_mat[i, 7] = lam * 2 * mu
-            # m_mat[i, 8] = lx * ly
-
+            m_mat[i, 0:] = rec.mls_funcs(*params)
     return m_mat
 
 
