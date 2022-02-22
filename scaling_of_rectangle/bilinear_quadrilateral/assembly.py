@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly_quadrilatrial import get_basis_coef, ddx_phi, ddy_phi
-from gauss_quadrature import quadrature2D_quad
+from assembly.assembly_quadrilatrial import get_basis_coef, ddx_phi, ddy_phi
+from assembly.gauss_quadrature import quadrature2D_quad
 from helpers import expand_index, index_map
 
 

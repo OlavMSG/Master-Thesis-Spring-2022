@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly_triangle import get_basis_coef
-from gauss_quadrature import get_area_triangle
+from assembly.assembly_triangle import get_basis_coef
+from assembly.gauss_quadrature import get_area_triangle
 from helpers import expand_index, index_map
 
 

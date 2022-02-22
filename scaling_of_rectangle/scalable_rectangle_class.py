@@ -7,12 +7,12 @@ from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
 
-from get_plate import getPlateRec, getPlateTri
+from assembly.get_plate import getPlateRec, getPlateTri
 from scaling_of_rectangle.bilinear_quadrilateral.assembly import assemble_ints_quad
 from helpers import VectorizedFunction2D, compute_a, expand_index, get_vec_from_range
 from scaling_of_rectangle.linear_triangle.assembly import assemble_ints_tri
-from assembly_quadrilatrial import assemble_f as assemble_f_quad
-from assembly_triangle import assemble_f as assemble_f_tri
+from assembly.assembly_quadrilatrial import assemble_f as assemble_f_quad
+from assembly.assembly_triangle import assemble_f as assemble_f_tri
 import default_constants
 from pod import pod_with_energy_norm, compute_v
 

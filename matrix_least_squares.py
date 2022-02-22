@@ -52,17 +52,16 @@ def compute_m_mat(m, mu_params, rec: ScalableRectangle, parameter_vecs, do_exrta
             mls_funcs = rec.mls_funcs(*params[:-2])  # use this for now, more general needed later in the other examples...
             m_mat[i, 0:3] = 2 * mu * mls_funcs
             m_mat[i, 3:6] = lam * mls_funcs
-
             if do_exrta:
                 # extra + 3
                 m_mat[i, 6] = 1  # +3
                 m_mat[i, 7] = lam * 2 * mu
-                m_mat[i, 8] = params[-2] * params[-1]
+                m_mat[i, 8] = params[0] * params[1]
     else:
         m_mat = np.zeros((m4, len(mu_params) + 1), dtype=float)
         # m_mat[:, 0] = 1 # 6->7 above
         for i, params in enumerate(product(*parameter_vecs)):
-            m_mat[i, 0:] = rec.mls_funcs(*params)
+            m_mat[i, 0:3] = rec.mls_funcs(*params)
     return m_mat
 
 
