@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly.assembly_triangle import get_basis_coef
-from assembly.gauss_quadrature import get_area_triangle
+from assembly.triangle.linear import get_basis_coef
+from assembly.triangle.gauss_quadrature import get_area
 from helpers import expand_index, index_map
 
 
@@ -146,7 +146,7 @@ def assemble_ints_tri(n, p, tri):
         # calculate the area of the triangle
         # and basis functions coef. or Jacobin inverse
         ck = get_basis_coef(p[nk, :])
-        area = get_area_triangle(*p[nk, :])
+        area = get_area(*p[nk, :])
         # assemble local contributions
         ints = assemble_ints_local(area, ck)
         # expand the index

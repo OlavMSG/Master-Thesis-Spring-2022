@@ -7,12 +7,11 @@ from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
 
-from assembly.get_plate import getPlateRec, getPlateTri
-from scaling_of_rectangle.bilinear_quadrilateral.assembly import assemble_ints_quad
+from assembly.get_plate_base import getPlateRec, getPlateTri
+from scaling_of_rectangle.bilinear_quadrilateral.assembly_old import assemble_ints_quad
+from scaling_of_rectangle.linear_triangle.assembly_old import assemble_ints_tri
+
 from helpers import VectorizedFunction2D, compute_a, expand_index, get_vec_from_range
-from scaling_of_rectangle.linear_triangle.assembly import assemble_ints_tri
-from assembly.assembly_quadrilatrial import assemble_f as assemble_f_quad
-from assembly.assembly_triangle import assemble_f as assemble_f_tri
 import default_constants
 from pod import pod_with_energy_norm, compute_v
 
@@ -38,7 +37,7 @@ class ScalableRectangle:
         self.lx = None
         self.f_load_lv_full = None
         self.ints = None
-        self.rec_scale_range = default_constants.rec_scale_range
+        self.rec_scale_range = (1, 5)
         self.n = n + 1
 
         self.s_mat = None
@@ -57,11 +56,9 @@ class ScalableRectangle:
         if self.element in ("linear triangle", "lt"):
             self._get_plate = getPlateTri
             self._assemble_ints = assemble_ints_tri
-            self._assemble_f = assemble_f_tri
         else:
             self._get_plate = getPlateRec
             self._assemble_ints = assemble_ints_quad
-            self._assemble_f = assemble_f_quad
 
         self.f_func_is_not_zero = True
 
@@ -79,7 +76,7 @@ class ScalableRectangle:
         self.compute_free_and_expanded_edges()
         self.n_free = self.expanded_free_index.shape[0]
 
-        print("Warning: for now: only supports constant f_funcs functions")
+        print("Warning: for now: only supports 0 f_funcs functions")
         print("Warning: for now: only supports constant homo. Dirichlet and Neumann BC functions")
 
     def set_geo_mu_params(self, lx, ly):
@@ -91,15 +88,9 @@ class ScalableRectangle:
         self._set_ints_free()
 
     def assemble_f(self):
-        print("Warning: for now: only supports constant f_funcs functions")
+        print("Warning: for now: only supports 0 f_funcs functions")
 
-        def f_func_comp_phi(x, y):
-            # return self.f_func(*self.phi(x, y))
-            return self.f_func(x, y)
-
-        f_func_vec = VectorizedFunction2D(f_func_comp_phi)
-
-        self.f_load_lv_full = self._assemble_f(self.n, self.p, self.tri, f_func_vec, self.f_func_is_not_zero)
+        self.f_load_lv_full = np.zeros(self.n * self.n * 2)
         self._set_f_load_lv_free()
 
     def phi(self, x, y, lx=None, ly=None):

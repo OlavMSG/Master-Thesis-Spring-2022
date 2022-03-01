@@ -16,7 +16,7 @@ def index_map(i, d):
     ----------
     i : int, np.array
         the index in the 2D case.
-    d : int
+    d : int, np.array
         the dimension to use for the 2D index.
 
     Returns
@@ -45,7 +45,7 @@ def inv_index_map(k):
         the dimension to use for the 2D index.
 
     """
-    return k // 2, k % 2
+    return divmod(k, 2)
 
 
 def expand_index(index):
@@ -265,7 +265,7 @@ class VectorizedFunction2D:
             Returns
             -------
             np.array
-                matrix, column 0: x-values, column 1: y-values.
+                matrix, row 0: x-values, row 1: y-values.
 
             """
             if isinstance(x_vec, (float, int)):
@@ -276,7 +276,7 @@ class VectorizedFunction2D:
             y_vals = np.zeros_like(x_vec, dtype=float)
             for i, (x, y) in enumerate(zip(x_vec, y_vec)):
                 x_vals[i], y_vals[i] = func_non_vec(x, y)
-            return np.column_stack((x_vals, y_vals))
+            return np.row_stack((x_vals, y_vals))
 
         self._func_vec = vectorize_func_2d
 
@@ -294,7 +294,7 @@ class VectorizedFunction2D:
         Returns
         -------
         np.array
-            matrix, column 0: x-values, column 1: y-values.
+            matrix, row 0: x-values, row 1: y-values.
 
         """
         return self._func_vec(x_vec, y_vec)

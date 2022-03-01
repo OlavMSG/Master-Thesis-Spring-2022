@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly.assembly_quadrilatrial import get_basis_coef, ddx_phi, ddy_phi
-from assembly.gauss_quadrature import quadrature2D_quad
+from assembly.quadrilateral.bilinear import ddy_phi, ddx_phi, get_basis_coef
+from assembly.quadrilateral.gauss_quadrature import quadrature2D
 from helpers import expand_index, index_map
 
 
@@ -68,10 +68,10 @@ def assemble_ints_local(ck, p_vec):
                 return ddy_phi(x, y, ck, i) * ddy_phi(x, y, ck, j)
 
             nq = 2
-            cij0 = quadrature2D_quad(*p_vec, cij_func0, nq)
-            cij1 = quadrature2D_quad(*p_vec, cij_func1, nq)
-            cij2 = quadrature2D_quad(*p_vec, cij_func2, nq)
-            cij3 = quadrature2D_quad(*p_vec, cij_func3, nq)
+            cij0 = quadrature2D(*p_vec, cij_func0, nq)
+            cij1 = quadrature2D(*p_vec, cij_func1, nq)
+            cij2 = quadrature2D(*p_vec, cij_func2, nq)
+            cij3 = quadrature2D(*p_vec, cij_func3, nq)
 
             # construct local ints
 

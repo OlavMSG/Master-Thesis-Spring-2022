@@ -19,10 +19,9 @@
 # code taken from Specialization-Project-fall-2021
 
 import numpy as np
-import scipy.spatial as spsa
 
 
-def _make_edge(n):
+def make_edge(n):
     """
     Make the edge
 
@@ -50,7 +49,7 @@ def _make_edge(n):
     return edge
 
 
-def _make_p(a, b, n):
+def make_p(a, b, n):
     """
     Get the points
 
@@ -80,7 +79,7 @@ def _make_p(a, b, n):
     return p
 
 
-def getPlateTri(n, a=-1, b=1):
+def getPlateTri(n, a=0, b=1):
     """
     Get the plate (a,b)^2, Triangular elements
 
@@ -89,7 +88,7 @@ def getPlateTri(n, a=-1, b=1):
     n : int
         Number of nodes in each spatial direction (n^2 total nodes).
     a : float, optional
-        Lower limit for x and y. The default is -1.
+        Lower limit for x and y. The default is 0.
     b : float, optional
         Upper limit for x and y. The default is 1.
 
@@ -104,7 +103,7 @@ def getPlateTri(n, a=-1, b=1):
 
     """
     # Generating nodal points.
-    p = _make_p(a, b, n)
+    p = make_p(a, b, n)
 
     # Generating elements.
 
@@ -128,11 +127,11 @@ def getPlateTri(n, a=-1, b=1):
 
     arg = np.argsort(tri[:, 0])
     tri = tri[arg]
-    edge = _make_edge(n)
+    edge = make_edge(n)
     return p, tri, edge
 
 
-def getPlateRec(n, a=-1, b=1):
+def getPlateRec(n, a=0, b=1):
     """
     Get the plate (a,b)^2, Rectangle Elements
 
@@ -141,7 +140,7 @@ def getPlateRec(n, a=-1, b=1):
     n : int
         Number of nodes in each spatial direction (n^2 total nodes).
     a : float, optional
-        Lower limit for x and y. The default is -1.
+        Lower limit for x and y. The default is 0.
     b : float, optional
         Upper limit for x and y. The default is 1.
 
@@ -156,7 +155,7 @@ def getPlateRec(n, a=-1, b=1):
 
     """
     # Generating nodal points.
-    p = _make_p(a, b, n)
+    p = make_p(a, b, n)
 
     # Generating elements.
 
@@ -177,5 +176,5 @@ def getPlateRec(n, a=-1, b=1):
 
     arg = np.argsort(tri[:, 0])
     tri = tri[arg]
-    edge = _make_edge(n)
+    edge = make_edge(n)
     return p, tri, edge

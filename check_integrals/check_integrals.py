@@ -87,7 +87,7 @@ def get_div_uv():
 
 def check_from_z():
     print("-" * 30)
-    print("Check integrals terms form z_mat")
+    print("Check integrals terms form z_mat_funcs")
     ddot_uv_true = expand(double_dot_2d(nabla_u_real, nabla_v_real))
     ddot_uv = get_ddot_uv()
     eq1 = ddot_uv.equals(ddot_uv_true)

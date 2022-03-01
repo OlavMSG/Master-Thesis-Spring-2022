@@ -6,8 +6,8 @@ based on Specialization-Project-fall-2021
 
 import numpy as np
 
-from gauss_quadrature import line_integral_with_basis
-from helpers import expand_index, VectorizedFunction2D
+from assembly.neumann.gauss_quadrature import line_integral_with_linear_basis
+from helpers import expand_index
 
 
 def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func):
@@ -34,11 +34,12 @@ def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func):
     n2d = n * n * 2
     # load vector
     f_load_neumann = np.zeros(n2d, dtype=float)
+    nq = 4
     for ek in neumann_edge:
         # p1 = p[ek[0], :]
         # p2 = p[ek[1], :]
         # expand the index
         expanded_ek = expand_index(ek)
         # add local contribution
-        f_load_neumann[expanded_ek] += line_integral_with_basis(*p[ek, :], 4, neumann_bc_func)
+        f_load_neumann[expanded_ek] += line_integral_with_linear_basis(*p[ek, :], neumann_bc_func, nq)
     return f_load_neumann

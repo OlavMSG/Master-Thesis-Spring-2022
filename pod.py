@@ -80,7 +80,7 @@ def pod_with_energy_norm(m, rec, mode):
         sigma2_vec, z_mat = eigh(corr_mat)
         # reverse arrays because they are in ascending order
         rec.sigma2_vec = sigma2_vec[::-1]
-        rec.z_mat = z_mat[:, ::-1]
+        rec.z_mat_funcs = z_mat[:, ::-1]
     else:
         rec.x05 = fractional_matrix_power(a_free.A, 0.5)
         # build correlation matrix
@@ -89,7 +89,7 @@ def pod_with_energy_norm(m, rec, mode):
         sigma2_vec, z_mat = eigh(corr_mat)
         # reverse arrays because they are in ascending order
         rec.sigma2_vec = sigma2_vec[::-1]
-        rec.z_mat = z_mat[:, ::-1]
+        rec.z_mat_funcs = z_mat[:, ::-1]
     # compute n_rom from relative information content
     i_n = np.cumsum(rec.sigma2_vec) / np.sum(rec.sigma2_vec)
     rec.n_rom = np.min(np.argwhere(i_n >= 1 - rec.eps_pod ** 2)) + 1
@@ -112,6 +112,6 @@ def compute_v(n_rom, n_free, rec):
     None.
     """
     if rec.ns_rom <= n_free:
-        rec.v = rec.s_mat @ rec.z_mat[:, :n_rom] / np.sqrt(rec.sigma2_vec[:n_rom])
+        rec.v = rec.s_mat @ rec.z_mat_funcs[:, :n_rom] / np.sqrt(rec.sigma2_vec[:n_rom])
     else:
-        rec.v = np.linalg.solve(rec.x05, rec.z_mat[:, :n_rom])
+        rec.v = np.linalg.solve(rec.x05, rec.z_mat_funcs[:, :n_rom])
