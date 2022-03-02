@@ -69,7 +69,7 @@ def quadrature2D(p1, p2, p3, p4, g, nq_x, nq_y=None):
         the function to integrate.
     nq_x : int
         scheme order in x.
-    nq_y : int
+    nq_y : int, optional
         scheme order in y, equal to nq_x if None. Default None.
 
     Returns
@@ -105,7 +105,7 @@ def quadrature2D_vector(p1, p2, p3, p4, g, nq_x, nq_y=None):
         the vector function g = [g1, g2] to integrate.
     nq_x : int
         scheme order in x.
-    nq_y : int
+    nq_y : int, optional
         scheme order in y, equal to nq_x if None. Default None.
 
     Returns

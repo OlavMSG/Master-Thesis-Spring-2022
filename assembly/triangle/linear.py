@@ -8,8 +8,10 @@ import numpy as np
 import scipy.sparse as sparse
 
 from assembly.triangle.gauss_quadrature import quadrature2D, quadrature2D_vector
-from helpers import expand_index, index_map
+from helpers import expand_index, index_map, inv_index_map
+import index_functions as ind_funcs
 
+# should be accessible form this file, so import it
 from assembly.neumann.linear import assemble_f_neumann
 
 
@@ -64,7 +66,7 @@ def phi(x, y, ck, i):
     return ck[0, i] + ck[1, i] * x + ck[2, i] * y
 
 
-def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
+def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq):
     """
     Assemble the local contributions to the 6 integrals on an element.
 
@@ -78,6 +80,8 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
         geometry parameters
     p_mat : np.array
         vertexes of the triangle element.
+    nq : int
+        quadrature scheme order.
 
     Returns
     -------
@@ -100,15 +104,12 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
     int5_local = np.zeros((6, 6), dtype=float)
 
     # since the derivatives are constant we only need the integral of all 16 functions in z_mat_funcs
-    nq = 4
     z_mat = np.zeros((4, 4), dtype=float)
     for i in range(4):
         for j in range(4):
-            if z_mat_funcs[i, j] is not None:
-                def z_mat_funcs_ij(x, y):
-                    return z_mat_funcs[i, j](x, y, *geo_params)
-
-                z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
+            def z_mat_funcs_ij(x, y):
+                return z_mat_funcs[i, j](x, y, *geo_params)
+            z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
 
     # matrices are symmetric by construction, so only compute on part.
     d = np.array([0, 1])
@@ -148,23 +149,24 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
                 int4_local[kj1, ki0] = int4_01
                 int5_local[kj1, ki0] = int5_01
 
-            # u 2-comp is nonzero, di = 1
-            # v 1-comp is nonzero, dj = 0
-            # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
-            int3_10 = np.sum(cij[[0, 3]] * z_mat[[0, 3], 1])
-            # int4_10 = np.sum(cij[[1, 2]] * z_mat[2, [2, 1]])  # = int5_01
-            # int5_10 = np.sum(cij[[1, 2]] * z_mat[2, [1, 2]])  # = int4_01
+            if i != j:
+                # u 2-comp is nonzero, di = 1
+                # v 1-comp is nonzero, dj = 0
+                # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
+                # int3_10 = np.sum(cij[[0, 3]] * z_mat[[0, 3], 1]) # int3_01
+                # int4_10 = np.sum(cij[[1, 2]] * z_mat[2, [2, 1]])  # = int5_01
+                # int5_10 = np.sum(cij[[1, 2]] * z_mat[2, [1, 2]])  # = int4_01
 
-            # if int4_10 != int5_01: print("int4_10 != int5_01")
-            # if int5_10 != int4_01: print("int5_10 != int4_01")
+                # if int4_10 != int5_01: print("int4_10 != int5_01")
+                # if int5_10 != int4_01: print("int5_10 != int4_01")
 
-            int3_local[ki1, kj0] = int3_10
-            int4_local[ki1, kj0] = int5_01
-            int5_local[ki1, kj0] = int4_01
-            if ki1 != kj0:
-                int3_local[kj0, ki1] = int3_10
-                int4_local[kj0, ki1] = int5_01
-                int5_local[kj0, ki1] = int4_01
+                int3_local[ki1, kj0] = int3_01
+                int4_local[ki1, kj0] = int5_01
+                int5_local[ki1, kj0] = int4_01
+                if ki1 != kj0:
+                    int3_local[kj0, ki1] = int3_01
+                    int4_local[kj0, ki1] = int5_01
+                    int5_local[kj0, ki1] = int4_01
 
             # u 2-comp is nonzero, di = 1
             # v 2-comp is nonzero, dj = 1
@@ -177,11 +179,11 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
             if ki1 != kj1:
                 int1_local[kj1, ki1] = int2_00
                 int2_local[kj1, ki1] = int1_00
-
+    # print((check_mat - 1 == 0).all())
     return int1_local, int2_local, int3_local, int4_local, int5_local
 
 
-def assemble_f_local(ck, f_func, p_mat):
+def assemble_f_local(ck, f_func, p_mat, nq):
     """
     Assemble the local contribution to the f_load_lv for the triangle element
 
@@ -193,6 +195,8 @@ def assemble_f_local(ck, f_func, p_mat):
         load function.
     p_mat : np.array
         vertexes of the triangle element.
+    nq : int
+        quadrature scheme order.
 
     Returns
     -------
@@ -201,19 +205,18 @@ def assemble_f_local(ck, f_func, p_mat):
 
     """
     f_local = np.zeros(6, dtype=float)
-    nq = 4
     d = np.array([0, 1])
     for i in range(3):
         def f_phi(x, y):
             # f = [f0, f2]
             # phi_i0 = [phi_i, 0], phi_i1 = [0, phi_i]
             return f_func(x, y) * phi(x, y, ck, i)
-        ki0, ki1 = index_map(i, d)
-        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, f_phi, nq)
+
+        f_local[index_map(i, d)] = quadrature2D_vector(*p_mat, f_phi, nq)
     return f_local
 
 
-def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero):
+def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
     """
     Assemble the ints matrices and the body force load vector
 
@@ -233,6 +236,8 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
         load function.
     f_func_is_not_zero : bool
         True if f_func does not return (0,0) for all (x,y)
+    nq : int, optional
+        triangle quadrature scheme order. The default is 4.
 
     Returns
     -------
@@ -277,18 +282,18 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
         # and basis functions coef. or Jacobin inverse
         ck = get_basis_coef(p[nk, :])
         # assemble local contributions
-        ints = assemble_ints_local(ck, z_mat_funcs, geo_params, p[nk, :])
+        ints_local = assemble_ints_local(ck, z_mat_funcs, geo_params, p[nk, :], nq)
         # expand the index
         expanded_nk = expand_index(nk)
         index = np.ix_(expanded_nk, expanded_nk)
         # add local contributions
         # matrices
-        int1[index] += ints[0]
-        int2[index] += ints[1]
-        int3[index] += ints[2]
-        int4[index] += ints[3]
-        int5[index] += ints[4]
+        int1[index] += ints_local[0]
+        int2[index] += ints_local[1]
+        int3[index] += ints_local[2]
+        int4[index] += ints_local[3]
+        int5[index] += ints_local[4]
         if f_func_is_not_zero:
             # load vector
-            f_load_lv[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :])
+            f_load_lv[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :], nq)
     return (int1, int2, int3, int4, int5), f_load_lv

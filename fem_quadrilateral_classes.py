@@ -4,8 +4,12 @@
 """
 
 from importlib.util import find_spec
-
 import helpers
+
+import numpy as np
+from time import perf_counter
+
+from assembly import triangle, quadrilateral
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -14,9 +18,6 @@ if symengine_is_found:
 else:
     import sympy as sym
     from sympy import lambdify as sym_lambdify
-
-import numpy as np
-from time import perf_counter
 
 x1, x2 = sym.symbols("x1, x2", real=True)
 sym_x_vec = sym.Matrix([x1, x2])
@@ -64,9 +65,8 @@ class QuadrilateralSolver:
         s = perf_counter()
         for i in range(4):
             for j in range(4):
-                if self.sym_z_mat[i, j] != 0:
-                    self.z_mat_funcs[i, j] = np.vectorize(sym_lambdify(self.sym_params, self.sym_z_mat[i, j]),
-                                                          otypes=[float])
+                self.z_mat_funcs[i, j] = np.vectorize(sym_lambdify(self.sym_params, self.sym_z_mat[i, j]),
+                                                      otypes=[float])
         print("func time:", perf_counter() - s)
 
     def _sym_mls_params_setup(self):
@@ -122,7 +122,7 @@ class QuadrilateralSolver:
         print("mls params:", perf_counter() - s)
         print(self.sym_mls_funcs)
 
-    def __init__(self, n):
+    def __init__(self, n, element="lt"):
 
         self.mls_order = None
         self.use_negative_mls_order = None
@@ -136,7 +136,18 @@ class QuadrilateralSolver:
         self.f_func = helpers.VectorizedFunction2D(default_func)
         self.f_func_non_zero = False
 
+        if element.lower() in self.implemented_elements:
+            self.element = element.lower()
+        else:
+            error_text = "Element " + str(element) + " is not implemented. " \
+                         + "Implemented elements: " + str(self.implemented_elements)
+            raise NotImplementedError(error_text)
 
+        if self.element in ("linear triangle", "lt"):
+            self.nq = 4
+        else:
+            self.nq = 2
+            self.nq_y = 2
 
     def mls(self, mls_order=1, use_negative_mls_order=False):
         self.mls_order = mls_order
@@ -144,13 +155,29 @@ class QuadrilateralSolver:
 
         self._sym_mls_params_setup()
 
+    def set_quadrature_scheme_order(self, nq, nq_y=None):
+        if self.element in ("linear triangle", "lt"):
+            self.nq = nq
+        else:
+            self.nq = nq
+            if nq_y is None:
+                self.nq_y = nq
+            else:
+                self.nq_y = nq
+
     def _assemble(self, geo_params):
+        s = perf_counter()
         self.geo_params = geo_params
-        from assembly.triangle.get_plate import getPlate
-        p, tri, edge = getPlate(self.n, *self.ref_plate)
-        from assembly.triangle.linear import assemble_ints_and_f_load_lv
-        assemble_ints_and_f_load_lv(self.n, p, tri, self.z_mat_funcs, self.geo_params,
-                                    self.f_func, self.f_func_non_zero)
+        if self.element in ("linear triangle", "lt"):
+            self.p, self.tri, self.edge = triangle.get_plate.getPlate(self.n)
+            triangle.linear.assemble_ints_and_f_load_lv(self.n, self.p, self.tri, self.z_mat_funcs, self.geo_params,
+                                                        self.f_func, self.f_func_non_zero, self.nq)
+        else:
+            self.p, self.tri, self.edge = quadrilateral.get_plate.getPlate(self.n)
+            quadrilateral.bilinear.assemble_ints_and_f_load_lv(self.n, self.p, self.tri, self.z_mat_funcs,
+                                                               self.geo_params, self.f_func, self.f_func_non_zero,
+                                                               self.nq, self.nq_y)
+        print("time assemble:", perf_counter() - s)
 
     def assemble(self, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8, **kwargs):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8]))
@@ -185,17 +212,16 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
 
 def main():
-    n = 30
+    n = 3
     # q = QuadrilateralSolver(n)
     # print(q.sym_phi)
     d = DraggableCornerRectangleSolver(n)
     print(d.sym_phi)
     d.assemble(0.1, 0.2)
-    print(d.sym_z_mat.subs({mu1: 0.1, mu2: 0.2}))
+    print("------------")
     r = ScalableRectangleSolver(n)
     print(r.sym_phi)
     r.assemble(1, 2)
-    print(r.sym_z_mat.subs({mu1: 1, mu2: 2}))
     """u = set([item for sublist in r.sym_z_mat.tolist() for item in sublist])
     print(u)"""
 

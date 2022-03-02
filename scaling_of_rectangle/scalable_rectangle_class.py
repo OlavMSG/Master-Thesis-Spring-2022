@@ -17,7 +17,7 @@ from pod import pod_with_energy_norm, compute_v
 
 
 class ScalableRectangle:
-    ref_plate = (-1, 1)
+    ref_plate = (0, 1)
     is_jac_constant = True
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
     geo_mu_params = ["lx", "ly"]
@@ -98,7 +98,7 @@ class ScalableRectangle:
             lx = self.lx
         if ly is None:
             ly = self.ly
-        return 0.5 * (x + lx), 0.5 * (y + ly)
+        return lx * x, ly * y
 
     def compute_a1_and_a2_from_ints(self, lx=None, ly=None):
         # ints = (int11, int12, int21, int22, int4, int5)

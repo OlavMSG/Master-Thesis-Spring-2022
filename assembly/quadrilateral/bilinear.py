@@ -8,8 +8,9 @@ import numpy as np
 import scipy.sparse as sparse
 
 from assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
-from helpers import expand_index, index_map
+from helpers import expand_index, index_map, inv_index_map
 
+# should be accessible form this file, so import it
 from assembly.neumann.linear import assemble_f_neumann
 
 
@@ -132,7 +133,7 @@ def ddy_phi(x, y, ck, i):
     return ck[2, i] + ck[3, i] * x
 
 
-def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
+def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
     """
     Assemble the local contributions to the 6 integrals on an element.
 
@@ -146,6 +147,10 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
         geometry parameters
     p_mat : np.array
         vertexes of the quadrilateral element.
+    nq_x : int
+        scheme order in x.
+    nq_y : int
+        scheme order in y.
 
     Returns
     -------
@@ -166,10 +171,10 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
     int3_local = np.zeros((8, 8), dtype=float)
     int4_local = np.zeros((8, 8), dtype=float)
     int5_local = np.zeros((8, 8), dtype=float)
-    nq = 2
 
     # since the derivatives are non-constant we need to do the all integrals in the loop
     # matrices are symmetric by construction, so only compute on part.
+
     d = np.array([0, 1])
     for i in range(4):
         ki0, ki1 = index_map(i, d)  # di = 0, di = 1
@@ -196,19 +201,19 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
             # v 1-comp is nonzero, dj = 0
             # [u_11*v_11, u_11*v_12, u_12*v_11, u_12*v_12]
             def int1_00_func(x, y):
-                return cij_func0(x, y) * z_mat_funcs[0, 0](x, y) \
-                       + cij_func1(x, y) * z_mat_funcs[1, 0](x, y) \
-                       + cij_func2(x, y) * z_mat_funcs[2, 0](x, y) \
-                       + cij_func3(x, y) * z_mat_funcs[3, 0](x, y)
+                return cij_func0(x, y) * z_mat_funcs[0, 0](x, y, *geo_params) \
+                       + cij_func1(x, y) * z_mat_funcs[1, 0](x, y, *geo_params) \
+                       + cij_func2(x, y) * z_mat_funcs[2, 0](x, y, *geo_params) \
+                       + cij_func3(x, y) * z_mat_funcs[3, 0](x, y, *geo_params)
 
             def int2_00_func(x, y):
-                return cij_func0(x, y) * z_mat_funcs[0, 3](x, y) \
-                       + cij_func1(x, y) * z_mat_funcs[1, 3](x, y) \
-                       + cij_func2(x, y) * z_mat_funcs[2, 3](x, y) \
-                       + cij_func3(x, y) * z_mat_funcs[3, 3](x, y)
+                return cij_func0(x, y) * z_mat_funcs[0, 3](x, y, *geo_params) \
+                       + cij_func1(x, y) * z_mat_funcs[1, 3](x, y, *geo_params) \
+                       + cij_func2(x, y) * z_mat_funcs[2, 3](x, y, *geo_params) \
+                       + cij_func3(x, y) * z_mat_funcs[3, 3](x, y, *geo_params)
 
-            int1_00 = quadrature2D(*p_mat, int1_00_func, nq)
-            int2_00 = quadrature2D(*p_mat, int2_00_func, nq)
+            int1_00 = quadrature2D(*p_mat, int1_00_func, nq_x, nq_y)
+            int2_00 = quadrature2D(*p_mat, int2_00_func, nq_x, nq_y)
 
             int1_local[ki0, kj0] = int1_00
             int2_local[ki0, kj0] = int2_00
@@ -220,20 +225,20 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
             # v 2-comp is nonzero, dj = 1
             # [u_11*v_21, u_11*v_22, u_12*v_21, u_12*v_22]
             def int3_01_func(x, y):
-                return cij_func0(x, y) * z_mat_funcs[0, 2](x, y) \
-                       + cij_func3(x, y) * z_mat_funcs[3, 2](x, y)
+                return cij_func0(x, y) * z_mat_funcs[0, 2](x, y, *geo_params) \
+                       + cij_func3(x, y) * z_mat_funcs[3, 2](x, y, *geo_params)
 
             def int4_01_func(x, y):
-                return cij_func1(x, y) * z_mat_funcs[1, 2](x, y) \
-                       + cij_func2(x, y) * z_mat_funcs[1, 1](x, y)
+                return cij_func1(x, y) * z_mat_funcs[1, 2](x, y, *geo_params) \
+                       + cij_func2(x, y) * z_mat_funcs[1, 1](x, y, *geo_params)
 
             def int5_01_func(x, y):
-                return cij_func1(x, y) * z_mat_funcs[1, 1](x, y) \
-                       + cij_func2(x, y) * z_mat_funcs[1, 2](x, y)
+                return cij_func1(x, y) * z_mat_funcs[1, 1](x, y, *geo_params) \
+                       + cij_func2(x, y) * z_mat_funcs[1, 2](x, y, *geo_params)
 
-            int3_01 = quadrature2D(*p_mat, int3_01_func, nq)
-            int4_01 = quadrature2D(*p_mat, int4_01_func, nq)
-            int5_01 = quadrature2D(*p_mat, int5_01_func, nq)
+            int3_01 = quadrature2D(*p_mat, int3_01_func, nq_x, nq_y)
+            int4_01 = quadrature2D(*p_mat, int4_01_func, nq_x, nq_y)
+            int5_01 = quadrature2D(*p_mat, int5_01_func, nq_x, nq_y)
 
             int3_local[ki0, kj1] = int3_01
             int4_local[ki0, kj1] = int4_01
@@ -243,24 +248,25 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
                 int4_local[kj1, ki0] = int4_01
                 int5_local[kj1, ki0] = int5_01
 
-            # u 2-comp is nonzero, di = 1
-            # v 1-comp is nonzero, dj = 0
-            # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
-            def int3_10_func(x, y):
-                return cij_func0(x, y) * z_mat_funcs[0, 1](x, y) \
-                       + cij_func3(x, y) * z_mat_funcs[3, 1](x, y)
+            if i != j:
+                # u 2-comp is nonzero, di = 1
+                # v 1-comp is nonzero, dj = 0
+                # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
+                # def int3_10_func(x, y):
+                # return cij_func0(x, y) * z_mat_funcs[0, 1](x, y, *geo_params) \
+                #       + cij_func3(x, y) * z_mat_funcs[3, 1](x, y, *geo_params)
 
-            int3_10 = quadrature2D(*p_mat, int3_10_func, nq)
-            # int4_10 = int5_01
-            # int5_10 = int4_01
+                # int3_10 = quadrature2D(*p_mat, int3_10_func, nq)  # = int3_01
+                # int4_10 = int5_01
+                # int5_10 = int4_01
 
-            int3_local[ki1, kj0] = int3_10
-            int4_local[ki1, kj0] = int5_01
-            int5_local[ki1, kj0] = int4_01
-            if ki1 != kj0:
-                int3_local[kj0, ki1] = int3_10
-                int4_local[kj0, ki1] = int5_01
-                int5_local[kj0, ki1] = int4_01
+                int3_local[ki1, kj0] = int3_01
+                int4_local[ki1, kj0] = int5_01
+                int5_local[ki1, kj0] = int4_01
+                if ki1 != kj0:
+                    int3_local[kj0, ki1] = int3_01
+                    int4_local[kj0, ki1] = int5_01
+                    int5_local[kj0, ki1] = int4_01
 
             # u 2-comp is nonzero, di = 1
             # v 2-comp is nonzero, dj = 1
@@ -277,7 +283,7 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat):
     return int1_local, int2_local, int3_local, int4_local, int5_local
 
 
-def assemble_f_local(ck, f_func, p_mat):
+def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
     """
     Assemble the local contribution to the f_load_lv for the quadrilateral
      element
@@ -290,6 +296,10 @@ def assemble_f_local(ck, f_func, p_mat):
         load function.
     p_mat : np.array
         vertexes of the quadrilateral element.
+    nq_x : int
+        scheme order in x.
+    nq_y : int
+        scheme order in y.
 
     Returns
     -------
@@ -298,7 +308,6 @@ def assemble_f_local(ck, f_func, p_mat):
 
     """
     f_local = np.zeros(8, dtype=float)
-    nq = 4
     d = np.array([0, 1])
     for i in range(4):
         def f_phi(x, y):
@@ -307,11 +316,11 @@ def assemble_f_local(ck, f_func, p_mat):
             return f_func(x, y) * phi(x, y, ck, i)
 
         ki0, ki1 = index_map(i, d)
-        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, f_phi, nq)
+        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, f_phi, nq_x, nq_y)
     return f_local
 
 
-def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero):
+def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq_x=2, nq_y=None):
     """
     Assemble the ints matrices and the body force load vector
 
@@ -331,6 +340,10 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
         load function.
     f_func_is_not_zero : bool
         True if f_func does not return (0,0) for all (x,y)
+    nq_x : int, optional
+        quadrilateral quadrature scheme order in x. The default is 2
+    nq_y : int, optional
+        quadrilateral quadrature scheme order in y, equal to nq_x if None. The default is None.
 
     Returns
     -------
@@ -339,6 +352,8 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
     f_load_lv : np.array
         load vector for the linear form.
     """
+    if nq_y is None:
+        nq_y = nq_x
     n2d = n * n * 2
     # Stiffness matrices
     # dok_matrix
@@ -361,17 +376,17 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
         # and basis functions coef. or Jacobin inverse
         ck = get_basis_coef(p[nk, :])
         # assemble local contributions
-        ints = assemble_ints_local(ck, z_mat_funcs, geo_params, p[nk, :])
+        ints_local = assemble_ints_local(ck, z_mat_funcs, geo_params, p[nk, :], nq_x, nq_y)
         # expand the index
         expanded_nk = expand_index(nk)
         index = np.ix_(expanded_nk, expanded_nk)
         # add local contributions
-        int1[index] += ints[0]
-        int2[index] += ints[1]
-        int3[index] += ints[2]
-        int4[index] += ints[4]
-        int5[index] += ints[5]
+        int1[index] += ints_local[0]
+        int2[index] += ints_local[1]
+        int3[index] += ints_local[2]
+        int4[index] += ints_local[3]
+        int5[index] += ints_local[4]
         if f_func_is_not_zero:
             # load vector
-            f_load_lv[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :])
+            f_load_lv[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :], nq_x, nq_y)
     return (int1, int2, int3, int4, int5), f_load_lv
