@@ -10,7 +10,7 @@ from assembly.neumann.gauss_quadrature import line_integral_with_linear_basis
 from helpers import expand_index
 
 
-def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func):
+def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func, nq=4):
     """
     Assemble the neumann load vector
 
@@ -24,6 +24,8 @@ def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func):
         array of the edges of the triangulation.
     neumann_bc_func : function, VectorizedFunction2D
         the neumann boundary condition function.
+    nq : int, optional
+        quadrature scheme order. The default is 4.
 
     Returns
     -------
@@ -34,7 +36,6 @@ def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func):
     n2d = n * n * 2
     # load vector
     f_load_neumann = np.zeros(n2d, dtype=float)
-    nq = 4
     for ek in neumann_edge:
         # p1 = p[ek[0], :]
         # p2 = p[ek[1], :]

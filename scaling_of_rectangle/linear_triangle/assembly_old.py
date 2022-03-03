@@ -76,14 +76,15 @@ def assemble_ints_local(area, ck):
                 int4_local[kj1, ki0] = cij[2]
                 int5_local[kj1, ki0] = cij[1]
 
-            # u 2-comp is nonzero, di = 1
-            # v 1-comp is nonzero, dj = 0
-            # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
-            int4_local[ki1, kj0] = cij[1]
-            int5_local[ki1, kj0] = cij[2]
-            if ki1 != kj0:
-                int4_local[kj0, ki1] = cij[1]
-                int5_local[kj0, ki1] = cij[2]
+            if i != j:
+                # u 2-comp is nonzero, di = 1
+                # v 1-comp is nonzero, dj = 0
+                # [u_21*v_11, u_21*v_12, u_22*v_11, u_22*v_12]
+                int4_local[ki1, kj0] = cij[1]
+                int5_local[ki1, kj0] = cij[2]
+                if ki1 != kj0:
+                    int4_local[kj0, ki1] = cij[1]
+                    int5_local[kj0, ki1] = cij[2]
 
             # u 2-comp is nonzero, di = 1
             # v 2-comp is nonzero, dj = 1

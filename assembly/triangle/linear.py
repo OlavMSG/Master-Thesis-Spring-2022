@@ -8,8 +8,7 @@ import numpy as np
 import scipy.sparse as sparse
 
 from assembly.triangle.gauss_quadrature import quadrature2D, quadrature2D_vector
-from helpers import expand_index, index_map, inv_index_map
-import index_functions as ind_funcs
+from helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
 from assembly.neumann.linear import assemble_f_neumann
@@ -106,9 +105,11 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq):
     # since the derivatives are constant we only need the integral of all 16 functions in z_mat_funcs
     z_mat = np.zeros((4, 4), dtype=float)
     for i in range(4):
-        for j in range(4):
+        for j in (0, 2, 3):
+            # j = 1, is never used.
             def z_mat_funcs_ij(x, y):
                 return z_mat_funcs[i, j](x, y, *geo_params)
+
             z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
 
     # matrices are symmetric by construction, so only compute on part.

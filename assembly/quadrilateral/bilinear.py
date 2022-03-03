@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sparse
 
 from assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
-from helpers import expand_index, index_map, inv_index_map
+from helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
 from assembly.neumann.linear import assemble_f_neumann

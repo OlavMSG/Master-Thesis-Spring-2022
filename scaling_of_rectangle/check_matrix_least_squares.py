@@ -4,11 +4,10 @@
 """
 from time import perf_counter
 
-import numpy as np
 from scipy.sparse.linalg import norm
 
 from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
-from matrix_least_squares import matrix_least_squares
+from scaling_of_rectangle.matrix_least_squares import matrix_least_squares
 
 
 def main():

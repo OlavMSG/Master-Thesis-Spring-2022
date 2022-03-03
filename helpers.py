@@ -121,7 +121,7 @@ def get_e_young_nu_poisson(mu, lambda_):
 
 def compute_a(e_young, nu_poisson, a1, a2):
     """
-    Compute the matrix a fro the linear elasticity problem, 
+    Compute the matrix a from the linear elasticity problem,
     depending on the young's module and the poisson ratio,
     and the matrices a1 and a2
 
@@ -146,6 +146,36 @@ def compute_a(e_young, nu_poisson, a1, a2):
     mu, lambda_ = get_lambda_mu(e_young, nu_poisson)
     # compute a
     return 2 * mu * a1 + lambda_ * a2
+
+
+def compute_a1_and_a2(int1, int2, int3, int4, int5):
+    """
+    Compute the matrices a1 and a2 from the 5 integrals
+
+    Parameters
+    ----------
+    int1 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix int1.
+    int2 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix int2.
+    int3 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix int3.
+    int4 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix int4.
+    int5 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix int5.
+
+
+    Returns
+    -------
+    a1 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix a1.
+    a2 : scipy.sparse.dox_matrix, np.array
+        bilinar form matrix a2.
+    """
+    a1 = int1 + 0.5 * (int2 + int3 + int4)
+    a2 = int1 + int3 + int5
+    return a1, a2
 
 
 def get_u_exact(p, u_exact_func):
