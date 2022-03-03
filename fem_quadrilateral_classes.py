@@ -4,12 +4,16 @@
 """
 
 from importlib.util import find_spec
+
+from scipy.sparse.linalg import spsolve
+
 import helpers
 
 import numpy as np
 from time import perf_counter
 
 from assembly import triangle, quadrilateral
+from solution_function_class import SolutionFunctionValues2D
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -132,6 +136,7 @@ class QuadrilateralSolver:
 
     def __init__(self, n, f_func, dirichlet_bc_func=None, element="lt"):
 
+        self.uh = SolutionFunctionValues2D()
         self.neumann_edge = None
         self.dirichlet_edge = None
         self.get_dirichlet_edge_func = None
@@ -139,6 +144,7 @@ class QuadrilateralSolver:
         self.use_negative_mls_order = None
         self.n = n + 1
         self.n_full = self.n * self.n * 2
+        self.is_assembled_and_free = False
 
         self._sym_setup()
 
@@ -304,7 +310,7 @@ class QuadrilateralSolver:
         x_vec = self.p[self.dirichlet_edge_index][:, 0]
         y_vec = self.p[self.dirichlet_edge_index][:, 1]
         # lifting function
-        self.rg = helpers.FunctionValues2D.from_nx2(self.dirichlet_bc_func(x_vec, y_vec)).flatt_values
+        self.rg = helpers.FunctionValues2D.from_2xn(self.dirichlet_bc_func(x_vec, y_vec)).flatt_values
 
         dirichlet_xy_index = np.ix_(self.expanded_free_index, self.expanded_dirichlet_edge_index)
         self.f1_load_dirichlet = self.a1_full[dirichlet_xy_index] @ self.rg
@@ -342,9 +348,100 @@ class QuadrilateralSolver:
         if self.has_non_homo_dirichlet:
             self._set_f_load_dirichlet()
         print("time free and lifting:", perf_counter() - s)
+        self.is_assembled_and_free = True
+
+    def _compute_a_free(self, e_young, nu_poisson):
+        if self.is_assembled_and_free:
+            return helpers.compute_a(e_young, nu_poisson, self.a1_free, self.a2_free)
+        else:
+            raise ValueError("Matrices and vectors are not assembled.")
+
+    def compute_f_load_free(self, e_young, nu_poisson):
+
+        # copy the body force load vector
+        f_load = self.f_load_lv_free.copy()
+        """# add the neumann load vector if it exists
+        if self.has_neumann and self.has_non_homo_neumann:
+            f_load += self._hf_data.f_load_neumann_free"""
+        # compute and add the dirichlet load vector if it exists
+        if self.has_non_homo_dirichlet:
+            if e_young is None or nu_poisson is None:
+                raise ValueError("e_young and/or nu_poisson are not given, needed for non homo. dirichlet conditions.")
+            f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_load_dirichlet, self.f2_load_dirichlet)
+        return f_load
+
+    def hfsolve(self, e_young, nu_poisson, print_info=True):
+        """
+        Solve the High-fidelity system given a Young's module and poisson ratio
+        Parameters
+        ----------
+        e_young : float, np.ndarray
+            Young's module.
+        nu_poisson : float, np.ndarray
+            poisson ratio.
+        print_info : bool, optional
+            print solver info. The default is True.
+        Returns
+        -------
+        None.
+        """
+        # compute a and convert to csr
+        a = self._compute_a_free(e_young, nu_poisson).tocsr()
+        f_load = self.compute_f_load_free(e_young, nu_poisson)  # e_young, nu_poisson needed if non homo. dirichlet
+        # initialize uh
+        uh = np.zeros(self.n_full)
+        start_time = perf_counter()
+        # solve system
+        uh[self.expanded_free_index] = spsolve(a, f_load)
+        if print_info:
+            print("Solved a @ uh = f_load in {:.6f} sec".format(perf_counter() - start_time))
+        if self.has_non_homo_dirichlet:
+            uh[self.expanded_dirichlet_edge_index] = self.rg
+        # set uh, and save it in a nice way.
+        self.uh = SolutionFunctionValues2D.from_1x2n(uh)
+        self.uh.set_e_young_and_nu_poisson(e_young, nu_poisson)
+        if print_info:
+            print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
+                  "The property uh, extra properties values, x and y are available.")
 
     def assemble(self, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8, **kwargs):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8]))
+
+    @property
+    def uh_free(self):
+        """
+        the free flattened part of the high-fidelity solution
+        Raises
+        ------
+        LinearElasticity2DProblemNotSolved
+            if the high-fidelity system has not been solved.
+        Returns
+        -------
+        np.array
+            the free flattened part of the high-fidelity solution.
+        """
+        if self.uh.values is None:
+            raise ValueError(
+                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_free.")
+        return self.uh.flatt_values[self.expanded_free_index]
+
+    @property
+    def uh_full(self):
+        """
+        the full flattened of the high-fidelity solution
+        Raises
+        ------
+        LinearElasticity2DProblemNotSolved
+            if the high-fidelity system has not been solved.
+        Returns
+        -------
+        np.array
+            the full flattened of the high-fidelity solution.
+        """
+        if self.uh.values is None:
+            raise ValueError(
+                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_full.")
+        return self.uh.flatt_values
 
 
 class DraggableCornerRectangleSolver(QuadrilateralSolver):

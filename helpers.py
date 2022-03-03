@@ -197,7 +197,8 @@ def get_u_exact(p, u_exact_func):
     """
     x_vec = p[:, 0]
     y_vec = p[:, 1]
-    u_exact = FunctionValues2D.from_nx2(VectorizedFunction2D(u_exact_func)(x_vec, y_vec))
+
+    u_exact = FunctionValues2D.from_2xn(VectorizedFunction2D(u_exact_func)(x_vec, y_vec))
     return u_exact
 
 
@@ -364,7 +365,25 @@ class FunctionValues2D:
         None.
 
         """
+
         self._values = np.asarray(values, dtype=float)
+        self._n = self._values.shape[0]
+
+    def _set_from_2xn(self, values):
+        """
+        set from values of shape (2,n)
+
+        Parameters
+        ----------
+        values : np.array
+            function values in shape (2,n).
+
+        Returns
+        -------
+        None.
+
+        """
+        self._values = np.asarray(values.T, dtype=float)
         self._n = self._values.shape[0]
 
     def _set_from_1x2n(self, values):
@@ -412,6 +431,26 @@ class FunctionValues2D:
         """
         out = cls()
         out._set_from_nx2(values)
+        return out
+
+    @classmethod
+    def from_2xn(cls, values):
+        """
+        Make FunctionValues2D from values of shape (2, n)
+
+        Parameters
+        ----------
+        values : np.array
+            function values in shape (n,2).
+
+        Returns
+        -------
+        out : FunctionValues2D
+            FunctionValues2D from values of shape (2, n).
+
+        """
+        out = cls()
+        out._set_from_2xn(values)
         return out
 
     @classmethod
@@ -485,7 +524,7 @@ class FunctionValues2D:
 
         """
         # return [x0, y0, x1, y1, ...]
-        return self._values.reshape((1, self.n * 2)).ravel()
+        return self._values.reshape((self._n * 2,)).ravel()
 
     @property
     def dim(self):
