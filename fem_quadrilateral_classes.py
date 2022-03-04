@@ -18,10 +18,10 @@ from solution_function_class import SolutionFunctionValues2D
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
     import symengine as sym
-    from symengine import Lambdify as sym_lambdify
+    from symengine import Lambdify as sym_Lambdify
 else:
     import sympy as sym
-    from sympy import lambdify as sym_lambdify
+    from sympy import lambdify as sym_Lambdify
 
 x1, x2 = sym.symbols("x1, x2", real=True)
 sym_x_vec = sym.Matrix([x1, x2])
@@ -59,7 +59,56 @@ class QuadrilateralSolver:
               "are given as:")
         print(mu_to_vertices_dict)
 
+    def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
+
+        self.uh = SolutionFunctionValues2D()
+        self.neumann_edge = None
+        self.dirichlet_edge = None
+        self.get_dirichlet_edge_func = None
+        self.mls_order = None
+        self.use_negative_mls_order = None
+        self.n = n + 1
+        self.n_full = self.n * self.n * 2
+        self.is_assembled_and_free = False
+
+        self._sym_setup()
+
+        if element.lower() in self.implemented_elements:
+            self.element = element.lower()
+        else:
+            error_text = "Element " + str(element) + " is not implemented. " \
+                         + "Implemented elements: " + str(self.implemented_elements)
+            raise NotImplementedError(error_text)
+
+        if self.element in ("linear triangle", "lt"):
+            self.nq = 4
+            self.nq_y = None
+        else:
+            self.nq = 2
+            self.nq_y = 2
+
+        def default_func(x, y):
+            return 0, 0
+
+        self.f_func_non_zero = True
+        if f_func == 0:
+            self.f_func = helpers.VectorizedFunction2D(default_func)
+            self.f_func_non_zero = False
+        else:
+            self.f_func = helpers.VectorizedFunction2D(f_func)
+
+        self.has_non_homo_dirichlet = False
+        if dirichlet_bc_func is None:
+            self.dirichlet_bc_func = helpers.VectorizedFunction2D(default_func)
+        else:
+            self.dirichlet_bc_func = helpers.VectorizedFunction2D(
+                lambda x, y: dirichlet_bc_func(*self.phi(x, y, *self.geo_params)))
+            self.has_non_homo_dirichlet = True
+
     def _sym_setup(self):
+        s = perf_counter()
+        self.phi = sym_Lambdify(self.sym_params, self.sym_phi)
+        print("phi time:", perf_counter() - s)
         s = perf_counter()
         self.sym_jac = self.sym_phi.jacobian(sym_x_vec)
         self.sym_det_jac = self.sym_jac.det()
@@ -75,9 +124,7 @@ class QuadrilateralSolver:
         s = perf_counter()
         for i in range(4):
             for j in range(4):
-                # note: j=1 is never used in assembly code.
-                # left here, such that all functions in z_mat_funcs can be called
-                self.z_mat_funcs[i, j] = np.vectorize(sym_lambdify(self.sym_params, self.sym_z_mat[i, j]),
+                self.z_mat_funcs[i, j] = np.vectorize(sym_Lambdify(self.sym_params, self.sym_z_mat[i, j]),
                                                       otypes=[float])
         print("func time:", perf_counter() - s)
 
@@ -130,53 +177,9 @@ class QuadrilateralSolver:
             arg_order = np.argwhere(np.abs(z_order) <= self.mls_order).ravel()
             self.sym_mls_funcs = sym.Matrix(z_funcs[arg_order].tolist()).T
         # lambdify
-        self.mls_funcs = sym_lambdify(self.sym_params, self.sym_mls_funcs)
+        self.mls_funcs = sym_Lambdify(self.sym_params, self.sym_mls_funcs)
         print("mls params:", perf_counter() - s)
         print(self.sym_mls_funcs)
-
-    def __init__(self, n, f_func, dirichlet_bc_func=None, element="lt"):
-
-        self.uh = SolutionFunctionValues2D()
-        self.neumann_edge = None
-        self.dirichlet_edge = None
-        self.get_dirichlet_edge_func = None
-        self.mls_order = None
-        self.use_negative_mls_order = None
-        self.n = n + 1
-        self.n_full = self.n * self.n * 2
-        self.is_assembled_and_free = False
-
-        self._sym_setup()
-
-        if element.lower() in self.implemented_elements:
-            self.element = element.lower()
-        else:
-            error_text = "Element " + str(element) + " is not implemented. " \
-                         + "Implemented elements: " + str(self.implemented_elements)
-            raise NotImplementedError(error_text)
-
-        if self.element in ("linear triangle", "lt"):
-            self.nq = 4
-        else:
-            self.nq = 2
-            self.nq_y = 2
-
-        def default_func(x, y):
-            return 0, 0
-
-        self.f_func_non_zero = True
-        if f_func == 0:
-            self.f_func = helpers.VectorizedFunction2D(default_func)
-            self.f_func_non_zero = False
-        else:
-            self.f_func = helpers.VectorizedFunction2D(f_func)
-
-        self.has_non_homo_dirichlet = False
-        if dirichlet_bc_func is None:
-            self.dirichlet_bc_func = helpers.VectorizedFunction2D(default_func)
-        else:
-            self.dirichlet_bc_func = helpers.VectorizedFunction2D(dirichlet_bc_func)
-            self.has_non_homo_dirichlet = True
 
     def mls(self, mls_order=1, use_negative_mls_order=False):
         self.mls_order = mls_order
@@ -407,6 +410,9 @@ class QuadrilateralSolver:
     def assemble(self, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8, **kwargs):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8]))
 
+    def get_u_exact(self, u_exact_func):
+        return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
+
     @property
     def uh_free(self):
         """
@@ -458,7 +464,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
               "are given as:")
         print(mu_to_vertices_dict)
 
-    def __init__(self, n, f_func, dirichlet_bc_func=None, element="lt"):
+    def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
         super().__init__(n, f_func, dirichlet_bc_func, element)
 
     def assemble(self, mu1, mu2, **kwargs):
@@ -479,7 +485,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
               "are given as:")
         print(mu_to_vertices_dict)
 
-    def __init__(self, n, f_func, dirichlet_bc_func=None, element="lt"):
+    def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
         super().__init__(n, f_func, dirichlet_bc_func, element)
 
     def assemble(self, mu1, mu2, **kwargs):

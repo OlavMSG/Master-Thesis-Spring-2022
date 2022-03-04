@@ -2,13 +2,11 @@
 """
 @author: Olav M.S. Gran
 """
-import sys
 
 import numpy as np
 
 from fem_quadrilateral_classes import ScalableRectangleSolver
 from default_constants import e_young_range, nu_poisson_range
-from helpers import get_u_exact
 
 
 def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt"):
@@ -17,23 +15,21 @@ def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt"):
     e_mean = np.mean(e_young_range)
     nu_mean = np.mean(nu_poisson_range)
 
-    le2d = ScalableRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element)
-    le2d.assemble(lx, ly)
+    s_rec = ScalableRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element)
+    s_rec.assemble(lx, ly)
 
-    le2d.hfsolve(e_mean, nu_mean, print_info=False)
-    u_exact = get_u_exact(le2d.p, u_exact_func)
+    s_rec.hfsolve(e_mean, nu_mean, print_info=False)
+    u_exact = s_rec.get_u_exact(u_exact_func)
 
     # discrete max norm, holds if u_exact is linear (Terms 1, x, y)
-    test_res = np.all(np.abs(le2d.uh_full - u_exact.flatt_values) < tol)
-    print("max norm {}".format(np.max(np.abs(le2d.uh_full - u_exact.flatt_values))))
+    test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
+    print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
     print("tolerance {}".format(tol))
-    print("plate limits {}".format(le2d.ref_plate))
+    print("plate limits {}".format(s_rec.ref_plate))
     print("element type: {}".format(element))
     print("test {} for n={}".format(test_res, n))
 
     print("-" * 10)
-
-    assert test_res
 
 
 def case_1(n, tol, element="lt"):

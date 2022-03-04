@@ -47,7 +47,7 @@ def get_points_and_weights_quad_2D(nq):
     Raises
     ------
     ValueError
-        if nq is not {1, 3, 4}.
+        if nq is not {1, 3, 4, 6}.
 
     Returns
     -------
@@ -70,14 +70,31 @@ def get_points_and_weights_quad_2D(nq):
         z = np.array([[1 / 3, 1 / 3, 1 / 3],
                       [3 / 5, 1 / 5, 1 / 5],
                       [1 / 5, 3 / 5, 1 / 5],
-                      [1 / 5, 1 / 5, 3 / 5]],
-                     dtype=float)
-        rho = np.array([-9 / 16,
-                        25 / 48,
-                        25 / 48,
-                        25 / 48], dtype=float)
+                      [1 / 5, 1 / 5, 3 / 5]], dtype=float)
+        rho = np.array([-9 / 16, 25 / 48, 25 / 48, 25 / 48], dtype=float)
+    elif nq == 6:
+        # source: O.C. Zienkiewicz, R.L. Taylor and J.Z. Zhu. "The Finite Element Method: Its Basis and Fundamentals,
+        # Sixth Edition". (2005) page. 165
+        alpha1 = 0.0597158717
+        beta1 = 0.4701420641
+        alpha2 = 0.7974269853
+        beta2 = 0.1012865073
+        z = np.array([[1 / 3, 1/3, 1/3],
+                      [alpha1, beta1, beta1],
+                      [beta1, alpha1, beta1],
+                      [beta1, beta1, alpha1],
+                      [alpha2, beta2, beta2],
+                      [beta2, alpha2, beta2],
+                      [beta2, beta2, alpha2]], dtype=float)
+        c1 = 0.1323941527
+        c2 = 0.1259391805
+        rho = np.array([0.225, c1, c1, c1, c2, c2, c2], dtype=float)
     else:
-        raise ValueError("nq must in {1, 3, 4} for 2D quadrature")
+        # from quadpy import t2
+        # scheme = t2.get_good_scheme(nq)
+        # z = scheme.points.T
+        # rho = scheme.weights
+        raise ValueError("nq must in {1, 3, 4, 6} for 2D quadrature")
 
     return z, rho
 

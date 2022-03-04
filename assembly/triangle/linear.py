@@ -105,11 +105,9 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq):
     # since the derivatives are constant we only need the integral of all 16 functions in z_mat_funcs
     z_mat = np.zeros((4, 4), dtype=float)
     for i in range(4):
-        for j in (0, 2, 3):
-            # j = 1, is never used.
+        for j in range(4):
             def z_mat_funcs_ij(x, y):
                 return z_mat_funcs[i, j](x, y, *geo_params)
-
             z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
 
     # matrices are symmetric by construction, so only compute on part.
