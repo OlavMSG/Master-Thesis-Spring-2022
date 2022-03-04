@@ -9,7 +9,7 @@ from scipy.sparse.linalg import spsolve
 
 
 from helpers import compute_a, expand_index, get_u_exact
-from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 from time import perf_counter
 
 

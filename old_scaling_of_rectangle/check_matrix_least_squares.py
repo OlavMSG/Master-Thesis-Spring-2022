@@ -6,8 +6,8 @@ from time import perf_counter
 
 from scipy.sparse.linalg import norm
 
-from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
-from scaling_of_rectangle.matrix_least_squares import matrix_least_squares
+from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+from old_scaling_of_rectangle.matrix_least_squares import matrix_least_squares
 
 
 def main():

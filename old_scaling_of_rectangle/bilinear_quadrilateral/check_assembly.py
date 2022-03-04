@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from helpers import VectorizedFunction2D, compute_a, expand_index, get_u_exact
-from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 
 
 def plot_mesh(n, p, tri):

@@ -9,7 +9,7 @@ from time import perf_counter
 import scipy.sparse as sparse
 
 from helpers import get_vec_from_range, get_lambda_mu
-from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 import default_constants
 
 

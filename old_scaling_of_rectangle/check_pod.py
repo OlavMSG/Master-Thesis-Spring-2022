@@ -15,7 +15,7 @@ from matplotlib.ticker import MaxNLocator
 
 from default_constants import default_tol
 from helpers import check_and_make_folder
-from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 
 """for nice representation of plots"""
 

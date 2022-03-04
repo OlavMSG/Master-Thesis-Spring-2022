@@ -8,12 +8,12 @@ import numpy as np
 from scipy.sparse.linalg import spsolve
 
 from assembly.get_plate_base import getPlateRec, getPlateTri
-from scaling_of_rectangle.bilinear_quadrilateral.assembly_old import assemble_ints_quad
-from scaling_of_rectangle.linear_triangle.assembly_old import assemble_ints_tri
+from old_scaling_of_rectangle.bilinear_quadrilateral.assembly_old import assemble_ints_quad
+from old_scaling_of_rectangle.linear_triangle.assembly_old import assemble_ints_tri
 
 from helpers import compute_a, expand_index, get_vec_from_range
 import default_constants
-from scaling_of_rectangle.pod import pod_with_energy_norm, compute_v
+from old_scaling_of_rectangle.pod import pod_with_energy_norm, compute_v
 
 
 class ScalableRectangle:

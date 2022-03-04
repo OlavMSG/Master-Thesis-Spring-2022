@@ -10,7 +10,7 @@ from scipy.linalg import eigh, fractional_matrix_power
 
 from default_constants import nu_poisson_range, e_young_range
 from helpers import get_vec_from_range
-# from scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
+# from old_scaling_of_rectangle.scalable_rectangle_class import ScalableRectangle
 
 
 def make_solution_matrix(ns, rec_scale_vec, e_young_vec, nu_poisson_vec, rec):
