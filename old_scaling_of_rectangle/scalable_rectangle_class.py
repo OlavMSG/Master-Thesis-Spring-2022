@@ -278,7 +278,7 @@ class ScalableRectangle:
     def compute_free_and_expanded_edges(self):
         # set self.p, self.tri, self.edge
         # self.a1_full, self.a2_full
-        # self.f_load_lv_full , self.dirichlet_edge
+        # self.f_body_force_full , self.dirichlet_edge
         # optionally: self.f_load_neumann_full,  neumann_edge
         # before calling this function
 

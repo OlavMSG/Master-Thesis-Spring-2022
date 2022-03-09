@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from fem_quadrilateral_classes import QuadrilateralSolver
+from fem_quadrilateral import QuadrilateralSolver
 from default_constants import e_young_range, nu_poisson_range
 
 

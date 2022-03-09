@@ -2,18 +2,19 @@
 """
 @author: Olav M.S. Gran
 """
+from __future__ import annotations
 
 from importlib.util import find_spec
+from typing import Optional
 
 from scipy.sparse.linalg import spsolve
-
-import helpers
-
 import numpy as np
 from time import perf_counter
 
+import helpers
 from assembly import triangle, quadrilateral
 from solution_function_class import SolutionFunctionValues2D
+from base_solver import BaseSolver
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -30,7 +31,7 @@ b1, b2, b3, b4 = sym.symbols("b1:5", real=True)
 mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8 = sym.symbols("mu1:9", real=True)
 
 
-def sym_kron_product2x2(mat1, mat2):
+def sym_kron_product2x2(mat1: sym.Matrix, mat2: sym.Matrix) -> sym.Matrix:
     kron = sym.Matrix(
         [[mat1[0, 0] * mat2[0, 0], mat1[0, 0] * mat2[0, 1], mat1[0, 1] * mat2[0, 0], mat1[0, 1] * mat2[0, 1]],
          [mat1[0, 0] * mat2[1, 0], mat1[0, 0] * mat2[1, 1], mat1[0, 1] * mat2[1, 0], mat1[0, 1] * mat2[1, 1]],
@@ -40,7 +41,7 @@ def sym_kron_product2x2(mat1, mat2):
     return kron
 
 
-class QuadrilateralSolver:
+class QuadrilateralSolver(BaseSolver):
     ref_plate = (0, 1)
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
     sym_phi = sym.Matrix([
@@ -48,6 +49,7 @@ class QuadrilateralSolver:
         x2 + mu2 * (1 - x1) * (1 - x2) + mu4 * x1 * (1 - x2) + mu6 * x1 * x2 + mu8 * (1 - x1) * x2
     ])
     sym_params = sym.Matrix([x1, x2, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8])
+    geo_param_range = (-0.125, 0.125)  # 1/8
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -61,6 +63,7 @@ class QuadrilateralSolver:
 
     def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
 
+        self.mls_has_been_setup = False
         self.uh = SolutionFunctionValues2D()
         self.neumann_edge = None
         self.dirichlet_edge = None
@@ -106,6 +109,7 @@ class QuadrilateralSolver:
             self.has_non_homo_dirichlet = True
 
     def _sym_setup(self):
+        self.sym_geo_params = self.sym_params[2:]
         s = perf_counter()
         self.phi = sym_Lambdify(self.sym_params, self.sym_phi)
         print("phi time:", perf_counter() - s)
@@ -130,7 +134,6 @@ class QuadrilateralSolver:
 
     def _sym_mls_params_setup(self):
         s = perf_counter()
-        self.sym_geo_params = self.sym_params[2:]
 
         if self.is_jac_constant:
             mu_funcs = []
@@ -179,15 +182,16 @@ class QuadrilateralSolver:
         # lambdify
         self.mls_funcs = sym_Lambdify(self.sym_params, self.sym_mls_funcs)
         print("mls params:", perf_counter() - s)
-        print(self.sym_mls_funcs)
+        # print(self.sym_mls_funcs)
 
-    def mls(self, mls_order=1, use_negative_mls_order=False):
+    def mls_setup(self, mls_order: int = 1, use_negative_mls_order: bool = False):
         self.mls_order = mls_order
         self.use_negative_mls_order = use_negative_mls_order
 
         self._sym_mls_params_setup()
+        self.mls_has_been_setup = True
 
-    def set_quadrature_scheme_order(self, nq, nq_y=None):
+    def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         if self.element in ("linear triangle", "lt"):
             self.nq = nq
         else:
@@ -287,7 +291,7 @@ class QuadrilateralSolver:
     def _compute_free_and_expanded_edges(self):
         # set self.p, self.tri, self.edge
         # self.a1_full, self.a2_full
-        # self.f_load_lv_full , self.dirichlet_edge
+        # self.f_body_force_full , self.dirichlet_edge
         # optionally: self.f_load_neumann_full,  neumann_edge
         # before calling this function
 
@@ -296,9 +300,9 @@ class QuadrilateralSolver:
 
     def _set_free(self):
         free_xy_index = np.ix_(self.expanded_free_index, self.expanded_free_index)
-        self.a1_free = self.a1_full[free_xy_index]
-        self.a2_free = self.a2_full[free_xy_index]
-        self.f_load_lv_free = self.f_load_lv_full[self.expanded_free_index]
+        self.a1 = self.a1_full[free_xy_index]
+        self.a2 = self.a2_full[free_xy_index]
+        self.f0 = self.f0_full[self.expanded_free_index]
 
     def _set_f_load_dirichlet(self):
         """
@@ -316,30 +320,27 @@ class QuadrilateralSolver:
         self.rg = helpers.FunctionValues2D.from_2xn(self.dirichlet_bc_func(x_vec, y_vec)).flatt_values
 
         dirichlet_xy_index = np.ix_(self.expanded_free_index, self.expanded_dirichlet_edge_index)
-        self.f1_load_dirichlet = self.a1_full[dirichlet_xy_index] @ self.rg
-        self.f2_load_dirichlet = self.a2_full[dirichlet_xy_index] @ self.rg
+        self.f1_dir = self.a1_full[dirichlet_xy_index] @ self.rg
+        self.f2_dir = self.a2_full[dirichlet_xy_index] @ self.rg
 
     def _assemble(self, geo_params):
         s = perf_counter()
         self.geo_params = geo_params
         if self.element in ("linear triangle", "lt"):
             self.p, self.tri, self.edge = triangle.get_plate.getPlate(self.n)
-            self.ints, self.f_load_lv_full = triangle.linear.assemble_ints_and_f_load_lv(self.n, self.p, self.tri,
-                                                                                         self.z_mat_funcs,
-                                                                                         self.geo_params,
-                                                                                         self.f_func,
-                                                                                         self.f_func_non_zero,
-                                                                                         self.nq)
+            self.ints, self.f_body_force_full \
+                = triangle.linear.assemble_ints_and_f_body_force(self.n, self.p, self.tri, self.z_mat_funcs,
+                                                                 self.geo_params, self.f_func,
+                                                                 self.f_func_non_zero, self.nq)
         else:
             self.p, self.tri, self.edge = quadrilateral.get_plate.getPlate(self.n)
-            self.ints, self.f_load_lv_full = quadrilateral.bilinear.assemble_ints_and_f_load_lv(self.n, self.p,
-                                                                                                self.tri,
-                                                                                                self.z_mat_funcs,
-                                                                                                self.geo_params,
-                                                                                                self.f_func,
-                                                                                                self.f_func_non_zero,
-                                                                                                self.nq, self.nq_y)
+            self.ints, self.f_body_force_full \
+                = quadrilateral.bilinear.assemble_ints_and_f_body_force(self.n, self.p, self.tri, self.z_mat_funcs,
+                                                                        self.geo_params, self.f_func,
+                                                                        self.f_func_non_zero, self.nq, self.nq_y)
         self.a1_full, self.a2_full = helpers.compute_a1_and_a2(*self.ints)
+        # NB!!! for now
+        self.f0_full = self.f_body_force_full
         print("time assemble:", perf_counter() - s)
 
         s = perf_counter()
@@ -355,14 +356,14 @@ class QuadrilateralSolver:
 
     def _compute_a_free(self, e_young, nu_poisson):
         if self.is_assembled_and_free:
-            return helpers.compute_a(e_young, nu_poisson, self.a1_free, self.a2_free)
+            return helpers.compute_a(e_young, nu_poisson, self.a1, self.a2)
         else:
             raise ValueError("Matrices and vectors are not assembled.")
 
     def compute_f_load_free(self, e_young, nu_poisson):
 
         # copy the body force load vector
-        f_load = self.f_load_lv_free.copy()
+        f_load = self.f0.copy()
         """# add the neumann load vector if it exists
         if self.has_neumann and self.has_non_homo_neumann:
             f_load += self._hf_data.f_load_neumann_free"""
@@ -370,10 +371,10 @@ class QuadrilateralSolver:
         if self.has_non_homo_dirichlet:
             if e_young is None or nu_poisson is None:
                 raise ValueError("e_young and/or nu_poisson are not given, needed for non homo. dirichlet conditions.")
-            f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_load_dirichlet, self.f2_load_dirichlet)
+            f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_dir, self.f2_dir)
         return f_load
 
-    def hfsolve(self, e_young, nu_poisson, print_info=True):
+    def hfsolve(self, e_young: float, nu_poisson: float, print_info: bool = True):
         """
         Solve the High-fidelity system given a Young's module and poisson ratio
         Parameters
@@ -407,43 +408,21 @@ class QuadrilateralSolver:
             print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
                   "The property uh, extra properties values, x and y are available.")
 
-    def assemble(self, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8, **kwargs):
+    def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float, mu7: float, mu8: float):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8]))
 
     def get_u_exact(self, u_exact_func):
         return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
 
     @property
-    def uh_free(self):
-        """
-        the free flattened part of the high-fidelity solution
-        Raises
-        ------
-        LinearElasticity2DProblemNotSolved
-            if the high-fidelity system has not been solved.
-        Returns
-        -------
-        np.array
-            the free flattened part of the high-fidelity solution.
-        """
+    def uh_free(self) -> np.ndarray:
         if self.uh.values is None:
             raise ValueError(
                 "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_free.")
         return self.uh.flatt_values[self.expanded_free_index]
 
     @property
-    def uh_full(self):
-        """
-        the full flattened of the high-fidelity solution
-        Raises
-        ------
-        LinearElasticity2DProblemNotSolved
-            if the high-fidelity system has not been solved.
-        Returns
-        -------
-        np.array
-            the full flattened of the high-fidelity solution.
-        """
+    def uh_full(self) -> np.ndarray:
         if self.uh.values is None:
             raise ValueError(
                 "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_full.")
@@ -456,6 +435,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu5: mu1, mu6: mu2,
                                                            mu7: 0, mu8: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
+    geo_param_range = (-0.25, 0.25)  # 1/4
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -467,7 +447,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
     def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
         super().__init__(n, f_func, dirichlet_bc_func, element)
 
-    def assemble(self, mu1, mu2, **kwargs):
+    def assemble(self, mu1: float, mu2: float, **kwargs: float):
         self._assemble(np.array([mu1, mu2]))
 
 
@@ -477,6 +457,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
                                                            mu5: mu1 - 1, mu6: mu2 - 1,
                                                            mu7: 0, mu8: mu2 - 1}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
+    geo_param_range = (1, 5)
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -488,7 +469,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
     def __init__(self, n, f_func, dirichlet_bc_func=None, element="bq"):
         super().__init__(n, f_func, dirichlet_bc_func, element)
 
-    def assemble(self, mu1, mu2, **kwargs):
+    def assemble(self, mu1: float, mu2: float, **kwargs: float):
         self._assemble(np.array([mu1, mu2]))
 
 
@@ -499,12 +480,12 @@ def main():
     # print(q.sym_phi)
     d = DraggableCornerRectangleSolver(n, 0)
     print(d.sym_phi)
-    d.mls()
+    d.mls_setup()
     d.assemble(0.1, 0.2)
     print("------------")
     r = ScalableRectangleSolver(n, 0)
     print(r.sym_phi)
-    r.mls()
+    r.mls_setup()
     r.assemble(1, 2)
     """u = set([item for sublist in r.sym_z_mat.tolist() for item in sublist])
     print(u)"""

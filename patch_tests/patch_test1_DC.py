@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from fem_quadrilateral_classes import DraggableCornerRectangleSolver
+from fem_quadrilateral import DraggableCornerRectangleSolver
 from default_constants import e_young_range, nu_poisson_range
 
 

@@ -27,7 +27,7 @@ def main():
     # a_full = compute_a(e_young, nu_poisson, a1_full, a2_full)
     print("-" * 50)
     s = perf_counter()
-    x_mats = matrix_least_squares(m, rec, mls_mode="sparse")
+    x_mats = matrix_least_squares(m, rec, mls_mode="sp")
     print("time matrix least squares:", perf_counter() - s)
     print("checking np.linalg.norm(...)")
 
@@ -48,7 +48,7 @@ def main():
     print("-" * 50)
     m = 5
     s = perf_counter()
-    x_mats = matrix_least_squares(m, rec, mls_mode="sparse", compute_a_str="a1")
+    x_mats = matrix_least_squares(m, rec, mls_mode="sp", compute_a_str="a1")
     print("time matrix least squares:", perf_counter() - s)
     print("checking np.linalg.norm(...)")
 
@@ -59,7 +59,7 @@ def main():
 
     print("-"*50)
     s = perf_counter()
-    x_mats = matrix_least_squares(m, rec, mls_mode="sparse", compute_a_str="a2")
+    x_mats = matrix_least_squares(m, rec, mls_mode="sp", compute_a_str="a2")
     print("time matrix least squares:", perf_counter() - s)
     print("checking norm(...)")
 

@@ -5,7 +5,7 @@ based on Specialization-Project-fall-2021
 """
 
 import numpy as np
-import scipy.sparse as sparse
+import scipy.sparse as sp
 
 from assembly.triangle.gauss_quadrature import quadrature2D, quadrature2D_vector
 from helpers import expand_index, index_map
@@ -156,9 +156,6 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq):
                 # int4_10 = np.sum(cij[[1, 2]] * z_mat[2, [2, 1]])  # = int5_01
                 # int5_10 = np.sum(cij[[1, 2]] * z_mat[2, [1, 2]])  # = int4_01
 
-                # if int4_10 != int5_01: print("int4_10 != int5_01")
-                # if int5_10 != int4_01: print("int5_10 != int4_01")
-
                 int3_local[ki1, kj0] = int3_01
                 int4_local[ki1, kj0] = int5_01
                 int5_local[ki1, kj0] = int4_01
@@ -215,7 +212,7 @@ def assemble_f_local(ck, f_func, p_mat, nq):
     return f_local
 
 
-def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
+def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
     """
     Assemble the ints matrices and the body force load vector
 
@@ -241,8 +238,8 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
     Returns
     -------
     ints: tuple
-        tuple of sparse matrices of ints
-    f_load_lv : np.array
+        tuple of sp matrices of ints
+    f_body_force : np.array
         load vector for the linear form.
 
     """
@@ -250,25 +247,13 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
     # Stiffness matrices
     # dok_matrix
     # Allows for efficient O(1) access of individual elements
-    int1 = sparse.dok_matrix((n2d, n2d), dtype=float)
-    int2 = sparse.dok_matrix((n2d, n2d), dtype=float)
-    int3 = sparse.dok_matrix((n2d, n2d), dtype=float)
-    int4 = sparse.dok_matrix((n2d, n2d), dtype=float)
-    int5 = sparse.dok_matrix((n2d, n2d), dtype=float)
+    int1 = sp.dok_matrix((n2d, n2d), dtype=float)
+    int2 = sp.dok_matrix((n2d, n2d), dtype=float)
+    int3 = sp.dok_matrix((n2d, n2d), dtype=float)
+    int4 = sp.dok_matrix((n2d, n2d), dtype=float)
+    int5 = sp.dok_matrix((n2d, n2d), dtype=float)
     # load vector
-    f_load_lv = np.zeros(n2d, dtype=float)
-    if f_func_is_not_zero:
-        for nk in tri:
-            # nk : node-numbers for the k'th triangle
-            # the points of the triangle
-            # p1 = p[nk[0], :]
-            # p2 = p[nk[1], :]
-            # p3 = p[nk[2], :]
-            # using indexmap k = 2 * i + d, d=0 for x, 1 for y, i is the node number
-            # and basis functions coef. or Jacobin inverse
-            ck = get_basis_coef(p[nk, :])
-            # expand the index
-            expanded_nk = expand_index(nk)
+    f_body_force = np.zeros(n2d, dtype=float)
 
     for nk in tri:
         # nk : node-numbers for the k'th triangle
@@ -294,5 +279,5 @@ def assemble_ints_and_f_load_lv(n, p, tri, z_mat_funcs, geo_params, f_func, f_fu
         int5[index] += ints_local[4]
         if f_func_is_not_zero:
             # load vector
-            f_load_lv[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :], nq)
-    return (int1, int2, int3, int4, int5), f_load_lv
+            f_body_force[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :], nq)
+    return (int1, int2, int3, int4, int5), f_body_force

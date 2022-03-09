@@ -148,7 +148,7 @@ def make_plots(n, save, q=None, do_errors=True):
         ax.set_xlabel("$N$")
         ax.set_ylabel("$\\|\\|u_h(\\mu) - Vu_N(\\mu)\\|\\|_a/\\|\\|u_h(\\mu)\\|\\|_a$")
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.grid()
+        ax.material_grid()
         # adjust
         ax.legend(loc=9, bbox_to_anchor=(0.5, -0.13), ncol=2)
         if save:

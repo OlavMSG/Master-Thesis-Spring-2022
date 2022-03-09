@@ -89,7 +89,7 @@ def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=Non
                          e_young_range=None, nu_poisson_range=None, sample_mode="uniform"):
     # It should be possible to get the a-matrices (in b_mats) from saves here...
     if mls_mode is None:
-        mls_mode = default_constants.mls_mode
+        mls_mode = "sp"
 
     if mu_params is None:
         mu_params = rec.geo_mu_params.copy()
@@ -112,9 +112,9 @@ def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=Non
     c_mat = np.linalg.solve(m_mat.T @ m_mat, m_mat.T)
     print("time c_mat:", perf_counter() - s)
 
-    if mls_mode == "sparse":
+    if mls_mode == "sp":
         # default sample_mode
-        # use sparse matrices and get the a-matrices (in b_mats) just in time.
+        # use sp matrices and get the a-matrices (in b_mats) just in time.
         # the slowest method, but uses the least memory of the method.
         n, q_max = m_mat.shape
         n2d = rec.n * rec.n * 2
@@ -143,7 +143,7 @@ def matrix_least_squares(m, rec: ScalableRectangle, mu_params=None, mls_mode=Non
         x_mats = np.einsum("qk,kij -> qij", c_mat, b_mats)
         print("time x_mats2:", perf_counter() - s)
     else:
-        error_text = "Mode is not implemented. Implemented modes: " + str(default_constants.implemented_mls_modes)
+        error_text = "Mode is not implemented. Implemented modes: " + str(["sp", "array"])
         raise NotImplementedError(error_text)
 
     return x_mats
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     print(d)
     print("dok_matrix")
     a = np.arange(2 * 2 * 2).reshape((2 * 2, 2))
-    a = sparse.dok_matrix(a)
+    a = sp.dok_matrix(a)
     print(a.A)
     d = a.reshape(2, 2 * 2)
     print(d.A)

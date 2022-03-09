@@ -54,7 +54,7 @@ def pod_with_energy_norm(m, rec, mode):
     Parameters
     ----------
     m: int
-        grid parameter
+        material_grid parameter
     rec :
         the solver.
     Returns
