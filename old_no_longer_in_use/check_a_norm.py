@@ -34,6 +34,5 @@ def main():
     err2 = err1[free_index]
     print(err2 @ a_free @ err2)
 
-
 if __name__ == '__main__':
     main()

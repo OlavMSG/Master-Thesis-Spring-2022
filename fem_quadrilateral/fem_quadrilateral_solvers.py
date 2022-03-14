@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
-from typing import Optional
+from pathlib import Path
+from typing import Optional, List, Tuple, Callable, Union
 
 from scipy.sparse.linalg import spsolve
 import numpy as np
@@ -15,6 +16,7 @@ import helpers
 from assembly import triangle, quadrilateral
 from solution_function_class import SolutionFunctionValues2D
 from base_solver import BaseSolver
+from snapshot_saver import SnapshotSaver
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -180,7 +182,7 @@ class QuadrilateralSolver(BaseSolver):
             arg_order = np.argwhere(np.abs(z_order) <= self.mls_order).ravel()
             self.sym_mls_funcs = sym.Matrix(z_funcs[arg_order].tolist()).T
         # lambdify
-        self.mls_funcs = sym_Lambdify(self.sym_params, self.sym_mls_funcs)
+        self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
         print("mls params:", perf_counter() - s)
         # print(self.sym_mls_funcs)
 
@@ -200,6 +202,9 @@ class QuadrilateralSolver(BaseSolver):
                 self.nq_y = nq
             else:
                 self.nq_y = nq
+
+    def set_geo_param_range(self, start: float, stop: float):
+        self.geo_param_range = (start, stop)
 
     def _get_dirichlet_edge(self):
         """
@@ -228,6 +233,8 @@ class QuadrilateralSolver(BaseSolver):
         elif self.dirichlet_edge.shape != self.edge.shape:
             neumann_edge = np.array(list(set(map(tuple, self.edge)) - set(map(tuple, self.dirichlet_edge))))
             self.neumann_edge = neumann_edge[np.argsort(neumann_edge[:, 0]), :]
+        else:
+            self.neumann_edge = np.array([])
 
     def _are_edges_illegal(self):
         """
@@ -241,14 +248,14 @@ class QuadrilateralSolver(BaseSolver):
         None.
         """
         if self.get_dirichlet_edge_func is None:
-            if np.all(self.neumann_edge == self.edge):
+            if np.all(self.neumann_edge.shape == self.edge.shape):
                 error_text = "Only neumann conditions are not allowed, gives neumann_edge=edge, " \
                              + "please define get_dirichlet_edge_func."
                 raise ValueError(error_text)
         else:
-            if (self.dirichlet_edge is None) and np.all(self.neumann_edge == self.edge):
+            if (len(self.dirichlet_edge) == 0) and np.all(self.neumann_edge.shape == self.edge.shape):
                 raise ValueError("get_dirichlet_edge_func gives dirichlet_edge=None and neumann_edge=edge.")
-            if (self.neumann_edge is None) and np.all(self.dirichlet_edge == self.edge):
+            if (len(self.neumann_edge) == 0) and np.all(self.dirichlet_edge.shape == self.edge.shape):
                 raise ValueError("get_dirichlet_edge_func gives dirichlet_edge=edge and neumann_edge=None.")
 
     def _edges(self):
@@ -339,6 +346,8 @@ class QuadrilateralSolver(BaseSolver):
                                                                         self.geo_params, self.f_func,
                                                                         self.f_func_non_zero, self.nq, self.nq_y)
         self.a1_full, self.a2_full = helpers.compute_a1_and_a2(*self.ints)
+        self.a1_full = self.a1_full.tocsr()
+        self.a2_full = self.a2_full.tocsr()
         # NB!!! for now
         self.f0_full = self.f_body_force_full
         print("time assemble:", perf_counter() - s)
@@ -390,7 +399,7 @@ class QuadrilateralSolver(BaseSolver):
         None.
         """
         # compute a and convert to csr
-        a = self._compute_a_free(e_young, nu_poisson).tocsr()
+        a = self._compute_a_free(e_young, nu_poisson)  # .tocsr()
         f_load = self.compute_f_load_free(e_young, nu_poisson)  # e_young, nu_poisson needed if non homo. dirichlet
         # initialize uh
         uh = np.zeros(self.n_full)
@@ -407,6 +416,18 @@ class QuadrilateralSolver(BaseSolver):
         if print_info:
             print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
                   "The property uh, extra properties values, x and y are available.")
+
+    def save_snapshots(self, root: Path, geo_grid: int,
+                       mode: str = "uniform",
+                       material_grid: Optional[int] = None,
+                       e_young_range: Optional[Tuple[float, float]] = None,
+                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+        saver = SnapshotSaver(root, geo_grid, self.geo_param_range,
+                              mode=mode,
+                              material_grid=material_grid,
+                              e_young_range=e_young_range,
+                              nu_poisson_range=nu_poisson_range)
+        saver(self)
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float, mu7: float, mu8: float):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8]))
@@ -427,6 +448,14 @@ class QuadrilateralSolver(BaseSolver):
             raise ValueError(
                 "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_full.")
         return self.uh.flatt_values
+
+    @property
+    def uh_anorm2(self) -> np.ndarray:
+        if self.uh.values is None:
+            raise ValueError(
+                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_anorm2.")
+        return self.uh.flatt_values.T @ helpers.compute_a(self.uh.e_young, self.uh.nu_poisson, self.a1_full,
+                                                          self.a2_full) @ self.uh.flatt_values
 
 
 class DraggableCornerRectangleSolver(QuadrilateralSolver):
@@ -474,18 +503,18 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
 
 def main():
-    n = 3
+    n = 20
     # q = QuadrilateralSolver(n, 0)
     # q.mls()
     # print(q.sym_phi)
     d = DraggableCornerRectangleSolver(n, 0)
     print(d.sym_phi)
-    d.mls_setup()
+    # d.mls_setup()
     d.assemble(0.1, 0.2)
     print("------------")
     r = ScalableRectangleSolver(n, 0)
     print(r.sym_phi)
-    r.mls_setup()
+    # r.mls_setup()
     r.assemble(1, 2)
     """u = set([item for sublist in r.sym_z_mat.tolist() for item in sublist])
     print(u)"""

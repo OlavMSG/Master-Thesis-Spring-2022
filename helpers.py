@@ -85,16 +85,16 @@ def get_lambda_mu(e_young, nu_poisson):
     -------
     mu : float, np.array
         Lame coefficient mu.
-    lambda_ : float, np.array
+    lambda_bar : float, np.array
         Lame coefficient lambda.
 
     """
-    lambda_ = e_young * nu_poisson / (1 - nu_poisson * nu_poisson)
+    lambda_bar = e_young * nu_poisson / (1 - nu_poisson * nu_poisson)
     mu = 0.5 * e_young / (nu_poisson + 1)
-    return mu, lambda_
+    return mu, lambda_bar
 
 
-def get_e_young_nu_poisson(mu, lambda_):
+def get_e_young_nu_poisson(mu, lambda_bar):
     """
     Get the young's module and the poisson ratio from 2D plane stress Lame coefficients lambda and mu
     (Note: used formulas in get_lambda_mu and solved for e_young and nu_poisson)
@@ -102,9 +102,9 @@ def get_e_young_nu_poisson(mu, lambda_):
     Parameters
     ----------
     mu : float, np.float
-        Lame coefficients mu.
-    lambda_ : float, np.float
-        Lame coefficients lambda.
+        Lame coefficient mu.
+    lambda_bar : float, np.float
+        Lame coefficient lambda.
 
     Returns
     -------
@@ -114,8 +114,8 @@ def get_e_young_nu_poisson(mu, lambda_):
         poisson ratio.
 
     """
-    nu_poisson = lambda_ / (lambda_ + 2 * mu)
-    e_young = 4 * (lambda_ * mu + mu * mu) / (lambda_ + 2 * mu)
+    nu_poisson = lambda_bar / (lambda_bar + 2 * mu)
+    e_young = 4 * (lambda_bar * mu + mu * mu) / (lambda_bar + 2 * mu)
     return e_young, nu_poisson
 
 
@@ -142,10 +142,10 @@ def compute_a(e_young, nu_poisson, a1, a2):
         bilinar form matrix a depending on the young's module and the poisson ratio.
 
     """
-    # get the Lame coeffichents
-    mu, lambda_ = get_lambda_mu(e_young, nu_poisson)
+    # get the Lame coefficients
+    mu, lambda_bar = get_lambda_mu(e_young, nu_poisson)
     # compute a
-    return 2 * mu * a1 + lambda_ * a2
+    return 2 * mu * a1 + lambda_bar * a2
 
 
 def compute_a1_and_a2(int1, int2, int3, int4, int5):

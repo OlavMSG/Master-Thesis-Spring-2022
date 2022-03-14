@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Protocol, Optional, List, Tuple, Callable, Union
 from importlib.util import find_spec
 import numpy as np
@@ -24,7 +25,6 @@ class BaseSolver(Protocol):
     sym_phi: sym.Matrix
     sym_params: sym.Matrix
     sym_geo_params: sym.Matrix
-    geo_param_range: Tuple[float, float]
     n_free: int
     mls_has_been_setup: bool
     mls_funcs: Callable
@@ -34,7 +34,11 @@ class BaseSolver(Protocol):
     f0: Matrix
     f1_dir: Matrix
     f2_dir: Matrix
-
+    p: Matrix
+    tri: Matrix
+    edge: Matrix
+    dirichlet_edge: Matrix
+    neumann_edge: Matrix
 
     def mls_setup(self, mls_order: int = 1, use_negative_mls_order: bool = False):
         ...
@@ -42,7 +46,17 @@ class BaseSolver(Protocol):
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         ...
 
+    def set_geo_param_range(self, start: float, stop: float):
+        ...
+
     def hfsolve(self, e_young: float, nu_poisson: float, print_info: bool = True):
+        ...
+
+    def save_snapshots(self, root: Path, geo_grid: int,
+                       mode: str = "uniform",
+                       material_grid: Optional[int] = None,
+                       e_young_range: Optional[Tuple[float, float]] = None,
+                       nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float, mu7: float, mu8: float):
@@ -54,4 +68,8 @@ class BaseSolver(Protocol):
 
     @property
     def uh_full(self) -> np.ndarray:
+        return np.ndarray()
+
+    @property
+    def uh_anorm2(self) -> np.ndarray:
         return np.ndarray()

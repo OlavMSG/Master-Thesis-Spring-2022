@@ -37,6 +37,6 @@ n_rom_cut = "rank"  # = 1e-12
                    "f2_dir_rom": "f2_dir_rom.npy",
                    "f_load_lv_rom": "f_load_lv_rom.npy",
                    "f_load_neumann_rom": "f_load_neumann_rom.npy",
-                   "v": "v_mat.npy",
+                   "v": "v_mat_n_max.npy",
                    "sigma2": "singular_values_vec.npy",
                    "pod_parameters": "pod_parameters.npy"}"""
