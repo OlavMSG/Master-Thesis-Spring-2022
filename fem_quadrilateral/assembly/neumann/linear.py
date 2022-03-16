@@ -6,7 +6,7 @@ based on Specialization-Project-fall-2021
 
 import numpy as np
 
-from assembly.neumann.gauss_quadrature import line_integral_with_linear_basis
+from fem_quadrilateral.assembly.neumann.gauss_quadrature import line_integral_with_linear_basis
 from helpers import expand_index
 
 

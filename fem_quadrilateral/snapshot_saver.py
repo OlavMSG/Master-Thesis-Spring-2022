@@ -8,10 +8,11 @@ from typing import Optional, Tuple
 from pathlib import Path
 
 import numpy as np
+import tqdm
 
 import default_constants
 import helpers
-from base_solver import BaseSolver
+from .base_solver import BaseSolver
 from matrix_lsq import Storage, DiskStorage, Snapshot
 from itertools import product, repeat
 
@@ -48,7 +49,7 @@ class SnapshotSaver:
 
     def __call__(self, solver: BaseSolver):
         if not solver.mls_has_been_setup:
-            solver.mls_setup()
+            solver.matrix_lsq_setup()
 
         # save the mean as a special Snapshot.
         geo_mean = np.mean(self.geo_range)
@@ -56,25 +57,38 @@ class SnapshotSaver:
         nu_mean = np.mean(self.nu_poisson_range)
         # make the data
         solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
-        data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params)))
+        data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
         a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
         # for now save
         grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
         # save it
         root_mean = self.root / "mean"
         root_mean.mkdir(parents=True, exist_ok=True)
-        Snapshot(root_mean, data_mean, a=a_mean,
-                 p=solver.p, tri=solver.tri, edge=solver.edge,
-                 dirichlet_edge=solver.dirichlet_edge,
-                 neumann_edge=solver.neumann_edge,
-                 grid_params=grid_params)
+        # save a1, a2, f0, f1_dir, f2_dir for debugging.
+        if solver.has_non_homo_dirichlet:
+            Snapshot(root_mean, data_mean, a=a_mean,
+                     p=solver.p, tri=solver.tri, edge=solver.edge,
+                     dirichlet_edge=solver.dirichlet_edge,
+                     neumann_edge=solver.neumann_edge,
+                     grid_params=grid_params,
+                     a1=solver.a1, a2=solver.a2,
+                     f0=solver.f0,
+                     f1_dir=solver.f1_dir, f2_dir=solver.f2_dir)
+        else:
+            Snapshot(root_mean, data_mean, a=a_mean,
+                     p=solver.p, tri=solver.tri, edge=solver.edge,
+                     dirichlet_edge=solver.dirichlet_edge,
+                     neumann_edge=solver.neumann_edge,
+                     grid_params=grid_params,
+                     a1=solver.a1, a2=solver.a2,
+                     f0=solver.f0)
 
         # get all vectors from ranges
         geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_gird, self.mode)
         e_young_vec = helpers.get_vec_from_range(self.e_young_range, self.material_grid, self.mode)
         nu_poisson_vec = helpers.get_vec_from_range(self.nu_poisson_range, self.material_grid, self.mode)
         # make snapshots
-        for geo_params in product(geo_vec, repeat=len(solver.sym_geo_params)):
+        for geo_params in tqdm.tqdm(product(geo_vec, repeat=len(solver.sym_geo_params)), desc="Saving"):
             solver.assemble(*geo_params)
             # compute solution and a-norm-squared for all e_young and nu_poisson
             # put in solution matrix and anorm2 vector
@@ -85,13 +99,14 @@ class SnapshotSaver:
                 s_mat[:, i] = solver.uh_free
                 uh_anorm2_vec[i] = solver.uh_anorm2
             # matrix-LSQ data
-            data = solver.mls_funcs(*geo_params)
+            data = solver.mls_funcs(*geo_params).ravel()
             # save
             if solver.has_non_homo_dirichlet:
                 self.storage.append(data, a1=solver.a1, a2=solver.a2,
                                     f0=solver.f0,
                                     f1_dir=solver.f1_dir, f2_dir=solver.f2_dir,
                                     s_mat=s_mat, uh_anorm2=uh_anorm2_vec)
+
             else:
                 self.storage.append(data, a1=solver.a1, a2=solver.a2,
                                     f0=solver.f0,

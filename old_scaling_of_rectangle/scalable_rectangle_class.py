@@ -7,7 +7,8 @@ from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
 
-from assembly.get_plate_base import getPlateRec, getPlateTri
+from fem_quadrilateral.assembly.quadrilateral.get_plate import getPlate as getPlateRec
+from fem_quadrilateral.assembly.triangle.get_plate import getPlate as getPlateTri
 from old_scaling_of_rectangle.bilinear_quadrilateral.assembly_old import assemble_ints_quad
 from old_scaling_of_rectangle.linear_triangle.assembly_old import assemble_ints_tri
 
@@ -22,7 +23,7 @@ class ScalableRectangle:
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
     geo_mu_params = ["lx", "ly"]
 
-    def __init__(self, n, f_func, get_dirichlet_edge_func=None, element="lt"):
+    def __init__(self, n, f_func, get_dirichlet_edge_func=None, element="bq"):
         self.uh_rom = None
         self.last_n_rom = None
         self.v = None

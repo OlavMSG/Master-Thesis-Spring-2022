@@ -11,7 +11,7 @@ from old_scaling_of_rectangle.matrix_least_squares import matrix_least_squares
 
 
 def main():
-    n = 20
+    n = 2
     m = 3
     # lx, ly = 3, 1
     rec = ScalableRectangle(n, "bq")

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author: Olav M.S. Gran
-from Specialization-Project-fall-2021
+based on Specialization-Project-fall-2021
 """
 import os
 

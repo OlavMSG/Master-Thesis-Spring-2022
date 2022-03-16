@@ -19,12 +19,13 @@
 # code taken from Specialization-Project-fall-2021
 
 import numpy as np
-from assembly.get_plate_base import make_p, make_edge
+
+from fem_quadrilateral.assembly.get_plate_base import make_edge, make_p
 
 
 def getPlate(n, a=0, b=1):
     """
-    Get the plate (a,b)^2, Rectangle Elements
+    Get the plate (a,b)^2, Triangular elements
 
     Parameters
     ----------
@@ -50,8 +51,8 @@ def getPlate(n, a=0, b=1):
 
     # Generating elements.
 
-    n12 = (n - 1) * (n - 1)
-    tri = np.zeros((n12, 4), dtype=int)
+    n12 = (n - 1) * (n - 1) * 2
+    tri = np.zeros((n12, 3), dtype=int)
 
     def index_map(i, j):
         return i + n * j
@@ -62,11 +63,13 @@ def getPlate(n, a=0, b=1):
             tri[k, 0] = index_map(i, j)
             tri[k, 1] = index_map(i + 1, j)
             tri[k, 2] = index_map(i + 1, j + 1)
-            tri[k, 3] = index_map(i, j + 1)
+            k += 1
+            tri[k, 0] = index_map(i, j)
+            tri[k, 1] = index_map(i + 1, j + 1)
+            tri[k, 2] = index_map(i, j + 1)
             k += 1
 
     arg = np.argsort(tri[:, 0])
     tri = tri[arg]
     edge = make_edge(n)
     return p, tri, edge
-

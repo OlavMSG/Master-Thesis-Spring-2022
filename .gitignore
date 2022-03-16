@@ -131,3 +131,9 @@ dmypy.json
 #other
 .idea
 old_scaling_of_rectangle/pod_plots
+/fem_quadrilateral/test_storage1
+/fem_quadrilateral/test_storage2
+/fem_quadrilateral/test_storage_SR1
+/fem_quadrilateral/test_storage_SR2
+/fem_quadrilateral/plots_test_storage_SR1
+/fem_quadrilateral/plots_test_storage_SR2

@@ -7,11 +7,11 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sp
 
-from assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
+from fem_quadrilateral.assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
 from helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
-from assembly.neumann.linear import assemble_f_neumann
+from fem_quadrilateral.assembly.neumann.linear import assemble_f_neumann
 
 
 def get_basis_coef(p_vec):

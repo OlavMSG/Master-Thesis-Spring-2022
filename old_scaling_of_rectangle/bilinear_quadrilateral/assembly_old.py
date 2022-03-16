@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly.quadrilateral.bilinear import ddy_phi, ddx_phi, get_basis_coef
-from assembly.quadrilateral.gauss_quadrature import quadrature2D
+from fem_quadrilateral.assembly.quadrilateral.bilinear import ddy_phi, ddx_phi, get_basis_coef
+from fem_quadrilateral.assembly.quadrilateral.gauss_quadrature import quadrature2D
 from helpers import expand_index, index_map
 
 

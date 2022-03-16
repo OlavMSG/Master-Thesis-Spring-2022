@@ -7,8 +7,8 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sparse
 
-from assembly.triangle.linear import get_basis_coef
-from assembly.triangle.gauss_quadrature import get_area
+from fem_quadrilateral.assembly.triangle.linear import get_basis_coef
+from fem_quadrilateral.assembly.triangle.gauss_quadrature import get_area
 from helpers import expand_index, index_map
 
 
