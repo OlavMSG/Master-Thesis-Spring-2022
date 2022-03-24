@@ -180,34 +180,6 @@ class QuadrilateralSolver(BaseSolver):
             mu_orders.append(np.zeros(ant, dtype=int))
             mu_orders[-1][i] = 1
 
-        # param_index_dict = dict(zip(self.sym_geo_params, np.arange(len(self.sym_geo_params))))
-        # print(param_index_dict)
-
-        def get_param_list(order):
-            assert order >= 2  # only called on order >= 2
-            """if order == 0:
-                return [sym.S.One], [0], [0]
-            elif order == 1:
-                return mu_funcs, order_mu_params, order_mu_params"""
-            params_temp = mu_funcs.copy()
-            orders_temp = mu_orders.copy()
-            params_funcs = [sym.S.One]
-            params_orders = [np.zeros(ant, dtype=int)]
-            for _ in range(order - 1):
-                for param1, order1 in zip(params_temp, orders_temp):
-                    for param2, order2 in zip(mu_funcs, mu_orders):
-                        if (mul := param1 * param2) not in params_funcs:
-                            params_funcs.append(mul)
-                            params_orders.append(order1 + order2)
-                        # gives inf when mu_i = 0 for DR, another algorithm below handles this for SR and Q.
-                        """if (div := param1 / param2) not in params_funcs:
-                            params_funcs.append(div)
-                            params_orders.append(order1 - order2)"""
-
-                params_temp = params_funcs.copy()
-                orders_temp = params_orders.copy()
-            return params_funcs, params_orders
-
         # looking at Z =  top_z / det(jac)
         # 1 / det(jac) has gives a rational of form 1/(k + c*x)
         # Which has the Taylor expansion
@@ -237,8 +209,27 @@ class QuadrilateralSolver(BaseSolver):
         k_funcs = [sym.S.One]
         k_orders = [np.zeros(ant, dtype=int)]
         if k != 1:
-            if len(k.args) == len(self.sym_geo_params) and \
+            if self.is_jac_constant:
+                # Jacobian is constant, i.e k is constant
+                if len(k.args) == len(self.sym_geo_params) and \
+                        all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
+                    # k has one component, that is PI_{i=1} mu_i
+                    if (k_pow := 1 / k) not in k_funcs:
+                        k_funcs.append(k_pow)
+                        k_order = - np.ones(ant, dtype=int)
+                        k_order[-1] = 0  # set total to zero, we only have one term
+                        k_orders.append(k_order)
+                else:
+                    # k has multiple components, form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
+                    if (k_pow := 1 / k) not in k_funcs:
+                        k_funcs.append(k_pow)
+                        k_order = np.zeros(ant, dtype=int)
+                        k_order[-1] = -2  # set total to zero, we only have one term
+                        k_orders.append(k_order)
+
+            elif len(k.args) == len(self.sym_geo_params) and \
                     all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
+                # Jacobian is not constant and k has one component, that is PI_{i=1} mu_i
                 for order in range(self.mls_order):
                     if (k_pow := 1 / k ** (order + 1)) not in k_funcs:
                         k_funcs.append(k_pow)
@@ -246,6 +237,8 @@ class QuadrilateralSolver(BaseSolver):
                         k_order[-1] = 0  # set total to zero, we only have one term
                         k_orders.append(k_order)
             else:
+                # Jacobian is not constant and k has multiple components,
+                # form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
                 for order in range(self.mls_order // 2):
                     if (k_pow := 1 / k ** (order + 1)) not in k_funcs:
                         k_funcs.append(k_pow)
@@ -253,7 +246,22 @@ class QuadrilateralSolver(BaseSolver):
                         k_order[-1] = - 2 * (order + 1)  # set total, we have multiple terms
                         k_orders.append(k_order)
         # get c
-        c_funcs, c_orders = get_param_list(self.mls_order + 2)
+        params_temp = mu_funcs.copy()
+        orders_temp = mu_orders.copy()
+        c_funcs = [sym.S.One]
+        c_orders = [np.zeros(ant, dtype=int)]
+        # loop to get mls_order + 2 orders.
+        for it in range(self.mls_order + 1):
+            for param1, order1 in zip(params_temp, orders_temp):
+                for param2, order2 in zip(mu_funcs, mu_orders):
+                    if (mul := param1 * param2) not in c_funcs:
+                        c_funcs.append(mul)
+                        c_orders.append(order1 + order2)
+            # do not update in last loop
+            if it != self.mls_order:
+                params_temp = c_funcs.copy()
+                orders_temp = c_orders.copy()
+
         # put it all together
         sym_mls_funcs = [sym.S.One]
         mls_orders = [np.zeros(ant, dtype=int)]
@@ -651,7 +659,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu5: mu1, mu6: mu2,
                                                            mu7: 0, mu8: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
-    geo_param_range = (-0.25, 0.25)  # 1/4
+    geo_param_range = (-0.49, 0.49)  # < 1/2
 
     @staticmethod
     def mu_to_vertices_dict():
