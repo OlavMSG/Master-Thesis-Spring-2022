@@ -12,7 +12,7 @@ import tqdm
 
 import default_constants
 import helpers
-from .base_solver import BaseSolver
+from fem_quadrilateral.base_solver import BaseSolver
 from matrix_lsq import Storage, DiskStorage, Snapshot
 from itertools import product, repeat
 

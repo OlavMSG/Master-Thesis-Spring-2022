@@ -23,6 +23,7 @@ class BaseSolver(Protocol):
     sym_phi: sym.Matrix
     sym_params: sym.Matrix
     sym_geo_params: sym.Matrix
+    sym_mls_funcs: sym.Matrix
     n_free: int
     mls_has_been_setup: bool
     mls_funcs: Callable
@@ -58,8 +59,7 @@ class BaseSolver(Protocol):
                        nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
-    def matrix_lsq_setup(self, mls_order: int = 1, use_negative_mls_order: bool = False,
-                         ignore_jac_constant: bool = False):
+    def matrix_lsq_setup(self, mls_order: int = 1):
         ...
 
     def matrix_lsq(self, root: Path):
@@ -70,6 +70,10 @@ class BaseSolver(Protocol):
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float, mu7: float, mu8: float):
         ...
+
+    @property
+    def mls_num_kept(self) -> int:
+        return -1
 
     @property
     def n_rom(self) -> int:

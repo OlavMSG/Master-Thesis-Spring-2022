@@ -30,7 +30,14 @@ class ErrorComputer:
         assert len(self.storage) != 0
 
     def __call__(self, solver: BaseSolver, e_young: float, nu_poisson: float, *geo_params: float):
-        ...
+        root_mean = self.root / "mean"
+        mean_snapshot = Snapshot(root_mean)
+        geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
+        m = material_grid ** 2
+        ns = geo_gird ** num_geo_param * m
+        error2_vec = np.zeros(ns, dtype=float)
+
+
 
 if __name__ == '__main__':
     ...

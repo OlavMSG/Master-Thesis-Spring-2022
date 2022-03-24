@@ -33,6 +33,8 @@ sym_x_vec = sym.Matrix([x1, x2])
 a1, a2, a3, a4 = sym.symbols("a1:5", real=True)
 b1, b2, b3, b4 = sym.symbols("b1:5", real=True)
 mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8 = sym.symbols("mu1:9", real=True)
+lx, ly = sym.symbols("Lx, Ly", real=True)
+x0, y0 = sym.symbols("x0, y0", real=True)
 
 
 def sym_kron_product2x2(mat1: sym.Matrix, mat2: sym.Matrix) -> sym.Matrix:
@@ -49,8 +51,8 @@ class QuadrilateralSolver(BaseSolver):
     ref_plate = (0, 1)
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
     sym_phi = sym.Matrix([
-        x1 + mu1 * (1 - x1) * (1 - x2) + mu3 * x1 * (1 - x2) + mu5 * x1 * x2 + mu7 * (1 - x1) * x2,
-        x2 + mu2 * (1 - x1) * (1 - x2) + mu4 * x1 * (1 - x2) + mu6 * x1 * x2 + mu8 * (1 - x1) * x2
+        x0 + x1 + mu1 * (1 - x1) * (1 - x2) + mu3 * x1 * (1 - x2) + mu5 * x1 * x2 + mu7 * (1 - x1) * x2,
+        y0 + x2 + mu2 * (1 - x1) * (1 - x2) + mu4 * x1 * (1 - x2) + mu6 * x1 * x2 + mu8 * (1 - x1) * x2
     ])
     sym_params = sym.Matrix([x1, x2, mu1, mu2, mu3, mu4, mu5, mu6, mu7, mu8])
     geo_param_range = (-0.125, 0.125)  # 1/8
@@ -63,12 +65,13 @@ class QuadrilateralSolver(BaseSolver):
                                "mu3": "a2 - 1", "mu4": "b2",
                                "mu5": "a3 - 1", "mu6": "b3 - 1",
                                "mu7": "a4", "mu8": "b4 - 1"}
-        print("Given the Quadrilateral with vertices in (a1, b1), (a2, b2), (a3, b3) and (a4, b4) the parameters mu1:8 "
-              "are given as:")
+        print("(x0, y0): are the coordinates of the lower left corner, default (0,0)")
+        print("Given the Quadrilateral centered in (0,0) with vertices in (a1, b1), (a2, b2), (a3, b3) and (a4, "
+              "b4) the parameters mu1:8 are given as:")
         print(mu_to_vertices_dict)
 
     def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq"):
+                 element="bq", x0=0, y0=0):
 
         self.uh_rom = SolutionFunctionValues2D()
         self.f2_dir_rom_list = None
@@ -89,6 +92,7 @@ class QuadrilateralSolver(BaseSolver):
         self.n_full = self.n * self.n * 2
         self.is_assembled_and_free = False
 
+        self.lower_left_corner = (x0, y0)
         self._sym_setup()
 
         if element.lower() in self.implemented_elements:
@@ -147,10 +151,12 @@ class QuadrilateralSolver(BaseSolver):
                 self.has_non_homo_neumann = True
 
     def _sym_setup(self):
+        s = perf_counter()
+        self.sym_phi = self.sym_phi.subs({x0: self.lower_left_corner[0], y0: self.lower_left_corner[1]})
         self.sym_geo_params = self.sym_params[2:]
         self.phi = sym_Lambdify(self.sym_params, self.sym_phi)
         self.sym_jac = self.sym_phi.jacobian(sym_x_vec)
-        self.sym_det_jac = self.sym_jac.det()
+        self.sym_det_jac = self.sym_jac.det().expand()
         self.det_jac_func = sym_Lambdify(self.sym_params, self.sym_det_jac)
         self.is_jac_constant = (x1 and x2 not in self.sym_jac.free_symbols)
         sym_jac_inv_det = sym.Matrix([[self.sym_jac[1, 1], - self.sym_jac[0, 1]],
@@ -163,54 +169,109 @@ class QuadrilateralSolver(BaseSolver):
             for j in range(4):
                 self.z_mat_funcs[i, j] = np.vectorize(sym_Lambdify(self.sym_params, self.sym_z_mat[i, j]),
                                                       otypes=[float])
+        print("time sym_setup:", perf_counter() - s)
 
-    def _sym_mls_params_setup(self, ignore_jac_constant=False):
-        if self.is_jac_constant and not ignore_jac_constant:
-            mu_funcs = []
-            for i in range(4):
-                for j in range(4):
-                    param = self.sym_z_mat[i, j]
-                    if param not in mu_funcs and param != 0:
-                        mu_funcs.append(param)
-            self.sym_mls_funcs = sym.Matrix(mu_funcs).T
-        else:
-            # could use this on all, with negative_order = True
-            # and drop is_jac_constant
-            mu_funcs = self.sym_geo_params + [1]
-            order_mu_params = np.ones_like(mu_funcs)
-            order_mu_params[-1] = 0
+    def _sym_mls_params_setup(self):
+        s = perf_counter()
+        mu_funcs = [sym.S.One] + self.sym_geo_params
+        ant = len(self.sym_geo_params) + 1
+        mu_orders = [np.zeros(ant, dtype=int)]  # [mu1:mu8, total]
+        for i in range(len(self.sym_geo_params)):
+            mu_orders.append(np.zeros(ant, dtype=int))
+            mu_orders[-1][i] = 1
 
-            mu_params_temp = mu_funcs.copy()
-            order_mu_params_temp = order_mu_params.copy()
-            z_funcs = []
-            z_order = []
-            for _ in range(self.mls_order):
-                z_funcs = []
-                z_order = []
-                for param1, order1 in zip(mu_params_temp, order_mu_params_temp):
-                    for param2, order2 in zip(mu_funcs, order_mu_params):
-                        mul = param1 * param2
-                        if mul == 1:
-                            mul = sym.S.One
-                        if mul not in z_funcs:
-                            z_funcs.append(mul)
-                            z_order.append(order1 + order2)
-                        if self.use_negative_mls_order:
-                            div = param1 / param2
-                            if div == 1:
-                                div = sym.S.One
-                            if div not in z_funcs:
-                                z_funcs.append(div)
-                                z_order.append(order1 - order2)
+        # param_index_dict = dict(zip(self.sym_geo_params, np.arange(len(self.sym_geo_params))))
+        # print(param_index_dict)
 
-                mu_params_temp = z_funcs
-                order_mu_params_temp = z_order
-            z_funcs = np.asarray(z_funcs)
-            z_order = np.asarray(z_order)
-            arg_order = np.argwhere(np.abs(z_order) <= self.mls_order).ravel()
-            self.sym_mls_funcs = sym.Matrix(z_funcs[arg_order].tolist()).T
+        def get_param_list(order):
+            assert order >= 2  # only called on order >= 2
+            """if order == 0:
+                return [sym.S.One], [0], [0]
+            elif order == 1:
+                return mu_funcs, order_mu_params, order_mu_params"""
+            params_temp = mu_funcs.copy()
+            orders_temp = mu_orders.copy()
+            params_funcs = [sym.S.One]
+            params_orders = [np.zeros(ant, dtype=int)]
+            for _ in range(order - 1):
+                for param1, order1 in zip(params_temp, orders_temp):
+                    for param2, order2 in zip(mu_funcs, mu_orders):
+                        if (mul := param1 * param2) not in params_funcs:
+                            params_funcs.append(mul)
+                            params_orders.append(order1 + order2)
+                        # gives inf when mu_i = 0 for DR, another algorithm below handles this for SR and Q.
+                        """if (div := param1 / param2) not in params_funcs:
+                            params_funcs.append(div)
+                            params_orders.append(order1 - order2)"""
+
+                params_temp = params_funcs.copy()
+                orders_temp = params_orders.copy()
+            return params_funcs, params_orders
+
+        # looking at Z =  top_z / det(jac)
+        # 1 / det(jac) has gives a rational of form 1/(k + c*x)
+        # Which has the Taylor expansion
+        # 1 / (k + c*x) = 1/k - cx/k^2 + c^2x^2/k^3 - ... + ...
+        # for |x|<|k/c|
+
+        # c here takes the form a_0*1 + sum (b_i * mu_i)
+        # so c^order takes the form a_0*1 + sum (b_i * mu_i) + sum (c_ij * mu_i * mu_j)
+        # + sum (d_ijk * mu_i * mu_j * mu_k) + ...
+
+        # Furthermore, the numerator in Z takes the form
+        # a_0*1 + sum (b_i * mu_i) + sum (c_ij * mu_i * mu_j), i.e order 2
+
+        # looking at f(phi) * det(jac)
+        # f(phi) to the order m takes the same form as c^order above
+        # det(jac) takes the form
+        # a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
+        # and is contained in order 2
+
+        # putting it all together we have
+        # k, c and top_z for Z matrix, and
+        # c and (det_jac) top_z for f(phi) * det(jac).
+        # conclusion: we do not nees top_z and get_jac, if we compute c 2 orders higher
+
+        # get k from det(jac) by setting x1=x2=0
+        k = self.sym_det_jac.subs({x1: 0, x2: 0})
+        k_funcs = [sym.S.One]
+        k_orders = [np.zeros(ant, dtype=int)]
+        if k != 1:
+            if len(k.args) == len(self.sym_geo_params) and \
+                    all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
+                for order in range(self.mls_order):
+                    if (k_pow := 1 / k ** (order + 1)) not in k_funcs:
+                        k_funcs.append(k_pow)
+                        k_order = -(order + 1) * np.ones(ant, dtype=int)
+                        k_order[-1] = 0  # set total to zero, we only have one term
+                        k_orders.append(k_order)
+            else:
+                for order in range(self.mls_order // 2):
+                    if (k_pow := 1 / k ** (order + 1)) not in k_funcs:
+                        k_funcs.append(k_pow)
+                        k_order = np.zeros(ant, dtype=int)
+                        k_order[-1] = - 2 * (order + 1)  # set total, we have multiple terms
+                        k_orders.append(k_order)
+        # get c
+        c_funcs, c_orders = get_param_list(self.mls_order + 2)
+        # put it all together
+        sym_mls_funcs = [sym.S.One]
+        mls_orders = [np.zeros(ant, dtype=int)]
+        for param1, order1 in zip(k_funcs, k_orders):
+            for param2, order2 in zip(c_funcs, c_orders):
+                if (mul := param1 * param2) not in sym_mls_funcs:
+                    sym_mls_funcs.append(mul)
+                    mls_orders.append(order1 + order2)
+
+        sym_mls_funcs = np.asarray(sym_mls_funcs)
+        arg_order = np.array(list(np.all(np.abs(order) <= self.mls_order)
+                                  and ((np.where(order > 0, order, 0).sum() <= self.mls_order)
+                                       and (-np.where(order < 0, order, 0).sum()) <= self.mls_order)
+                                  for order in mls_orders))
+        self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[arg_order].tolist()).T
         # lambdify
         self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
+        print("time sym_mls_params_setup:", perf_counter() - s)
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         if self.element in ("linear triangle", "lt"):
@@ -301,6 +362,7 @@ class QuadrilateralSolver(BaseSolver):
         # x and y on the dirichlet_edge
         x_vec = self.p[self.dirichlet_edge_index][:, 0]
         y_vec = self.p[self.dirichlet_edge_index][:, 1]
+
         # lifting function
         self.rg = helpers.FunctionValues2D.from_2xn(self.dirichlet_bc_func(x_vec, y_vec)).flatt_values
 
@@ -315,7 +377,7 @@ class QuadrilateralSolver(BaseSolver):
         self.geo_params = geo_params
         if self.element in ("linear triangle", "lt"):
             self.p, self.tri, self.edge = assembly.triangle.get_plate.getPlate(self.n)
-            self.ints, self.f0_full \
+            self.a1_full, self.a2_full, self.f0_full \
                 = assembly.triangle.linear.assemble_ints_and_f_body_force(self.n, self.p, self.tri,
                                                                           self.z_mat_funcs, self.geo_params,
                                                                           self.f_func, self.f_func_non_zero,
@@ -325,7 +387,7 @@ class QuadrilateralSolver(BaseSolver):
                                                                             self.neumann_bc_func, self.nq)
         else:
             self.p, self.tri, self.edge = assembly.quadrilateral.get_plate.getPlate(self.n)
-            self.ints, self.f0_full \
+            self.a1_full, self.a2_full, self.f0_full \
                 = assembly.quadrilateral.bilinear.assemble_ints_and_f_body_force(self.n, self.p, self.tri,
                                                                                  self.z_mat_funcs, self.geo_params,
                                                                                  self.f_func, self.f_func_non_zero,
@@ -334,7 +396,6 @@ class QuadrilateralSolver(BaseSolver):
                 self.f0_full += assembly.quadrilateral.bilinear.assemble_f_neumann(self.n, self.p, self.neumann_edge,
                                                                                    self.neumann_bc_func, self.nq)
 
-        self.a1_full, self.a2_full = helpers.compute_a1_and_a2(*self.ints)
         self.a1_full = self.a1_full.tocsr()
         self.a2_full = self.a2_full.tocsr()
 
@@ -457,12 +518,11 @@ class QuadrilateralSolver(BaseSolver):
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
                   "The property uh_rom, extra properties values, x and y are available.")
 
-    def matrix_lsq_setup(self, mls_order: int = 1, use_negative_mls_order: bool = False,
-                         ignore_jac_constant: bool = False):
+    def matrix_lsq_setup(self, mls_order: int = 1):
+        assert mls_order >= 0
         self.mls_order = mls_order
-        self.use_negative_mls_order = use_negative_mls_order
 
-        self._sym_mls_params_setup(ignore_jac_constant=ignore_jac_constant)
+        self._sym_mls_params_setup()
         self.mls_has_been_setup = True
 
     def save_snapshots(self, root: Path, geo_grid: int,
@@ -503,6 +563,41 @@ class QuadrilateralSolver(BaseSolver):
 
     def get_u_exact(self, u_exact_func):
         return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
+
+    def get_geo_param_limit_estimate(self, num, round_decimal=6):
+        # 1 / det(jac) has gives a rational of form 1/(k + c*x)
+        # Which has the Taylor expansion
+        # 1 / (k + c*x) = 1/k - cx/k^2 + c^2x^2/k^3 - ... + ...
+        # for |x|<|k/c|
+        # now max|x| = 1, so we need |c| < |k|
+        # get k from det(jac) by setting x1=x2=0
+        k = self.sym_det_jac.subs({x1: 0, x2: 0})
+        k_func = sym_Lambdify(self.sym_geo_params, k)
+        # get c from det(jac) via coeff and assuming x1=x2=1
+        c = self.sym_det_jac.coeff(x1) + self.sym_det_jac.coeff(x2)
+        c_func = sym_Lambdify(self.sym_geo_params, c)
+
+        from itertools import product, repeat
+        import tqdm
+        check_vec = np.linspace(0, 2, num)
+        max_geo_params = 0.0
+        ant = len(self.sym_geo_params)
+        for geo_params in tqdm.tqdm(product(*repeat(check_vec, ant)), desc="Iterating"):
+            if abs(c_func(*geo_params)) < abs(k_func(*geo_params)):
+                pot_max = max(geo_params)
+                if (abs(c_func(*repeat(pot_max, ant))) < abs(k_func(*repeat(pot_max, ant)))) or \
+                        (abs(c_func(*repeat(-pot_max, ant))) < abs(k_func(*repeat(-pot_max, ant)))):
+                    if pot_max > max_geo_params:
+                        max_geo_params = pot_max
+
+        max_geo_params = round(max_geo_params, round_decimal)
+        print(f"The estimate limit for the parameters is ({-max_geo_params}, {max_geo_params}).")
+
+    @property
+    def mls_num_kept(self) -> int:
+        if not self._mls_is_computed:
+            raise ValueError("Matrix least square is not computed.")
+        return self._mls.num_kept
 
     @property
     def n_rom(self) -> int:
@@ -564,13 +659,14 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
     @staticmethod
     def mu_to_vertices_dict():
         mu_to_vertices_dict = {"mu1": "a3 - 1", "mu2": "b3 - 1"}
-        print("Given the \"Rectangle\" with vertices in (0, 0), (0, 1), (a3, b3) and (0, 1) the parameters mu1:2 "
-              "are given as:")
+        print("(x0, y0): are the coordinates of the lower left corner, default (0,0)")
+        print("Given the \"Rectangle\" centered in (0,0) with vertices in (0, 0), (0, 1), (a3, b3) and (0, "
+              "1) the parameters mu1:2 are given as:")
         print(mu_to_vertices_dict)
 
     def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq"):
-        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element)
+                 element="bq", x0=0, y0=0):
+        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
 
     def assemble(self, mu1: float, mu2: float, **kwargs: float):
         self._assemble(np.array([mu1, mu2]))
@@ -578,22 +674,26 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
 
 class ScalableRectangleSolver(QuadrilateralSolver):
     sym_phi = sym.expand(QuadrilateralSolver.sym_phi.subs({mu1: 0, mu2: 0,
-                                                           mu3: mu1 - 1, mu4: 0,
-                                                           mu5: mu1 - 1, mu6: mu2 - 1,
-                                                           mu7: 0, mu8: mu2 - 1}))
-    sym_params = sym.Matrix([x1, x2, mu1, mu2])
-    geo_param_range = (0.1, 5)
+                                                           mu3: lx - 1, mu4: 0,
+                                                           mu5: lx - 1, mu6: ly - 1,
+                                                           mu7: 0, mu8: ly - 1}))
+    sym_params = sym.Matrix([x1, x2, lx, ly])
+    geo_param_range = (0.1, 5.1)
 
     @staticmethod
     def mu_to_vertices_dict():
-        mu_to_vertices_dict = {"mu1": "Lx", "mu2": "Ly"}
-        print("Given the \"Rectangle\" with vertices in (0, 0), (0, Lx), (Lx, Ly) and (0, Ly) the parameters mu1:2 "
-              "are given as:")
+        mu_to_vertices_dict = {"lx": "Lx", "ly": "Ly"}
+        print("(x0, y0): are the coordinates of the lower left corner, default (0,0)")
+        print("Given the \"Rectangle\" centered in (0,0) with vertices in (0, 0), (0, Lx), (Lx, Ly) and (0, "
+              "Ly) the parameters lx and ly are given as:")
         print(mu_to_vertices_dict)
 
     def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq"):
-        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element)
+                 element="bq", x0=0, y0=0):
+        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
 
-    def assemble(self, mu1: float, mu2: float, **kwargs: float):
-        self._assemble(np.array([mu1, mu2]))
+    def assemble(self, lx: float, ly: float, **kwargs: float):
+        self._assemble(np.array([lx, ly]))
+
+    def get_geo_param_limit_estimate(self, **kwargs):
+        print("The limit for the parameters is (0, inf).")

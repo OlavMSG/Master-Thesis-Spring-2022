@@ -133,9 +133,9 @@ def ddy_phi(x, y, ck, i):
     return ck[2, i] + ck[3, i] * x
 
 
-def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
+def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
     """
-    Assemble the local contributions to the 6 integrals on an element.
+    Assemble the local contributions to an element.
 
     Parameters
     ----------
@@ -154,23 +154,14 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
 
     Returns
     -------
-    int1_local : np.array
-        local contribution to matrix int1.
-    int2_local : np.array
-        local contribution to matrix int2.
-    int3_local : np.array
-        local contribution to matrix int3.
-    int4_local : np.array
-        local contribution to matrix int4.
-    int5_local : np.array
-        local contribution to matrix int5.
+    a1_local : np.array
+        local contribution to matrix a1.
+    a2_local : np.array
+        local contribution to matrix a2.
 
     """
-    int1_local = np.zeros((8, 8), dtype=float)
-    int2_local = np.zeros((8, 8), dtype=float)
-    int3_local = np.zeros((8, 8), dtype=float)
-    int4_local = np.zeros((8, 8), dtype=float)
-    int5_local = np.zeros((8, 8), dtype=float)
+    a1_local = np.zeros((8, 8), dtype=float)
+    a2_local = np.zeros((8, 8), dtype=float)
 
     # since the derivatives are non-constant we need to do the all integrals in the loop
     # matrices are symmetric by construction, so only compute on part.
@@ -215,11 +206,11 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
             int1_00 = quadrature2D(*p_mat, int1_00_func, nq_x, nq_y)
             int2_00 = quadrature2D(*p_mat, int2_00_func, nq_x, nq_y)
 
-            int1_local[ki0, kj0] = int1_00
-            int2_local[ki0, kj0] = int2_00
+            a1_local[ki0, kj0] = int1_00 + 0.5 * int2_00
+            a2_local[ki0, kj0] = int1_00
             if ki0 != kj0:
-                int1_local[kj0, ki0] = int1_00
-                int2_local[kj0, ki0] = int2_00
+                a1_local[kj0, ki0] = int1_00 + 0.5 * int2_00
+                a2_local[kj0, ki0] = int1_00
 
             # u 1-comp is nonzero, di = 0
             # v 2-comp is nonzero, dj = 1
@@ -240,13 +231,11 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
             int4_01 = quadrature2D(*p_mat, int4_01_func, nq_x, nq_y)
             int5_01 = quadrature2D(*p_mat, int5_01_func, nq_x, nq_y)
 
-            int3_local[ki0, kj1] = int3_01
-            int4_local[ki0, kj1] = int4_01
-            int5_local[ki0, kj1] = int5_01
+            a1_local[ki0, kj1] = 0.5 * (int3_01 + int4_01)
+            a2_local[ki0, kj1] = int3_01 + int5_01
             if ki0 != kj1:
-                int3_local[kj1, ki0] = int3_01
-                int4_local[kj1, ki0] = int4_01
-                int5_local[kj1, ki0] = int5_01
+                a1_local[kj1, ki0] = 0.5 * (int3_01 + int4_01)
+                a2_local[kj1, ki0] = int3_01 + int5_01
 
             if i != j:
                 # u 2-comp is nonzero, di = 1
@@ -257,13 +246,11 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
                 # int4_10 = int5_01
                 # int5_10 = int4_01
 
-                int3_local[ki1, kj0] = int3_01
-                int4_local[ki1, kj0] = int5_01
-                int5_local[ki1, kj0] = int4_01
+                a1_local[ki1, kj0] = 0.5 * (int3_01 + int5_01)
+                a2_local[ki1, kj0] = int3_01 + int4_01
                 if ki1 != kj0:
-                    int3_local[kj0, ki1] = int3_01
-                    int4_local[kj0, ki1] = int5_01
-                    int5_local[kj0, ki1] = int4_01
+                    a1_local[kj0, ki1] = 0.5 * (int3_01 + int5_01)
+                    a2_local[kj0, ki1] = int3_01 + int4_01
 
             # u 2-comp is nonzero, di = 1
             # v 2-comp is nonzero, dj = 1
@@ -271,13 +258,13 @@ def assemble_ints_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
             # int1_11 = int2_00
             # int2_11 = int1_00
 
-            int1_local[ki1, kj1] = int2_00
-            int2_local[ki1, kj1] = int1_00
+            a1_local[ki1, kj1] = int2_00 + 0.5 * int1_00
+            a2_local[ki1, kj1] = int2_00
             if ki1 != kj1:
-                int1_local[kj1, ki1] = int2_00
-                int2_local[kj1, ki1] = int1_00
+                a1_local[kj1, ki1] = int2_00 + 0.5 * int1_00
+                a2_local[kj1, ki1] = int2_00
 
-    return int1_local, int2_local, int3_local, int4_local, int5_local
+    return a1_local, a2_local
 
 
 def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
@@ -344,8 +331,10 @@ def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f
 
     Returns
     -------
-    ints: tuple
-        tuple of sp matrices of ints
+    a1 : np.array
+        full matrix a1.
+    a2 : np.array
+        full matrix a2.
     f_body_force : np.array
         load vector for the linear form.
     """
@@ -355,11 +344,8 @@ def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f
     # Stiffness matrices
     # dok_matrix
     # Allows for efficient O(1) access of individual elements
-    int1 = sp.dok_matrix((n2d, n2d), dtype=float)
-    int2 = sp.dok_matrix((n2d, n2d), dtype=float)
-    int3 = sp.dok_matrix((n2d, n2d), dtype=float)
-    int4 = sp.dok_matrix((n2d, n2d), dtype=float)
-    int5 = sp.dok_matrix((n2d, n2d), dtype=float)
+    a1 = sp.dok_matrix((n2d, n2d), dtype=float)
+    a2 = sp.dok_matrix((n2d, n2d), dtype=float)
     # load vector
     f_body_force = np.zeros(n2d, dtype=float)
     for nk in tri:
@@ -373,17 +359,14 @@ def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f
         # and basis functions coef. or Jacobin inverse
         ck = get_basis_coef(p[nk, :])
         # assemble local contributions
-        ints_local = assemble_ints_local(ck, z_mat_funcs, geo_params, p[nk, :], nq_x, nq_y)
+        a1_local, a2_local = assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p[nk, :], nq_x, nq_y)
         # expand the index
         expanded_nk = expand_index(nk)
         index = np.ix_(expanded_nk, expanded_nk)
         # add local contributions
-        int1[index] += ints_local[0]
-        int2[index] += ints_local[1]
-        int3[index] += ints_local[2]
-        int4[index] += ints_local[3]
-        int5[index] += ints_local[4]
+        a1[index] += a1_local
+        a2[index] += a2_local
         if f_func_is_not_zero:
             # load vector
             f_body_force[expanded_nk] += assemble_f_local(ck, f_func, p[nk, :], nq_x, nq_y)
-    return (int1, int2, int3, int4, int5), f_body_force
+    return a1, a2, f_body_force
