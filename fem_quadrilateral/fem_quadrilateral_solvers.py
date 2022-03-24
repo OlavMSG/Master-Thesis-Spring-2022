@@ -370,9 +370,6 @@ class QuadrilateralSolver(BaseSolver):
         self.f1_dir = self.a1_full[dirichlet_xy_index] @ self.rg
         self.f2_dir = self.a2_full[dirichlet_xy_index] @ self.rg
 
-        # self.a1_dir = self.a1_full[dirichlet_xy_index]
-        # self.a2_dir = self.a2_full[dirichlet_xy_index]
-
     def _assemble(self, geo_params):
         self.geo_params = geo_params
         if self.element in ("linear triangle", "lt"):
