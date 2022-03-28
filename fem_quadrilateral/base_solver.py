@@ -68,7 +68,7 @@ class BaseSolver(Protocol):
     def build_rb_model(self, root: Path, eps_pod: Optional[float] = None):
         ...
 
-    def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float, mu7: float, mu8: float):
+    def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         ...
 
     @property
