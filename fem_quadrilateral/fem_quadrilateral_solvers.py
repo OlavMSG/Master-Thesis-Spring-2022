@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from importlib.util import find_spec
+from itertools import product, repeat
 from pathlib import Path
 from typing import Optional, Tuple
 from functools import partial
@@ -12,6 +13,7 @@ from scipy.sparse.linalg import spsolve
 import numpy as np
 from time import perf_counter
 from scipy.special import legendre
+import tqdm
 
 import helpers
 from . import assembly
@@ -177,12 +179,7 @@ class QuadrilateralSolver(BaseSolver):
 
     def _sym_mls_params_setup(self):
         s = perf_counter()
-        mu_funcs = [sym.S.One] + self.sym_geo_params
         ant = len(self.sym_geo_params) + 1
-        mu_orders = [np.zeros(ant, dtype=int)]  # [mu1:mu8, total]
-        for i in range(len(self.sym_geo_params)):
-            mu_orders.append(np.zeros(ant, dtype=int))
-            mu_orders[-1][i] = 1
 
         # looking at Z =  top_z / det(jac)
         # 1 / det(jac) has gives a rational of form 1/(k + c*x)
@@ -219,14 +216,12 @@ class QuadrilateralSolver(BaseSolver):
                     # k has one component, that is PI_{i=1} mu_i
                     k_order = - np.ones(ant, dtype=int)
                     k_order[-1] = 0  # set total to zero, we only have one term
-                    if not any((k_order == order).all() for order in k_orders):
-                        k_orders.append(k_order)
+                    k_orders.append(k_order)
                 else:
                     # k has multiple components, form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
                     k_order = np.zeros(ant, dtype=int)
                     k_order[-1] = -2  # set total to zero, we only have one term
-                    if not any((k_order == order).all() for order in k_orders):
-                        k_orders.append(k_order)
+                    k_orders.append(k_order)
 
             elif len(k_term.args) == len(self.sym_geo_params) and \
                     all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
@@ -234,37 +229,29 @@ class QuadrilateralSolver(BaseSolver):
                 for order in range(self.mls_order):
                     k_order = -(order + 1) * np.ones(ant, dtype=int)
                     k_order[-1] = 0  # set total to zero, we only have one term
-                    if not any((k_order == order).all() for order in k_orders):
-                        k_orders.append(k_order)
+                    k_orders.append(k_order)
             else:
                 # Jacobian is not constant and k has multiple components,
                 # form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
                 for order in range(self.mls_order // 2):
                     k_order = np.zeros(ant, dtype=int)
                     k_order[-1] = - 2 * (order + 1)  # set total, we have multiple terms
-                    if not any((k_order == order).all() for order in k_orders):
-                        k_orders.append(k_order)
+                    k_orders.append(k_order)
+        k_orders = np.unique(k_orders, axis=0)
+
         # get c
-        orders_temp = mu_orders.copy()
-        c_orders = [np.zeros(ant, dtype=int)]
-        # loop to get mls_order + 2 orders.
-        for it in range(self.mls_order + 1):
-            for order1 in orders_temp:
-                for order2 in mu_orders:
-                    sum_order = order1 + order2
-                    if not any((sum_order == order).all() for order in c_orders):
-                        c_orders.append(sum_order)
-            # do not update in last loop
-            if it != self.mls_order:
-                orders_temp = c_orders.copy()
+        c = np.array(list(product(*repeat(np.arange(self.mls_order + 3), ant - 1))))
+        c = c[np.argwhere(np.sum(c, axis=1) <= self.mls_order + 2).ravel()]
+        c_orders = np.zeros((c.shape[0], c.shape[1] + 1), dtype=int)
+        c_orders[:, :-1] = c[np.argsort(np.sum(c, axis=1))]
 
         # put it all together
         mls_orders = [np.zeros(ant, dtype=int)]
         for order1 in k_orders:
             for order2 in c_orders:
                 sum_order = order1 + order2
-                if not any((sum_order == order).all() for order in mls_orders):
-                    mls_orders.append(sum_order)
+                mls_orders.append(sum_order)
+        mls_orders = np.unique(mls_orders, axis=0)
 
         # get orders to use
         arg_order = np.array(list(np.all(np.abs(order) <= self.mls_order)
@@ -276,14 +263,15 @@ class QuadrilateralSolver(BaseSolver):
 
         # make the mls_funcs
         sym_mls_funcs = sym.Matrix([sym.S.One] * len(mls_orders))
-        for n, order in enumerate(mls_orders):
+        for n, order in tqdm.tqdm(enumerate(mls_orders), desc="computing mls functions"):
             for i, mu_i in enumerate(self.sym_geo_params):  # may need changing...
                 if order[i] >= 0:
                     # get legendre
                     p = legendre(order[i]).coef[::-1]
                     poly = sym.S.Zero
                     for k in range(order[i] + 1):
-                        poly += p[k] * mu_i ** k
+                        if abs(pk := p[k]) > 1e-14:
+                            poly += pk * mu_i ** k
                     if poly != 0:
                         sym_mls_funcs[n] *= poly
                 else:
@@ -600,9 +588,6 @@ class QuadrilateralSolver(BaseSolver):
         cx = self.sym_det_jac - k
         c_func = sym_Lambdify(self.sym_geo_params, c)
         cx_func = sym_Lambdify(self.sym_params, cx)
-
-        from itertools import product, repeat
-        import tqdm
         check_vec = np.linspace(0, 2 / len(self.sym_geo_params), num)
         max_geo_params = 0.0
         ant = len(self.sym_geo_params)
