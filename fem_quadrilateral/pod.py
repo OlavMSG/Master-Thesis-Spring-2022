@@ -52,6 +52,11 @@ class PodWithEnergyNorm:
 
         for i, snapshot in tqdm.tqdm(enumerate(self.storage), desc="Loading data"):
             s_mat[:, i * m:(i + 1) * m] = snapshot["s_mat"]
+        if (s_mat == 0).all():
+            error_text = "Solution matrix is zero, can not compute POD for building a reduced model. " \
+                         + "The most likely cause is f_func=0, dirichlet_bc_func=0 and neumann_bc_func=0, " \
+                         + "where two last may be None."
+            raise ValueError(error_text)
 
         if ns <= n_free:
             # build correlation matrix

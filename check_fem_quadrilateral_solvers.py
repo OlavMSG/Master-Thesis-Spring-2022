@@ -7,24 +7,24 @@ from fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleS
 
 
 def main():
-    n = 3
+    n = 2
     order = 2
-    q = QuadrilateralSolver(n, 0)
+    """q = QuadrilateralSolver(n, 0)
     print(q.sym_phi)
     print(q.sym_jac)
     print(q.sym_det_jac)
     q.matrix_lsq_setup(mls_order=order)
     print(q.sym_mls_funcs)
-    print(len(q.sym_mls_funcs))
+    print(len(q.sym_mls_funcs))"""
     # q.get_geo_param_limit_estimate(5)
-    print("------------")
+    """print("------------")
     d = DraggableCornerRectangleSolver(n, 0)
     print(d.sym_phi)
     print(d.sym_jac)
     print(d.sym_det_jac)
     d.matrix_lsq_setup(mls_order=order)
     print(d.sym_mls_funcs)
-    print(len(d.sym_mls_funcs))
+    print(len(d.sym_mls_funcs))"""
     """d.matrix_lsq_setup()
     print(d.sym_mls_funcs)
     print(d.mls_funcs(.3, .5).ravel())

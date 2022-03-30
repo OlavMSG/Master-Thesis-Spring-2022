@@ -9,6 +9,7 @@ from typing import Protocol, Optional, List, Tuple, Callable, Union
 from importlib.util import find_spec
 import numpy as np
 import scipy.sparse as sp
+from fem_quadrilateral.solution_function_class import SolutionFunctionValues2D
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -40,6 +41,8 @@ class BaseSolver(Protocol):
     edge: np.ndarray
     dirichlet_edge: np.ndarray
     neumann_edge: np.ndarray
+    uh: SolutionFunctionValues2D
+    uh_rom: SolutionFunctionValues2D
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         ...

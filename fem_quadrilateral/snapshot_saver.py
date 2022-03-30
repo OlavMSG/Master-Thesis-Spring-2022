@@ -61,6 +61,8 @@ class SnapshotSaver:
         a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
         # for now save
         grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
+        ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
+        mode = np.array([self.mode])
         # save it
         root_mean = self.root / "mean"
         root_mean.mkdir(parents=True, exist_ok=True)
@@ -71,6 +73,7 @@ class SnapshotSaver:
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
                      grid_params=grid_params,
+                     ranges=ranges, mode=mode,
                      a1=solver.a1, a2=solver.a2,
                      f0=solver.f0,
                      f1_dir=solver.f1_dir, f2_dir=solver.f2_dir)
@@ -80,6 +83,7 @@ class SnapshotSaver:
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
                      grid_params=grid_params,
+                     ranges=ranges, mode=mode,
                      a1=solver.a1, a2=solver.a2,
                      f0=solver.f0)
 
@@ -130,11 +134,17 @@ class SnapshotSaver:
 
 
 if __name__ == '__main__':
-    from fem_quadrilateral import DraggableCornerRectangleSolver
+    from fem_quadrilateral import ScalableRectangleSolver
 
-    d = DraggableCornerRectangleSolver(3, 0)
+
+    def dir_bc(x, y):
+        return x, 0
+
+
+    d = ScalableRectangleSolver(2, 0, dirichlet_bc_func=dir_bc)
+    d.matrix_lsq_setup(2)
     root = Path("test_storage1")
-    s = SnapshotSaver(root, 3, d.geo_param_range, material_grid=3)
+    s = SnapshotSaver(root, 5, d.geo_param_range, material_grid=3)
     # print(s.get_parameter_matrix(d))
     s(d)
 

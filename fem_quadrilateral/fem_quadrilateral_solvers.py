@@ -243,10 +243,12 @@ class QuadrilateralSolver(BaseSolver):
         c = np.array(list(product(*repeat(np.arange(self.mls_order + 3), ant - 1))))
         c = c[np.argwhere(np.sum(c, axis=1) <= self.mls_order + 2).ravel()]
         c_orders = np.zeros((c.shape[0], c.shape[1] + 1), dtype=int)
-        c_orders[:, :-1] = c[np.argsort(np.sum(c, axis=1))]
+        c_orders[:, :-1] = c
 
         # put it all together
         mls_orders = [np.zeros(ant, dtype=int)]
+        # print(c_orders)
+        # print(k_orders)
         for order1 in k_orders:
             for order2 in c_orders:
                 sum_order = order1 + order2
@@ -259,18 +261,19 @@ class QuadrilateralSolver(BaseSolver):
                                        and (-np.where(order < 0, order, 0).sum()) <= self.mls_order)
                                   for order in mls_orders))
 
-        mls_orders = np.asarray(mls_orders)[arg_order]
-
+        mls_orders = mls_orders[arg_order]
+        # print(mls_orders)
+        p_list = [legendre(p).coeffs[::-1] for p in range(self.mls_order + 1)]
         # make the mls_funcs
         sym_mls_funcs = sym.Matrix([sym.S.One] * len(mls_orders))
         for n, order in tqdm.tqdm(enumerate(mls_orders), desc="computing mls functions"):
             for i, mu_i in enumerate(self.sym_geo_params):  # may need changing...
                 if order[i] >= 0:
                     # get legendre
-                    p = legendre(order[i]).coef[::-1]
+                    p = p_list[order[i]]
                     poly = sym.S.Zero
                     for k in range(order[i] + 1):
-                        if abs(pk := p[k]) > 1e-14:
+                        if abs(pk := p[k]) > 1e-10:
                             poly += pk * mu_i ** k
                     if poly != 0:
                         sym_mls_funcs[n] *= poly
@@ -281,7 +284,7 @@ class QuadrilateralSolver(BaseSolver):
             if order[-1] != 0:
                 sym_mls_funcs[n] *= k_term ** order[-1]
 
-        self.sym_mls_funcs = sym_mls_funcs.T
+        self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
         # lambdify
         self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
         print("time sym_mls_params_setup:", perf_counter() - s)
@@ -430,6 +433,8 @@ class QuadrilateralSolver(BaseSolver):
                     f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
             else:
                 # for now, may be changed
+                if not self.mls_has_been_setup:
+                    self.matrix_lsq_setup()
                 data = self.mls_funcs(*geo_params)
                 a1_fit = mls_compute_from_fit(data, self._mls.a1_list)
                 a2_fit = mls_compute_from_fit(data, self._mls.a2_list)
@@ -477,6 +482,8 @@ class QuadrilateralSolver(BaseSolver):
         elif len(geo_params) != len(self.sym_geo_params):
             raise ValueError(
                 f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
+        if not self.mls_has_been_setup:
+            self.matrix_lsq_setup()
 
         if n_rom is None:
             # for now, may be changed
