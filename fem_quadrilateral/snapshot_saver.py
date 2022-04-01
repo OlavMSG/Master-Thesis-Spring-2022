@@ -12,13 +12,13 @@ import tqdm
 
 import default_constants
 import helpers
-from fem_quadrilateral.base_solver import BaseSolver
+from .base_solver import BaseSolver
 from matrix_lsq import Storage, DiskStorage, Snapshot
 from itertools import product, repeat
 
 
 class SnapshotSaver:
-    storage: Storage
+    storage: DiskStorage
     root: Path
     geo_gird: int
     geo_range: Tuple[float, float]
@@ -48,9 +48,6 @@ class SnapshotSaver:
         assert len(self.storage) == 0
 
     def __call__(self, solver: BaseSolver):
-        if not solver.mls_has_been_setup:
-            solver.matrix_lsq_setup()
-
         # save the mean as a special Snapshot.
         geo_mean = np.mean(self.geo_range)
         e_mean = np.mean(self.e_young_range)
@@ -62,7 +59,8 @@ class SnapshotSaver:
         # for now save
         grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
         ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
-        mode = np.array([self.mode])
+        mode_and_element = np.array([self.mode, solver.element])
+        mls_order_and_llc = np.array([solver.mls_order, *solver.lower_left_corner])
         # save it
         root_mean = self.root / "mean"
         root_mean.mkdir(parents=True, exist_ok=True)
@@ -72,18 +70,18 @@ class SnapshotSaver:
                      p=solver.p, tri=solver.tri, edge=solver.edge,
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
-                     grid_params=grid_params,
-                     ranges=ranges, mode=mode,
+                     grid_params=grid_params, ranges=ranges,
+                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc,
                      a1=solver.a1, a2=solver.a2,
-                     f0=solver.f0,
+                     f0=solver.f0, rg=solver.rg,
                      f1_dir=solver.f1_dir, f2_dir=solver.f2_dir)
         else:
             Snapshot(root_mean, data_mean, a=a_mean,
                      p=solver.p, tri=solver.tri, edge=solver.edge,
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
-                     grid_params=grid_params,
-                     ranges=ranges, mode=mode,
+                     grid_params=grid_params, ranges=ranges,
+                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc,
                      a1=solver.a1, a2=solver.a2,
                      f0=solver.f0)
 
@@ -131,21 +129,3 @@ class SnapshotSaver:
                 path.unlink()
             root_mean.rmdir()
             self.storage.vipe(user_confirm=False)
-
-
-if __name__ == '__main__':
-    from fem_quadrilateral import ScalableRectangleSolver
-
-
-    def dir_bc(x, y):
-        return x, 0
-
-
-    d = ScalableRectangleSolver(2, 0, dirichlet_bc_func=dir_bc)
-    d.matrix_lsq_setup(2)
-    root = Path("test_storage1")
-    s = SnapshotSaver(root, 5, d.geo_param_range, material_grid=3)
-    # print(s.get_parameter_matrix(d))
-    s(d)
-
-    # s.vipe()

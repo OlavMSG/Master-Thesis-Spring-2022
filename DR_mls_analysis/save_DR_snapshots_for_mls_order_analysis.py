@@ -34,7 +34,7 @@ def save_snapshots(p_order):
         d.save_snapshots(root, mu_grid)
     else:
         d.matrix_lsq(root)
-        print(d.sym_mls_funcs)
+        print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
     print("-" * 50)
 
 

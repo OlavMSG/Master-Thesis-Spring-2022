@@ -7,8 +7,8 @@ from __future__ import annotations
 from importlib.util import find_spec
 from itertools import product, repeat
 from pathlib import Path
-from typing import Optional, Tuple
-from functools import partial
+from typing import Optional, Tuple, Callable, Union
+
 from scipy.sparse.linalg import spsolve
 import numpy as np
 from time import perf_counter
@@ -76,8 +76,10 @@ class QuadrilateralSolver(BaseSolver):
               "b4) the parameters mu1:8 are given as:")
         print(mu_to_vertices_dict)
 
-    def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq", x0=0, y0=0):
+    def __init__(self, n: int, f_func: Union[Callable, int],
+                 dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None,
+                 element: str = "bq", x0: float = 0, y0: float = 0):
 
         self.uh_rom = SolutionFunctionValues2D()
         self.f2_dir_rom_list = None
@@ -92,11 +94,12 @@ class QuadrilateralSolver(BaseSolver):
         self.uh = SolutionFunctionValues2D()
         self.neumann_edge = np.array([])
         self.dirichlet_edge = np.array([])
-        self.mls_order = None
+        self.mls_order = 1
         self.use_negative_mls_order = None
-        self.n = n + 1
-        self.n_full = self.n * self.n * 2
+        self._n = n + 1
+        self.n_full = self._n * self._n * 2
         self.is_assembled_and_free = False
+        self.is_assembled_and_free_from_root = False
 
         self.lower_left_corner = (x0, y0)
         self._sym_setup()
@@ -156,8 +159,43 @@ class QuadrilateralSolver(BaseSolver):
                     neumann_bc_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
                 self.has_non_homo_neumann = True
 
+    def _from_root(self):
+        from matrix_lsq import Snapshot
+        root_mean = self.saver_root / "mean"
+        mean_snapshot = Snapshot(root_mean)
+        self.geo_param_range = mean_snapshot["ranges"][0]
+        self.p, self.tri, self.edge = mean_snapshot["p"], mean_snapshot["tri"], mean_snapshot["edge"]
+        self.dirichlet_edge = mean_snapshot["dirichlet_edge"]
+        self.neumann_edge = mean_snapshot["neumann_edge"]
+        self.has_non_homo_dirichlet = (self.saver_root / "object-0" / "obj-f1_dir.npy").exists()
+        if self.has_non_homo_dirichlet:
+            self.rg = mean_snapshot["rg"]
+        # note here it does not matter if we have non-homogeneous or not, or if we have neumann conditions
+        mls_and_llc = mean_snapshot["mls_order_and_llc"]
+        self.mls_order = int(mls_and_llc[0])
+        # get lower_left_corner
+        self.lower_left_corner = tuple(mls_and_llc[1:])
+        # update phi, note do not have f_func, dirichlet_bc and neumann_bc func so 0,0 was used in cls() call.
+        self.sym_phi = self.sym_phi + sym.Matrix(self.lower_left_corner)
+        self.phi = sym_Lambdify(self.sym_params, self.sym_phi)
+        # compute free indexes.
+        self._compute_free_and_expanded_edges()
+        self.n_full = self.p.shape[0] * 2
+        self._n = int(np.sqrt(self.p.shape[0]))
+        self.is_assembled_and_free_from_root = True
+
+    @classmethod
+    def from_root(cls, root: Path):
+        out = cls(2, 0)
+        out.saver_root = root
+        out._from_root()
+        return out
+
+    @property
+    def n(self) -> int:
+        return self._n - 1
+
     def _sym_setup(self):
-        s = perf_counter()
         self.sym_phi = self.sym_phi.subs({x0: self.lower_left_corner[0], y0: self.lower_left_corner[1]})
         self.sym_geo_params = self.sym_params[2:]
         self.phi = sym_Lambdify(self.sym_params, self.sym_phi)
@@ -175,10 +213,8 @@ class QuadrilateralSolver(BaseSolver):
             for j in range(4):
                 self.z_mat_funcs[i, j] = np.vectorize(sym_Lambdify(self.sym_params, self.sym_z_mat[i, j]),
                                                       otypes=[float])
-        print("time sym_setup:", perf_counter() - s)
 
     def _sym_mls_params_setup(self):
-        s = perf_counter()
         ant = len(self.sym_geo_params) + 1
 
         # looking at Z =  top_z / det(jac)
@@ -240,7 +276,7 @@ class QuadrilateralSolver(BaseSolver):
         k_orders = np.unique(k_orders, axis=0)
 
         # get c
-        c = np.array(list(product(*repeat(np.arange(self.mls_order + 3), ant - 1))))
+        c = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant - 1))))
         c = c[np.argwhere(np.sum(c, axis=1) <= self.mls_order + 2).ravel()]
         c_orders = np.zeros((c.shape[0], c.shape[1] + 1), dtype=int)
         c_orders[:, :-1] = c
@@ -266,6 +302,13 @@ class QuadrilateralSolver(BaseSolver):
         p_list = [legendre(p).coeffs[::-1] for p in range(self.mls_order + 1)]
         # make the mls_funcs
         sym_mls_funcs = sym.Matrix([sym.S.One] * len(mls_orders))
+        # shift input to polynomials to (a, b)
+        a_plus_b = self.geo_param_range[0] + self.geo_param_range[1]
+        b_minus_a_1 = 1 / (self.geo_param_range[1] - self.geo_param_range[0])
+
+        def shift(x):
+            return (2 * x - a_plus_b) * b_minus_a_1
+
         for n, order in tqdm.tqdm(enumerate(mls_orders), desc="computing mls functions"):
             for i, mu_i in enumerate(self.sym_geo_params):  # may need changing...
                 if order[i] >= 0:
@@ -274,7 +317,8 @@ class QuadrilateralSolver(BaseSolver):
                     poly = sym.S.Zero
                     for k in range(order[i] + 1):
                         if abs(pk := p[k]) > 1e-10:
-                            poly += pk * mu_i ** k
+                            # shift the polynomials to (a, b)
+                            poly += pk * shift(mu_i) ** k
                     if poly != 0:
                         sym_mls_funcs[n] *= poly
                 else:
@@ -287,7 +331,6 @@ class QuadrilateralSolver(BaseSolver):
         self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
         # lambdify
         self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
-        print("time sym_mls_params_setup:", perf_counter() - s)
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         if self.element in ("linear triangle", "lt"):
@@ -328,37 +371,14 @@ class QuadrilateralSolver(BaseSolver):
             if (self.get_dirichlet_edge_func is not None) and np.all(self.dirichlet_edge.shape == self.edge.shape):
                 raise ValueError("get_dirichlet_edge_func gives dirichlet_edge=edge and neumann_edge=None.")
 
-    def _set_free_and_dirichlet_edge_index(self):
-        """
-        Set the free and dirichlet edge indexes
-        Returns
-        -------
-        None.
-        """
+    def _compute_free_and_expanded_edges(self):
         # find the unique dirichlet edge index
         self.dirichlet_edge_index = np.unique(self.dirichlet_edge)
         # free index is unique index minus dirichlet edge index
         self.free_index = np.setdiff1d(self.tri, self.dirichlet_edge_index)
 
-    def _set_expanded_free_and_dirichlet_edge_index(self):
-        """
-        Expand the free and dirichlet edge indexes
-        Returns
-        -------
-        None.
-        """
         self.expanded_free_index = helpers.expand_index(self.free_index)
         self.expanded_dirichlet_edge_index = helpers.expand_index(self.dirichlet_edge_index)
-
-    def _compute_free_and_expanded_edges(self):
-        # set self.p, self.tri, self.edge
-        # self.a1_full, self.a2_full
-        # self.f_body_force_full , self.dirichlet_edge
-        # optionally: self.f_load_neumann_full,  neumann_edge
-        # before calling this function
-
-        self._set_free_and_dirichlet_edge_index()
-        self._set_expanded_free_and_dirichlet_edge_index()
 
     def _set_free(self):
         free_xy_index = np.ix_(self.expanded_free_index, self.expanded_free_index)
@@ -389,24 +409,24 @@ class QuadrilateralSolver(BaseSolver):
     def _assemble(self, geo_params):
         self.geo_params = geo_params
         if self.element in ("linear triangle", "lt"):
-            self.p, self.tri, self.edge = assembly.triangle.get_plate.getPlate(self.n)
+            self.p, self.tri, self.edge = assembly.triangle.get_plate.getPlate(self._n)
             self.a1_full, self.a2_full, self.f0_full \
-                = assembly.triangle.linear.assemble_ints_and_f_body_force(self.n, self.p, self.tri,
+                = assembly.triangle.linear.assemble_ints_and_f_body_force(self._n, self.p, self.tri,
                                                                           self.z_mat_funcs, self.geo_params,
                                                                           self.f_func, self.f_func_non_zero,
                                                                           self.nq)
             if self.has_non_homo_neumann:
-                self.f0_full += assembly.triangle.linear.assemble_f_neumann(self.n, self.p, self.neumann_edge,
+                self.f0_full += assembly.triangle.linear.assemble_f_neumann(self._n, self.p, self.neumann_edge,
                                                                             self.neumann_bc_func, self.nq)
         else:
-            self.p, self.tri, self.edge = assembly.quadrilateral.get_plate.getPlate(self.n)
+            self.p, self.tri, self.edge = assembly.quadrilateral.get_plate.getPlate(self._n)
             self.a1_full, self.a2_full, self.f0_full \
-                = assembly.quadrilateral.bilinear.assemble_ints_and_f_body_force(self.n, self.p, self.tri,
+                = assembly.quadrilateral.bilinear.assemble_ints_and_f_body_force(self._n, self.p, self.tri,
                                                                                  self.z_mat_funcs, self.geo_params,
                                                                                  self.f_func, self.f_func_non_zero,
                                                                                  self.nq, self.nq_y)
             if self.has_non_homo_neumann:
-                self.f0_full += assembly.quadrilateral.bilinear.assemble_f_neumann(self.n, self.p, self.neumann_edge,
+                self.f0_full += assembly.quadrilateral.bilinear.assemble_f_neumann(self._n, self.p, self.neumann_edge,
                                                                                    self.neumann_bc_func, self.nq)
 
         self.a1_full = self.a1_full.tocsr()
@@ -426,24 +446,23 @@ class QuadrilateralSolver(BaseSolver):
 
     def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
         if len(geo_params) != 0:
-            if not self._mls_is_computed:
-                raise ValueError("Matrix LSQ is not computed, can not set geometry parameters.")
-            elif len(geo_params) != len(self.sym_geo_params):
+            if len(geo_params) != len(self.sym_geo_params):
                 raise ValueError(
                     f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
-            else:
-                # for now, may be changed
-                if not self.mls_has_been_setup:
-                    self.matrix_lsq_setup()
-                data = self.mls_funcs(*geo_params)
-                a1_fit = mls_compute_from_fit(data, self._mls.a1_list)
-                a2_fit = mls_compute_from_fit(data, self._mls.a2_list)
-                f_load = mls_compute_from_fit(data, self._mls.f0_list)
-                a = helpers.compute_a(e_young, nu_poisson, a1_fit, a2_fit)
-                if self.has_non_homo_dirichlet:
-                    f1_dir = mls_compute_from_fit(data, self._mls.f1_dir_list)
-                    f2_dir = mls_compute_from_fit(data, self._mls.f2_dir_list)
-                    f_load -= helpers.compute_a(e_young, nu_poisson, f1_dir, f2_dir)
+            if not self.mls_has_been_setup:
+                raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
+            if not self._mls_is_computed:
+                raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
+
+            data = self.mls_funcs(*geo_params)
+            a1_fit = mls_compute_from_fit(data, self._mls.a1_list)
+            a2_fit = mls_compute_from_fit(data, self._mls.a2_list)
+            f_load = mls_compute_from_fit(data, self._mls.f0_list)
+            a = helpers.compute_a(e_young, nu_poisson, a1_fit, a2_fit)
+            if self.has_non_homo_dirichlet:
+                f1_dir_fit = mls_compute_from_fit(data, self._mls.f1_dir_list)
+                f2_dir_fit = mls_compute_from_fit(data, self._mls.f2_dir_list)
+                f_load -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit, f2_dir_fit)
         elif self.is_assembled_and_free:
             # compute a
             a = helpers.compute_a(e_young, nu_poisson, self.a1, self.a2)
@@ -452,7 +471,8 @@ class QuadrilateralSolver(BaseSolver):
             # compute and add the dirichlet load vector if it exists
             if self.has_non_homo_dirichlet:
                 f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_dir, self.f2_dir)
-
+        elif self.is_assembled_and_free_from_root:
+            raise ValueError("Matrices and vectors are assembled from saved data, geo_params must therefor be given.")
         else:
             raise ValueError("Matrices and vectors are not assembled.")
 
@@ -470,22 +490,22 @@ class QuadrilateralSolver(BaseSolver):
         self.uh.set_e_young_and_nu_poisson(e_young, nu_poisson)
         if print_info:
             print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
-                  "The property uh, extra properties values, x and y are available.")
+                  "The property uh, extra properties values, x and y are available.\n")
 
     def rbsolve(self, e_young: float, nu_poisson: float, *geo_params: float, n_rom: Optional[int] = None,
                 print_info: bool = True):
         # for now
-        if not self.is_assembled_and_free:
-            raise ValueError("Matrices and vectors are not assembled. Can not get p, tri, edge and rg... May change...")
-        if not self._pod_is_computed:
-            raise ValueError("Pod is not computed. Can not solve.")
-        elif len(geo_params) != len(self.sym_geo_params):
+        if len(geo_params) != len(self.sym_geo_params):
             raise ValueError(
                 f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
         if not self.mls_has_been_setup:
-            self.matrix_lsq_setup()
+            raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
+        if not self._mls_is_computed:
+            raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
+        if not self._pod_is_computed:
+            raise ValueError("Pod is not computed. Can not solve.")
 
-        if n_rom is None:
+        if (n_rom is None) or (self._pod.n_rom == n_rom):
             # for now, may be changed
             data = self.mls_funcs(*geo_params)
             a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
@@ -493,14 +513,14 @@ class QuadrilateralSolver(BaseSolver):
             f_load_rom = mls_compute_from_fit(data, self.f0_rom_list)
             a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
             if self.has_non_homo_dirichlet:
-                f1_dir_rom = mls_compute_from_fit(data, self.f1_dir_rom_list)
-                f2_dir_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
-                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_rom, f2_dir_rom)
+                f1_dir_fit_rom = mls_compute_from_fit(data, self.f1_dir_rom_list)
+                f2_dir_fit_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
+                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
         else:
             # for now, may be changed
-            a1_rom_list = list(map(partial(self._pod.compute_rom, n_rom=n_rom), self._mls.a1_list))
-            a2_rom_list = list(map(partial(self._pod.compute_rom, n_rom=n_rom), self._mls.a2_list))
-            f0_rom_list = list(map(partial(self._pod.compute_rom, n_rom=n_rom), self._mls.f0_list))
+            a1_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
+            a2_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
+            f0_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f0_list]
 
             data = self.mls_funcs(*geo_params)
             a1_fit_rom = mls_compute_from_fit(data, a1_rom_list)
@@ -508,12 +528,12 @@ class QuadrilateralSolver(BaseSolver):
             f_load_rom = mls_compute_from_fit(data, f0_rom_list)
             a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
             if self.has_non_homo_dirichlet:
-                f1_dir_rom_list = list(map(partial(self._pod.compute_rom, n_rom=n_rom), self._mls.f1_dir_list))
-                f2_dir_rom_list = list(map(partial(self._pod.compute_rom, n_rom=n_rom), self._mls.f2_dir_list))
+                f1_dir_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f1_dir_list]
+                f2_dir_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f2_dir_list]
 
-                f1_dir_rom = mls_compute_from_fit(data, f1_dir_rom_list)
-                f2_dir_rom = mls_compute_from_fit(data, f2_dir_rom_list)
-                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_rom, f2_dir_rom)
+                f1_dir_fit_rom = mls_compute_from_fit(data, f1_dir_rom_list)
+                f2_dir_fit_rom = mls_compute_from_fit(data, f2_dir_rom_list)
+                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
 
         # initialize uh
         uh_rom = np.zeros(self.n_full)
@@ -533,14 +553,7 @@ class QuadrilateralSolver(BaseSolver):
         self.uh_rom.set_e_young_and_nu_poisson(e_young, nu_poisson)
         if print_info:
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
-                  "The property uh_rom, extra properties values, x and y are available.")
-
-    def matrix_lsq_setup(self, mls_order: int = 1):
-        assert mls_order >= 0
-        self.mls_order = mls_order
-
-        self._sym_mls_params_setup()
-        self.mls_has_been_setup = True
+                  "The property uh_rom, extra properties values, x and y are available.\n")
 
     def save_snapshots(self, root: Path, geo_grid: int,
                        geo_range: Tuple[float, float] = None,
@@ -551,12 +564,26 @@ class QuadrilateralSolver(BaseSolver):
         self.saver_root = root
         if geo_range is not None:
             self.geo_param_range = geo_range
+        if not self.mls_has_been_setup:
+            raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         saver = SnapshotSaver(self.saver_root, geo_grid, self.geo_param_range,
                               mode=mode,
                               material_grid=material_grid,
                               e_young_range=e_young_range,
                               nu_poisson_range=nu_poisson_range)
         saver(self)
+
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 1):
+        # default mls_order is 1,
+        assert self.mls_order >= 0
+        if self.mls_order != mls_order:
+            if mls_order != 1:
+                assert mls_order >= 0
+                self.mls_order = mls_order
+            # else just use set self.mls_order
+
+        self._sym_mls_params_setup()
+        self.mls_has_been_setup = True
 
     def matrix_lsq(self, root: Path):
         self._mls = MatrixLSQ(root)
@@ -571,12 +598,12 @@ class QuadrilateralSolver(BaseSolver):
             # compute matrix_lsq from root
             self.matrix_lsq(root)
         # for now, may be changed
-        self.a1_rom_list = list(map(self._pod.compute_rom, self._mls.a1_list))
-        self.a2_rom_list = list(map(self._pod.compute_rom, self._mls.a2_list))
-        self.f0_rom_list = list(map(self._pod.compute_rom, self._mls.f0_list))
+        self.a1_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.a1_list]
+        self.a2_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.a2_list]
+        self.f0_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f0_list]
         if self.has_non_homo_dirichlet:
-            self.f1_dir_rom_list = list(map(self._pod.compute_rom, self._mls.f1_dir_list))
-            self.f2_dir_rom_list = list(map(self._pod.compute_rom, self._mls.f2_dir_list))
+            self.f1_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f1_dir_list]
+            self.f2_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f2_dir_list]
 
     def get_u_exact(self, u_exact_func):
         return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
@@ -641,21 +668,21 @@ class QuadrilateralSolver(BaseSolver):
     def uh_free(self) -> np.ndarray:
         if self.uh.values is None:
             raise ValueError(
-                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_free.")
+                "High fidelity Problem has not been solved, can not return uh_free.")
         return self.uh.flatt_values[self.expanded_free_index]
 
     @property
     def uh_full(self) -> np.ndarray:
         if self.uh.values is None:
             raise ValueError(
-                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_full.")
+                "High fidelity Problem has not been solved, can not return uh_full.")
         return self.uh.flatt_values
 
     @property
     def uh_anorm2(self) -> np.ndarray:
         if self.uh.values is None:
             raise ValueError(
-                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_anorm2.")
+                "High fidelity Problem has not been solved, can not return uh_anorm2.")
         return self.uh.flatt_values.T @ helpers.compute_a(self.uh.e_young, self.uh.nu_poisson, self.a1_full,
                                                           self.a2_full) @ self.uh.flatt_values
 
@@ -663,14 +690,14 @@ class QuadrilateralSolver(BaseSolver):
     def uh_rom_free(self) -> np.ndarray:
         if self.uh_rom.values is None:
             raise ValueError(
-                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_free.")
+                "Reduced Order Problem has not been solved, can not return uh_free.")
         return self.uh_rom.flatt_values[self.expanded_free_index]
 
     @property
     def uh_rom_full(self) -> np.ndarray:
         if self.uh_rom.values is None:
             raise ValueError(
-                "High fidelity Linear Elasticity 2D Problem has not been solved, can not return uh_full.")
+                "Reduced Order Problem has not been solved, can not return uh_full.")
         return self.uh_rom.flatt_values
 
 
@@ -689,9 +716,18 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
               "1) the parameters mu1:2 are given as:")
         print(mu_to_vertices_dict)
 
-    def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq", x0=0, y0=0):
+    def __init__(self, n: int, f_func: Union[Callable, int],
+                 dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None,
+                 element: str = "bq", x0: float = 0, y0: float = 0):
         super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
+
+    @classmethod
+    def from_root(cls, root: Path):
+        out = cls(2, 0)
+        out.saver_root = root
+        out._from_root()
+        return out
 
     def assemble(self, mu1: float, mu2: float, **kwargs: float):
         self._assemble(np.array([mu1, mu2]))
@@ -712,9 +748,18 @@ class ScalableRectangleSolver(QuadrilateralSolver):
               "Ly) the parameters lx and ly are given as:")
         print(mu_to_vertices_dict)
 
-    def __init__(self, n, f_func, dirichlet_bc_func=None, get_dirichlet_edge_func=None, neumann_bc_func=None,
-                 element="bq", x0=0, y0=0):
+    def __init__(self, n: int, f_func: Union[Callable, int],
+                 dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None,
+                 element: str = "bq", x0: float = 0, y0: float = 0):
         super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
+
+    @classmethod
+    def from_root(cls, root: Path):
+        out = cls(2, 0)
+        out.saver_root = root
+        out._from_root()
+        return out
 
     def assemble(self, lx: float, ly: float, **kwargs: float):
         self._assemble(np.array([lx, ly]))

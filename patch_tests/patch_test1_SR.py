@@ -27,7 +27,7 @@ def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt"):
     print("tolerance {}".format(tol))
     print("plate limits {}".format(s_rec.ref_plate))
     print("element type: {}".format(element))
-    print("test {} for n={}".format(test_res, n))
+    print("test {} for _n={}".format(test_res, n))
 
     print("-" * 10)
 

@@ -3,7 +3,6 @@
 """
 @author: Olav M.S. Gran
 """
-import mpmath
 import numpy as np
 import sympy as sym
 from scipy.special import legendre

@@ -9,7 +9,7 @@ from typing import Protocol, Optional, List, Tuple, Callable, Union
 from importlib.util import find_spec
 import numpy as np
 import scipy.sparse as sp
-from fem_quadrilateral.solution_function_class import SolutionFunctionValues2D
+from .solution_function_class import SolutionFunctionValues2D
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -26,14 +26,18 @@ class BaseSolver(Protocol):
     sym_geo_params: sym.Matrix
     sym_mls_funcs: sym.Matrix
     n_free: int
+    n_full: int
+    _n: int
     mls_has_been_setup: bool
     mls_funcs: Callable
+    mls_order: int
     has_non_homo_dirichlet: bool
     a1: sp.spmatrix
     a2: sp.spmatrix
     f0: np.ndarray
     f1_dir: np.ndarray
     f2_dir: np.ndarray
+    rg: np.ndarray
     # a1_dir: sp.spmatrix
     # a2_dir: sp.spmatrix
     p: np.ndarray
@@ -41,8 +45,12 @@ class BaseSolver(Protocol):
     edge: np.ndarray
     dirichlet_edge: np.ndarray
     neumann_edge: np.ndarray
+    geo_param_range: Tuple[float, float]
     uh: SolutionFunctionValues2D
     uh_rom: SolutionFunctionValues2D
+    element: str
+    lower_left_corner: Tuple[float, float]
+    is_assembled_and_free_from_root: bool
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         ...
@@ -62,7 +70,7 @@ class BaseSolver(Protocol):
                        nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
-    def matrix_lsq_setup(self, mls_order: int = 1):
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 1):
         ...
 
     def matrix_lsq(self, root: Path):
@@ -73,6 +81,10 @@ class BaseSolver(Protocol):
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         ...
+
+    @property
+    def n(self) -> int:
+        return -1
 
     @property
     def mls_num_kept(self) -> int:

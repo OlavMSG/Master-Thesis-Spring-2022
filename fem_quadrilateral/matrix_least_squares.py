@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, List, Tuple, Callable, Union
+from typing import Optional, List, Tuple, Callable, Union, Iterable
 import numpy as np
 import scipy.sparse as sp
 import matplotlib.pyplot as plt
@@ -36,13 +36,20 @@ def norm(mat: Matrix) -> float:
         return np.linalg.norm(mat)
 
 
-def mls_compute_from_fit(data: np.ndarray, mats: List[Matrix]) -> Matrix:
+def mls_compute_from_fit(data: np.ndarray, mats: List[Matrix], drop: Union[Iterable[int], int] = None) -> Matrix:
+    if drop is None:
+        drop = []
+    elif isinstance(drop, int):
+        drop = [drop]
+    if not all(isinstance(drop_i, int) for drop_i in drop):
+        raise ValueError("All indexes in drop must be integers.")
     if isinstance(mats[0], sp.spmatrix):
         out = sp.csr_matrix(mats[0].shape, dtype=float)
     else:
         out = np.zeros_like(mats[0], dtype=float)
     for i, coeff in enumerate(data.ravel()):
-        out += coeff * mats[i]
+        if i not in drop:
+            out += coeff * mats[i]
     return out
 
 
@@ -56,6 +63,7 @@ class MatrixLSQ:
     f1_dir_list: List[Matrix] = None
     f2_dir_list: List[Matrix] = None
     num_kept: int = None
+    drop: np.ndarray
 
     def __init__(self, root: Path):
         self.root = root
@@ -75,46 +83,3 @@ class MatrixLSQ:
         # for now!
         self.num_kept = len(self.a1_list)
 
-
-if __name__ == '__main__':
-    from fem_quadrilateral import ScalableRectangleSolver, DraggableCornerRectangleSolver
-
-    print("dir_bc = 1, 1")
-
-
-    def dir_bc(x, y):
-        return 1, 1
-
-
-    n = 20
-    order = 2
-    ant = 5
-    root = Path("test_storage_SR1")
-
-    if len(DiskStorage(root)) == 0:
-        d = ScalableRectangleSolver(n, 0, dirichlet_bc_func=dir_bc)
-        d.matrix_lsq_setup(mls_order=order)
-        d.save_snapshots(root, ant)
-    d = ScalableRectangleSolver(n, 0, dirichlet_bc_func=dir_bc)
-    d.matrix_lsq_setup(mls_order=order)
-    print(d.sym_mls_funcs, len(d.sym_mls_funcs))
-    print(d.geo_param_range)
-
-    mls = MatrixLSQ(root)
-    mls()
-    print("-" * 50)
-
-    root = Path("test_storage_DR1")
-
-    if len(DiskStorage(root)) == 0:
-        d = DraggableCornerRectangleSolver(n, 0, dirichlet_bc_func=dir_bc)
-        d.matrix_lsq_setup(mls_order=order)
-        d.save_snapshots(root, ant)
-    d = DraggableCornerRectangleSolver(n, 0, dirichlet_bc_func=dir_bc)
-    d.matrix_lsq_setup(mls_order=order)
-    print(d.sym_mls_funcs, len(d.sym_mls_funcs))
-    print(d.geo_param_range)
-
-    mls = MatrixLSQ(root)
-    mls()
-    print("-" * 50)

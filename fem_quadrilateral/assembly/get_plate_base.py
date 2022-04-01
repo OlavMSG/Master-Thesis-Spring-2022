@@ -3,7 +3,7 @@
 #   Generate a mesh triangulation of the reference square (a,b)^2.
 #
 # Arguments:
-#    n      Number of nodes in each spatial direction (n^2 total nodes).
+#    _n      Number of nodes in each spatial direction (_n^2 total nodes).
 #    a      Lower limit for x and y
 #    b      Upper limit for x and y
 #
@@ -28,7 +28,7 @@ def make_edge(n):
     Parameters
     ----------
     n : int
-        Number of nodes in each spatial direction (n^2 total nodes).
+        Number of nodes in each spatial direction (_n^2 total nodes).
 
     Returns
     -------
@@ -56,7 +56,7 @@ def make_p(a, b, n):
     Parameters
     ----------
     n : int
-        Number of nodes in each spatial direction (n^2 total nodes).
+        Number of nodes in each spatial direction (_n^2 total nodes).
     a : float, optional
         Lower limit for x and y. The default is -1.
     b : float, optional
@@ -86,7 +86,7 @@ def getPlateTri(n, a=0, b=1):
     Parameters
     ----------
     n : int
-        Number of nodes in each spatial direction (n^2 total nodes).
+        Number of nodes in each spatial direction (_n^2 total nodes).
     a : float, optional
         Lower limit for x and y. The default is 0.
     b : float, optional
@@ -138,7 +138,7 @@ def getPlateRec(n, a=0, b=1):
     Parameters
     ----------
     n : int
-        Number of nodes in each spatial direction (n^2 total nodes).
+        Number of nodes in each spatial direction (_n^2 total nodes).
     a : float, optional
         Lower limit for x and y. The default is 0.
     b : float, optional

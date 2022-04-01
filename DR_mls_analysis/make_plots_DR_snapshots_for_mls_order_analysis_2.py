@@ -26,6 +26,7 @@ plt.rcParams.update(new_params)
 
 
 def main():
+    tol = 5e-3
     max_order = 10
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
@@ -164,7 +165,7 @@ def main():
         plt.savefig("".join((save_dict, "\\f1-sum-norm.pdf")), bbox_inches='tight')
         plt.show()
 
-        plt.figure("f - 1")
+        plt.figure("f2 - 1")
         plt.title(f"f2 - sum - norm - order = {p_order}")
         plt.fill_between(x, f2_min_rel_norms, f2_max_rel_norms, color="b", alpha=0.5)
         plt.semilogy(f2_mean_rel_norms, "x--", color="r",
@@ -173,6 +174,54 @@ def main():
         plt.grid()
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
         plt.savefig("".join((save_dict, "\\f2-sum-norm.pdf")), bbox_inches='tight')
+        plt.show()
+
+        plt.figure("a1z - 1")
+        plt.title(f"a1z - sum - norm - order = {p_order}")
+        plt.fill_between(x, a1_min_rel_norms, a1_max_rel_norms, color="b", alpha=0.5)
+        plt.semilogy(a1_mean_rel_norms, "x--", color="r",
+                     label="$\\|\\|A_1(\\mu)-g_qA_{1q}\\|\\|/\\|\\|A_1(\\mu)\\|\\|$")
+        plt.xlabel("$q$")
+        plt.grid()
+        plt.ylim(1-tol, 1+tol)
+        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
+        plt.savefig("".join((save_dict, "\\a1z-sum-norm.pdf")), bbox_inches='tight')
+        plt.show()
+
+        plt.figure("a2z - 1")
+        plt.title(f"a2z - sum - norm - order = {p_order}")
+        plt.fill_between(x, a2_min_rel_norms, a2_max_rel_norms, color="b", alpha=0.5)
+        plt.semilogy(a2_mean_rel_norms, "x--", color="r",
+                     label="$\\|\\|A_2(\\mu)-g_qA_{2q}\\|\\|/\\|\\|A_2(\\mu)\\|\\|$")
+        plt.xlabel("$q$")
+        plt.grid()
+        plt.ylim(1-tol, 1+tol)
+        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
+        plt.savefig("".join((save_dict, "\\a2z-sum-norm.pdf")), bbox_inches='tight')
+        plt.show()
+
+        plt.figure("f1z - 1")
+        plt.title(f"f1z - sum - norm - order = {p_order}")
+        plt.fill_between(x, f1_min_rel_norms, f1_max_rel_norms, color="b", alpha=0.5)
+        plt.semilogy(f1_mean_rel_norms, "x--", color="r",
+                     label="$\\|\\|f_1(\\mu)-g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
+        plt.xlabel("$q$")
+        plt.grid()
+        plt.ylim(1-tol, 1+tol)
+        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
+        plt.savefig("".join((save_dict, "\\f1z-sum-norm.pdf")), bbox_inches='tight')
+        plt.show()
+
+        plt.figure("f2z - 1")
+        plt.title(f"f2z - sum - norm - order = {p_order}")
+        plt.fill_between(x, f2_min_rel_norms, f2_max_rel_norms, color="b", alpha=0.5)
+        plt.semilogy(f2_mean_rel_norms, "x--", color="r",
+                     label="$\\|\\|f_2(\\mu)-g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
+        plt.xlabel("$q$")
+        plt.grid()
+        plt.ylim(1-tol, 1+tol)
+        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
+        plt.savefig("".join((save_dict, "\\f2z-sum-norm.pdf")), bbox_inches='tight')
         plt.show()
 
         plt.figure("a - 2")

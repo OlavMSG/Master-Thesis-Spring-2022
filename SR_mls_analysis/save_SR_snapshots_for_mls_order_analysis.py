@@ -34,14 +34,14 @@ def save_snapshots(p_order):
         r.save_snapshots(root, mu_grid)
     else:
         r.matrix_lsq(root)
-        print(r.sym_mls_funcs)
+        print(dict(zip(np.arange(len(r.sym_mls_funcs)), r.sym_mls_funcs)))
     print("-" * 50)
 
 
 def main():
     print(datetime.now().time())
     max_order = 10
-    multiprocess = True
+    multiprocess = False
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())
         jobs = []

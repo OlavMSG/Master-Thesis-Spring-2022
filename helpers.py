@@ -89,6 +89,10 @@ def get_lambda_mu(e_young, nu_poisson):
         Lame coefficient lambda.
 
     """
+    if e_young == 0:
+        raise ValueError("Invalid Young's module; E=0.")
+    if abs(nu_poisson) >= 1:
+        raise ValueError("Invalid Poisson Ratio; |nu|>=1.")
     lambda_bar = e_young * nu_poisson / (1 - nu_poisson * nu_poisson)
     mu = 0.5 * e_young / (nu_poisson + 1)
     return mu, lambda_bar
@@ -205,16 +209,16 @@ def get_u_exact(p, u_exact_func):
 def check_and_make_folder(n, folder_path, n_counts_nodes=False):
     """
     Check if the folder/directory and its sub-folder exists, if not make it.
-    Check both the folders 'folder_path' and 'folder_path/n{n}'
+    Check both the folders 'folder_path' and 'folder_path/_n{_n}'
 
     Parameters
     ----------
     n : int
         Discretization number
     folder_path : str
-        the path to the folder to check and make, form 'folder_path/n{n}'.
+        the path to the folder to check and make, form 'folder_path/_n{_n}'.
     n_counts_nodes: bool
-        True if n counts the number of nodes along the axes. Default False
+        True if _n counts the number of nodes along the axes. Default False
 
     Returns
     -------
@@ -227,7 +231,7 @@ def check_and_make_folder(n, folder_path, n_counts_nodes=False):
         m = n
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
-    folder_path = os.path.join(folder_path, f"n{m}")
+    folder_path = os.path.join(folder_path, f"_n{m}")
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
     return folder_path
@@ -353,12 +357,12 @@ class FunctionValues2D:
 
     def _set_from_nx2(self, values):
         """
-        set from values of shape (n,2)
+        set from values of shape (_n,2)
 
         Parameters
         ----------
         values : np.array
-            function values in shape (n,2).
+            function values in shape (_n,2).
 
         Returns
         -------
@@ -371,12 +375,12 @@ class FunctionValues2D:
 
     def _set_from_2xn(self, values):
         """
-        set from values of shape (2,n)
+        set from values of shape (2,_n)
 
         Parameters
         ----------
         values : np.array
-            function values in shape (2,n).
+            function values in shape (2,_n).
 
         Returns
         -------
@@ -407,7 +411,7 @@ class FunctionValues2D:
         """
         m = values.shape[0]
         if m % 2 != 0:
-            raise ValueError("Shape of values must be (1, k=2n), where n is an integer.")
+            raise ValueError("Shape of values must be (1, k=2n), where _n is an integer.")
         self._n = m // 2
         self._values = np.zeros((self.n, 2))
         self._values[:, 0] = values[np.arange(0, m, 2)]
@@ -416,17 +420,17 @@ class FunctionValues2D:
     @classmethod
     def from_nx2(cls, values):
         """
-        Make FunctionValues2D from values of shape (n, 2)
+        Make FunctionValues2D from values of shape (_n, 2)
 
         Parameters
         ----------
         values : np.array
-            function values in shape (n,2).
+            function values in shape (_n,2).
 
         Returns
         -------
-        out : FunctionValues2D
-            FunctionValues2D from values of shape (n, 2).
+        self : FunctionValues2D
+            FunctionValues2D from values of shape (_n, 2).
 
         """
         out = cls()
@@ -436,17 +440,17 @@ class FunctionValues2D:
     @classmethod
     def from_2xn(cls, values):
         """
-        Make FunctionValues2D from values of shape (2, n)
+        Make FunctionValues2D from values of shape (2, _n)
 
         Parameters
         ----------
         values : np.array
-            function values in shape (n,2).
+            function values in shape (_n,2).
 
         Returns
         -------
-        out : FunctionValues2D
-            FunctionValues2D from values of shape (2, n).
+        self : FunctionValues2D
+            FunctionValues2D from values of shape (2, _n).
 
         """
         out = cls()
@@ -465,7 +469,7 @@ class FunctionValues2D:
 
         Returns
         -------
-        out : FunctionValues2D
+        self : FunctionValues2D
             FunctionValues2D from values of shape (1, k=2n).
 
         """
