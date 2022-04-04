@@ -7,7 +7,7 @@ from __future__ import annotations
 from importlib.util import find_spec
 from itertools import product, repeat
 from pathlib import Path
-from typing import Optional, Tuple, Callable, Union
+from typing import Optional, Tuple, Callable, Union, Iterable
 
 from scipy.sparse.linalg import spsolve
 import numpy as np
@@ -22,6 +22,7 @@ from .base_solver import BaseSolver
 from .snapshot_saver import SnapshotSaver
 from .matrix_least_squares import MatrixLSQ, mls_compute_from_fit
 from .pod import PodWithEnergyNorm
+from .error_computers import HfErrorComputer, RbErrorComputer
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -444,7 +445,8 @@ class QuadrilateralSolver(BaseSolver):
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6]))
 
-    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
+    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True,
+                drop: Union[Iterable[int], int] = None):
         if len(geo_params) != 0:
             if len(geo_params) != len(self.sym_geo_params):
                 raise ValueError(
@@ -455,13 +457,13 @@ class QuadrilateralSolver(BaseSolver):
                 raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
 
             data = self.mls_funcs(*geo_params)
-            a1_fit = mls_compute_from_fit(data, self._mls.a1_list)
-            a2_fit = mls_compute_from_fit(data, self._mls.a2_list)
-            f_load = mls_compute_from_fit(data, self._mls.f0_list)
+            a1_fit = mls_compute_from_fit(data, self._mls.a1_list, drop=drop)
+            a2_fit = mls_compute_from_fit(data, self._mls.a2_list, drop=drop)
+            f_load = mls_compute_from_fit(data, self._mls.f0_list, drop=drop)
             a = helpers.compute_a(e_young, nu_poisson, a1_fit, a2_fit)
             if self.has_non_homo_dirichlet:
-                f1_dir_fit = mls_compute_from_fit(data, self._mls.f1_dir_list)
-                f2_dir_fit = mls_compute_from_fit(data, self._mls.f2_dir_list)
+                f1_dir_fit = mls_compute_from_fit(data, self._mls.f1_dir_list, drop=drop)
+                f2_dir_fit = mls_compute_from_fit(data, self._mls.f2_dir_list, drop=drop)
                 f_load -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit, f2_dir_fit)
         elif self.is_assembled_and_free:
             # compute a
@@ -554,6 +556,18 @@ class QuadrilateralSolver(BaseSolver):
         if print_info:
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
                   "The property uh_rom, extra properties values, x and y are available.\n")
+
+    def hferror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: Optional[float],
+                drop: Union[Iterable[int], int] = None) -> float:
+        # get relative HF error between true HF and MatrixLSQ HF systems
+        hf_err_comp = HfErrorComputer(root)
+        return hf_err_comp(self, e_young, nu_poisson, *geo_params, drop=drop)
+
+    def rberror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: float,
+                n_rom: Optional[int] = None) -> float:
+        # get relative RB error between true HF and RB systems
+        rb_err_comp = RbErrorComputer(root)
+        return rb_err_comp(self, e_young, nu_poisson, *geo_params, n_rom=n_rom)
 
     def save_snapshots(self, root: Path, geo_grid: int,
                        geo_range: Tuple[float, float] = None,
