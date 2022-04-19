@@ -142,11 +142,26 @@ DR_mls_analysis/DR_snapshots_for_mls_order_analysis_log2.txt
 /DR_mls_analysis/plots_DR_mls_error_analysis
 /DR_mls_analysis/plots_pod
 
+
+DR_mls_analysis_2/DR_snapshots_for_mls_order_analysis_log.txt
+DR_mls_analysis_2/DR_snapshots_for_mls_order_analysis_log2.txt
+
+/DR_mls_analysis_2/plots_DR_mls_order_analysis
+/DR_mls_analysis_2/DR_mls_order_analysis
+/DR_mls_analysis_2/plots_DR_mls_error_analysis
+/DR_mls_analysis_2/plots_pod
+
 /SR_mls_analysis/plots_SR_mls_order_analysis
 SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log.txt
 SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log2.txt
 /SR_mls_analysis/SR_mls_order_analysis/
 /SR_mls_analysis/plots_pod
+
+/SR_mls_analysis_2/plots_SR_mls_order_analysis
+SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log.txt
+SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
+/SR_mls_analysis_2/SR_mls_order_analysis/
+/SR_mls_analysis_2/plots_pod
 
 /fem_quadrilateral/test_storage_DR1
 /fem_quadrilateral/test_storage_SR1
