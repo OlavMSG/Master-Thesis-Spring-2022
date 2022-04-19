@@ -619,6 +619,16 @@ class QuadrilateralSolver(BaseSolver):
             self.f1_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f1_dir_list]
             self.f2_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f2_dir_list]
 
+    def plot_pod_singular_values(self):
+        if not self._pod_is_computed:
+            raise ValueError("Pod is not computed.")
+        self._pod.plot_singular_values()
+
+    def plot_pod_relative_information_content(self):
+        if not self._pod_is_computed:
+            raise ValueError("Pod is not computed.")
+        self._pod.plot_relative_information_content()
+
     def get_u_exact(self, u_exact_func):
         return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
 

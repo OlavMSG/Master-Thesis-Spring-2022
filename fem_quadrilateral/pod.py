@@ -10,6 +10,7 @@ from pathlib import Path
 
 import scipy.sparse as sp
 import tqdm
+from matplotlib import pyplot as plt
 from scipy.linalg import eigh, fractional_matrix_power
 
 import default_constants
@@ -100,7 +101,7 @@ class PodWithEnergyNorm:
             return self.v_mat_n_max[:, :n_rom]
 
     def compute_rom(self, obj: Matrix, n_rom: Optional[int] = None) -> Matrix:
-        if n_rom is None:
+        if (n_rom is None) or (n_rom == self.n_rom):
             if obj.ndim == 1:
                 # vector
                 return self.v.T @ obj
@@ -115,6 +116,48 @@ class PodWithEnergyNorm:
             elif obj.ndim == 2:
                 # matrix
                 return v.T @ obj @ v
+
+    def plot_singular_values(self):
+        if self.sigma2_vec is None:
+            raise ValueError("No singular values available, call Pod first.")
+        # set nice plotting
+        fontsize = 20
+        new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
+                      'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
+                      'figure.titlesize': fontsize,
+                      'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
+        plt.rcParams.update(new_params)
+        plt.figure("Singular values")
+        plt.title("Singular values, scaled to $\\sigma_1$")
+        arg0 = np.argwhere(self.sigma2_vec >= 0)
+        sigma_vec = np.sqrt(self.sigma2_vec[arg0])
+        rel_sigma_vec = sigma_vec / sigma_vec[0]
+        plt.semilogy(np.arange(len(rel_sigma_vec)) + 1, rel_sigma_vec, "mD-", label="Singular Values, $\\sigma_i$.")
+        plt.xlabel("$i$")
+        plt.ylabel("$\\sigma_i$")
+        plt.grid()
+        plt.legend()
+
+    def plot_relative_information_content(self):
+        if self.sigma2_vec is None:
+            raise ValueError("No singular values available, call Pod first.")
+        # set nice plotting
+        fontsize = 20
+        new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
+                      'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
+                      'figure.titlesize': fontsize,
+                      'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
+        plt.rcParams.update(new_params)
+        arg0 = np.argwhere(self.sigma2_vec >= 0)
+        i_n = np.cumsum(self.sigma2_vec[arg0]) / np.sum(self.sigma2_vec[arg0])
+        plt.figure("Relative information content")
+        plt.title("Relative information content, $I(N)$")
+        plt.plot(np.arange(len(i_n)) + 1, i_n, "gD-")
+        plt.plot(self.n_rom, i_n[self.n_rom - 1], "bo", label="$(N, I(N))$")
+        plt.xlabel("$N$")
+        plt.ylabel("$I(N)$")
+        plt.grid()
+        plt.legend()
 
 
 if __name__ == '__main__':
