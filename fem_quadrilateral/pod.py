@@ -153,7 +153,7 @@ class PodWithEnergyNorm:
         plt.figure("Relative information content")
         plt.title("Relative information content, $I(N)$")
         plt.plot(np.arange(len(i_n)) + 1, i_n, "gD-")
-        plt.plot(self.n_rom, i_n[self.n_rom - 1], "bo", label="$(N, I(N))$")
+        plt.plot(self.n_rom, i_n[self.n_rom - 1], "bo", label=f"$(N, I(N))=({self.n_rom}, {i_n[self.n_rom-1]:.4f})$")
         plt.xlabel("$N$")
         plt.ylabel("$I(N)$")
         plt.grid()

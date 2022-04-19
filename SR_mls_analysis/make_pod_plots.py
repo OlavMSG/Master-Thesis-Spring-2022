@@ -34,6 +34,7 @@ def make_pod_plots(p_order):
 
     root = main_root / f"p_order_{p_order}"
     save_dict = "plots_pod"
+    Path(save_dict).mkdir(parents=True, exist_ok=True)
     print(root)
     r = ScalableRectangleSolver.from_root(root)
     r.matrix_lsq_setup()
@@ -45,6 +46,7 @@ def make_pod_plots(p_order):
     plt.show()
 
     r.plot_pod_relative_information_content()
+    plt.ylim(0.999_6, 1.000_05)
     plt.savefig("".join((save_dict, f"\\pod_rel_info_cont_p_order_{p_order}.pdf")), bbox_inches='tight')
     plt.show()
 
@@ -72,7 +74,6 @@ def make_pod_plots(p_order):
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)
     print("plotting")
-    Path(save_dict).mkdir(parents=True, exist_ok=True)
     x = np.arange(n_rom_max) + 1
     plt.figure("err-1")
     plt.title("Relative Errors, $\\|\\|u_h(\\mu)-u_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
@@ -90,7 +91,7 @@ def main():
     print(datetime.now().time())
     max_order = 10
     p_order_list = [2, 4, 6]
-    multiprocess = False
+    multiprocess = True
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())
         jobs = []
