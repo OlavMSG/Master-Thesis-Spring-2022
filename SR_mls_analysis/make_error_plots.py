@@ -59,7 +59,7 @@ def main():
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)
     print("plotting")
-    save_dict = "to be filled in"
+    save_dict = "plots_SR_mls_order_analysis"
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     x = np.arange(max_order) + 1
     plt.figure("err-1")
