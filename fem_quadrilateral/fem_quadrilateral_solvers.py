@@ -82,6 +82,13 @@ class QuadrilateralSolver(BaseSolver):
                  neumann_bc_func: Optional[Callable] = None,
                  element: str = "bq", x0: float = 0, y0: float = 0):
 
+        self._use_experimental_expansion_in_mls = False
+        self._a1_set_n_rom_list = None
+        self._a2_set_n_rom_list = None
+        self._f0_set_n_rom_list = None
+        self._f1_dir_set_n_rom_list = None
+        self._f2_dir_set_n_rom_list = None
+        self._last_n_rom = -1
         self.uh_rom = SolutionFunctionValues2D()
         self.f2_dir_rom_list = None
         self.f1_dir_rom_list = None
@@ -257,7 +264,7 @@ class QuadrilateralSolver(BaseSolver):
                 else:
                     # k has multiple components, form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
                     k_order = np.zeros(ant, dtype=int)
-                    k_order[-1] = -2  # set total to zero, we only have one term
+                    k_order[-1] = -2  # set total to neg two, we only have one term
                     k_orders.append(k_order)
 
             elif len(k_term.args) == len(self.sym_geo_params) and \
@@ -268,12 +275,24 @@ class QuadrilateralSolver(BaseSolver):
                     k_order[-1] = 0  # set total to zero, we only have one term
                     k_orders.append(k_order)
             else:
+                # not tested
                 # Jacobian is not constant and k has multiple components,
                 # form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
                 for order in range(self.mls_order // 2):
                     k_order = np.zeros(ant, dtype=int)
                     k_order[-1] = - 2 * (order + 1)  # set total, we have multiple terms
                     k_orders.append(k_order)
+        # experimental expansions
+        if self._use_experimental_expansion_in_mls:
+            x1_term = self.sym_det_jac.subs({x1: 1, x2: 0}) - k_term
+            x2_term = self.sym_det_jac.subs({x1: 0, x2: 1}) - k_term
+            if (k_term == 1) and (x1_term in self.sym_geo_params) and (x2_term in self.sym_geo_params):
+                # add 1 / (x1_term * x2_term)
+                # here know len(self.sym_geo_params)=2
+                k_order = - np.ones(ant, dtype=int)
+                k_order[-1] = 0  # set total to zero, we only have one term
+                k_orders.append(k_order)
+
         k_orders = np.unique(k_orders, axis=0)
 
         # get c
@@ -520,23 +539,28 @@ class QuadrilateralSolver(BaseSolver):
                 f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
         else:
             # for now, may be changed
-            a1_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
-            a2_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
-            f0_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f0_list]
+            if (self._last_n_rom != n_rom) or (self._a1_set_n_rom_list is None):
+                self._a1_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
+                self._a2_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
+                self._f0_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f0_list]
 
             data = self.mls_funcs(*geo_params)
-            a1_fit_rom = mls_compute_from_fit(data, a1_rom_list)
-            a2_fit_rom = mls_compute_from_fit(data, a2_rom_list)
-            f_load_rom = mls_compute_from_fit(data, f0_rom_list)
+            a1_fit_rom = mls_compute_from_fit(data, self._a1_set_n_rom_list)
+            a2_fit_rom = mls_compute_from_fit(data, self._a2_set_n_rom_list)
+            f_load_rom = mls_compute_from_fit(data, self._f0_set_n_rom_list)
             a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
             if self.has_non_homo_dirichlet:
-                f1_dir_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f1_dir_list]
-                f2_dir_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f2_dir_list]
+                if (self._last_n_rom != n_rom) or (self._f1_dir_set_n_rom_list is None):
+                    self._f1_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
+                                                   for obj in self._mls.f1_dir_list]
+                    self._f2_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
+                                                   for obj in self._mls.f2_dir_list]
 
-                f1_dir_fit_rom = mls_compute_from_fit(data, f1_dir_rom_list)
-                f2_dir_fit_rom = mls_compute_from_fit(data, f2_dir_rom_list)
+                f1_dir_fit_rom = mls_compute_from_fit(data, self._f1_dir_set_n_rom_list)
+                f2_dir_fit_rom = mls_compute_from_fit(data, self._f2_dir_set_n_rom_list)
                 f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
-
+        # set last n_rom
+        self._last_n_rom = n_rom
         # initialize uh
         uh_rom = np.zeros(self.n_full)
         start_time = perf_counter()
@@ -587,7 +611,8 @@ class QuadrilateralSolver(BaseSolver):
                               nu_poisson_range=nu_poisson_range)
         saver(self)
 
-    def matrix_lsq_setup(self, mls_order: Optional[int] = 1):
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 1, use_experimental_expansion: bool = False):
+        self._use_experimental_expansion_in_mls = use_experimental_expansion
         # default mls_order is 1,
         assert self.mls_order >= 0
         if self.mls_order != mls_order:

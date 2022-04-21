@@ -35,17 +35,14 @@ def main():
     a1_mean_norms = np.zeros(max_order)
     a2_mean_norms = np.zeros(max_order)
     f1_mean_norms = np.zeros(max_order)
-    f2_mean_norms = np.zeros(max_order)
 
     a1_mean_norms2 = np.zeros(max_order)
     a2_mean_norms2 = np.zeros(max_order)
     f1_mean_norms2 = np.zeros(max_order)
-    f2_mean_norms2 = np.zeros(max_order)
 
     a1_mean_rel_norms = np.zeros(max_order)
     a2_mean_rel_norms = np.zeros(max_order)
     f1_mean_rel_norms = np.zeros(max_order)
-    f2_mean_rel_norms = np.zeros(max_order)
     for k, p_order in enumerate(range(1, max_order + 1)):
         root = main_root / f"p_order_{p_order}"
         print("root:", root)
@@ -55,17 +52,14 @@ def main():
         a1_norms = np.zeros(len(mls.storage))
         a2_norms = np.zeros(len(mls.storage))
         f1_norms = np.zeros(len(mls.storage))
-        f2_norms = np.zeros(len(mls.storage))
 
         a1_norms2 = np.zeros(len(mls.storage))
         a2_norms2 = np.zeros(len(mls.storage))
         f1_norms2 = np.zeros(len(mls.storage))
-        f2_norms2 = np.zeros(len(mls.storage))
 
         a1_rel_norms = np.zeros(len(mls.storage))
         a2_rel_norms = np.zeros(len(mls.storage))
         f1_rel_norms = np.zeros(len(mls.storage))
-        f2_rel_norms = np.zeros(len(mls.storage))
         for i, snapshot in enumerate(mls.storage):
             a1 = snapshot["a1"]
             a1_fit = mls_compute_from_fit(snapshot.data, mls.a1_list)
@@ -77,30 +71,22 @@ def main():
             a2_norms[i] = norm(a2_fit) / norm(a2)
             a2_norms2[i] = norm(a2_fit)
             a2_rel_norms[i] = norm(a2 - a2_fit) / norm(a2)
-            f1 = snapshot["f1_dir"]
-            f1_fit = mls_compute_from_fit(snapshot.data, mls.f1_dir_list)
+            f1 = snapshot["f0"]
+            f1_fit = mls_compute_from_fit(snapshot.data, mls.f0_list)
             f1_norms[i] = norm(f1_fit) / norm(f1)
             f1_norms2[i] = norm(f1_fit)
             f1_rel_norms[i] = norm(f1 - f1_fit) / norm(f1)
-            f2 = snapshot["f2_dir"]
-            f2_fit = mls_compute_from_fit(snapshot.data, mls.f2_dir_list)
-            f2_norms[i] = norm(f2_fit) / norm(f2)
-            f2_norms2[i] = norm(f2_fit)
-            f2_rel_norms[i] = norm(f2 - f2_fit) / norm(f2)
         a1_mean_norms[k] = np.mean(a1_norms)
         a2_mean_norms[k] = np.mean(a2_norms)
         f1_mean_norms[k] = np.mean(f1_norms)
-        f2_mean_norms[k] = np.mean(f2_norms)
 
         a1_mean_norms2[k] = np.mean(a1_norms2)
         a2_mean_norms2[k] = np.mean(a2_norms2)
         f1_mean_norms2[k] = np.mean(f1_norms2)
-        f2_mean_norms2[k] = np.mean(f2_norms2)
 
         a1_mean_rel_norms[k] = np.mean(a1_rel_norms)
         a2_mean_rel_norms[k] = np.mean(a2_rel_norms)
         f1_mean_rel_norms[k] = np.mean(f1_rel_norms)
-        f2_mean_rel_norms[k] = np.mean(f2_rel_norms)
     print("plotting")
     save_dict = "".join(("plots_", str(main_root)))
     Path(save_dict).mkdir(parents=True, exist_ok=True)
@@ -117,8 +103,7 @@ def main():
 
     plt.figure("f - 1")
     plt.title("sum f - norm")
-    plt.semilogy(x, f1_mean_rel_norms, "x--", label="$\\|\\|f_1(\\mu)-\\sum_{i}g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
-    plt.semilogy(x, f2_mean_rel_norms, "x--", label="$\\|\\|f_2(\\mu)-\\sum_{i}g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
+    plt.semilogy(x, f1_mean_rel_norms, "x--", label="$\\|\\|f_0(\\mu)-\\sum_{i}g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
     plt.xlabel("$p$, order")
     plt.grid()
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
@@ -137,8 +122,7 @@ def main():
 
     plt.figure("f - 2")
     plt.title("f - relnorm")
-    plt.semilogy(x, f1_mean_norms, "x--", label="$\\|\\|g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
-    plt.semilogy(x, f2_mean_norms, "x--", label="$\\|\\|g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
+    plt.semilogy(x, f1_mean_norms, "x--", label="$\\|\\|g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
     plt.xlabel("$p$, order")
     plt.grid()
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
@@ -157,8 +141,7 @@ def main():
 
     plt.figure("f - 3")
     plt.title("f - norm")
-    plt.semilogy(x, f1_mean_norms2, "x--", label="$\\|\\|g_qf_{1q}\\|\\|$")
-    plt.semilogy(x, f2_mean_norms2, "x--", label="$\\|\\|g_qf_{2q}\\|\\|$")
+    plt.semilogy(x, f1_mean_norms2, "x--", label="$\\|\\|g_qf_{0q}\\|\\|$")
     plt.xlabel("$p$, order")
     plt.grid()
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)

@@ -51,6 +51,8 @@ def make_pod_plots(p_order):
     plt.show()
 
     n_rom_max = r.n_rom_max
+    if n_rom_max > 25:
+        n_rom_max = 25
     max_errors = np.zeros(n_rom_max)
     mean_errors = np.zeros(n_rom_max)
     min_errors = np.zeros(n_rom_max)

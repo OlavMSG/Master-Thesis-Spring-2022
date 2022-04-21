@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot
 
 import helpers
-from fem_quadrilateral import ScalableRectangleSolver
+from fem_quadrilateral import DraggableCornerRectangleSolver
 from datetime import datetime
 from tqdm import tqdm
 
@@ -32,16 +32,16 @@ def main():
     max_order = 10
     print(datetime.now().time())
     print("-" * 50)
-    main_root = Path("SR_mls_order_analysis")
+    main_root = Path("DR_mls_order_analysis")
     max_errors = np.zeros(max_order)
     mean_errors = np.zeros(max_order)
     min_errors = np.zeros(max_order)
     for k, p_order in enumerate(range(1, max_order + 1)):
         root = main_root / f"p_order_{p_order}"
         print(root)
-        r = ScalableRectangleSolver.from_root(root)
-        r.matrix_lsq_setup()
-        r.matrix_lsq(root)
+        d = DraggableCornerRectangleSolver.from_root(root)
+        d.matrix_lsq_setup()
+        d.matrix_lsq(root)
 
         root_mean = root / "mean"
         mean_snapshot = Snapshot(root_mean)
@@ -55,12 +55,12 @@ def main():
         errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
         for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
                 product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-            errors_p[i] = r.hferror(root, e_young, nu_poisson, *geo_params)
+            errors_p[i] = d.hferror(root, e_young, nu_poisson, *geo_params)
         max_errors[k] = np.max(errors_p)
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)
     print("plotting")
-    save_dict = "plots_SR_mls_order_analysis"
+    save_dict = "plots_DR_mls_order_analysis"
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     x = np.arange(max_order) + 1
     plt.figure("err-1")

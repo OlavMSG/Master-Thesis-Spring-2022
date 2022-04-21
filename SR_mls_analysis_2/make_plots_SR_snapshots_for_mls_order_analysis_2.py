@@ -44,42 +44,34 @@ def main():
         a1_mean_norms = np.zeros(n)
         a2_mean_norms = np.zeros(n)
         f1_mean_norms = np.zeros(n)
-        f2_mean_norms = np.zeros(n)
 
         a1_mean_norms2 = np.zeros(n)
         a2_mean_norms2 = np.zeros(n)
         f1_mean_norms2 = np.zeros(n)
-        f2_mean_norms2 = np.zeros(n)
 
         a1_mean_rel_norms = np.zeros(n)
         a2_mean_rel_norms = np.zeros(n)
         f1_mean_rel_norms = np.zeros(n)
-        f2_mean_rel_norms = np.zeros(n)
 
         a1_max_rel_norms = np.zeros(n)
         a2_max_rel_norms = np.zeros(n)
         f1_max_rel_norms = np.zeros(n)
-        f2_max_rel_norms = np.zeros(n)
 
         a1_min_rel_norms = np.zeros(n)
         a2_min_rel_norms = np.zeros(n)
         f1_min_rel_norms = np.zeros(n)
-        f2_min_rel_norms = np.zeros(n)
         for k in tqdm(range(n), desc="Iterating"):
             a1_norms = np.zeros(len(mls.storage))
             a2_norms = np.zeros(len(mls.storage))
             f1_norms = np.zeros(len(mls.storage))
-            f2_norms = np.zeros(len(mls.storage))
 
             a1_norms2 = np.zeros(len(mls.storage))
             a2_norms2 = np.zeros(len(mls.storage))
             f1_norms2 = np.zeros(len(mls.storage))
-            f2_norms2 = np.zeros(len(mls.storage))
 
             a1_rel_norms = np.zeros(len(mls.storage))
             a2_rel_norms = np.zeros(len(mls.storage))
             f1_rel_norms = np.zeros(len(mls.storage))
-            f2_rel_norms = np.zeros(len(mls.storage))
             for i, snapshot in enumerate(mls.storage):
                 a1 = snapshot["a1"]
                 a1_norms[i] = norm(snapshot.data[k] * mls.a1_list[k]) / norm(a1)
@@ -89,43 +81,33 @@ def main():
                 a2_norms[i] = norm(snapshot.data[k] * mls.a2_list[k]) / norm(a2)
                 a2_norms2[i] = norm(mls.a2_list[k])
                 a2_rel_norms[i] = norm(a2 - snapshot.data[k] * mls.a2_list[k]) / norm(a2)
-                f1 = snapshot["f1_dir"]
-                f1_norms[i] = norm(snapshot.data[k] * mls.f1_dir_list[k]) / norm(f1)
-                f1_norms2[i] = norm(mls.f1_dir_list[k])
-                f1_rel_norms[i] = norm(f1 - snapshot.data[k] * mls.f1_dir_list[k]) / norm(f1)
-                f2 = snapshot["f2_dir"]
-                f2_norms[i] = norm(snapshot.data[k] * mls.f2_dir_list[k]) / norm(f2)
-                f2_norms2[i] = norm(mls.f2_dir_list[k])
-                f2_rel_norms[i] = norm(f2 - snapshot.data[k] * mls.f2_dir_list[k]) / norm(f2)
+                f1 = snapshot["f0"]
+                f1_norms[i] = norm(snapshot.data[k] * mls.f0_list[k]) / norm(f1)
+                f1_norms2[i] = norm(mls.f0_list[k])
+                f1_rel_norms[i] = norm(f1 - snapshot.data[k] * mls.f0_list[k]) / norm(f1)
             a1_mean_norms[k] = np.mean(a1_norms)
             a2_mean_norms[k] = np.mean(a2_norms)
             f1_mean_norms[k] = np.mean(f1_norms)
-            f2_mean_norms[k] = np.mean(f2_norms)
 
             a1_mean_norms2[k] = np.mean(a1_norms2)
             a2_mean_norms2[k] = np.mean(a2_norms2)
             f1_mean_norms2[k] = np.mean(f1_norms2)
-            f2_mean_norms2[k] = np.mean(f2_norms2)
 
             a1_mean_rel_norms[k] = np.mean(a1_rel_norms)
             a2_mean_rel_norms[k] = np.mean(a2_rel_norms)
             f1_mean_rel_norms[k] = np.mean(f1_rel_norms)
-            f2_mean_rel_norms[k] = np.mean(f2_rel_norms)
 
             a1_mean_rel_norms[k] = np.mean(a1_rel_norms)
             a2_mean_rel_norms[k] = np.mean(a2_rel_norms)
             f1_mean_rel_norms[k] = np.mean(f1_rel_norms)
-            f2_mean_rel_norms[k] = np.mean(f2_rel_norms)
 
             a1_max_rel_norms[k] = np.max(a1_rel_norms)
             a2_max_rel_norms[k] = np.max(a2_rel_norms)
             f1_max_rel_norms[k] = np.max(f1_rel_norms)
-            f2_max_rel_norms[k] = np.max(f2_rel_norms)
 
             a1_min_rel_norms[k] = np.min(a1_rel_norms)
             a2_min_rel_norms[k] = np.min(a2_rel_norms)
             f1_min_rel_norms[k] = np.min(f1_rel_norms)
-            f2_min_rel_norms[k] = np.min(f2_rel_norms)
 
 
         print("plotting")
@@ -155,25 +137,14 @@ def main():
         plt.show()
 
         plt.figure("f1 - 1")
-        plt.title(f"f1 - sum - norm - order = {p_order}")
+        plt.title(f"f0 - sum - norm - order = {p_order}")
         plt.fill_between(x, f1_min_rel_norms, f1_max_rel_norms, color="b", alpha=0.5)
         plt.semilogy(f1_mean_rel_norms, "x--", color="r",
-                     label="$\\|\\|f_1(\\mu)-g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
+                     label="$\\|\\|f_0(\\mu)-g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
         plt.xlabel("$q$")
         plt.grid()
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
-        plt.savefig("".join((save_dict, "\\f1-sum-norm.pdf")), bbox_inches='tight')
-        plt.show()
-
-        plt.figure("f2 - 1")
-        plt.title(f"f2 - sum - norm - order = {p_order}")
-        plt.fill_between(x, f2_min_rel_norms, f2_max_rel_norms, color="b", alpha=0.5)
-        plt.semilogy(f2_mean_rel_norms, "x--", color="r",
-                     label="$\\|\\|f_2(\\mu)-g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
-        plt.xlabel("$q$")
-        plt.grid()
-        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
-        plt.savefig("".join((save_dict, "\\f2-sum-norm.pdf")), bbox_inches='tight')
+        plt.savefig("".join((save_dict, "\\f0-sum-norm.pdf")), bbox_inches='tight')
         plt.show()
 
         plt.figure("a1z - 1")
@@ -201,28 +172,17 @@ def main():
         plt.show()
 
         plt.figure("f1z - 1")
-        plt.title(f"f1z - sum - norm - order = {p_order}")
+        plt.title(f"f0z - sum - norm - order = {p_order}")
         plt.fill_between(x, f1_min_rel_norms, f1_max_rel_norms, color="b", alpha=0.5)
         plt.semilogy(f1_mean_rel_norms, "x--", color="r",
-                     label="$\\|\\|f_1(\\mu)-g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
+                     label="$\\|\\|f_0(\\mu)-g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
         plt.xlabel("$q$")
         plt.grid()
         plt.ylim(1-tol, 1+tol)
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
-        plt.savefig("".join((save_dict, "\\f1z-sum-norm.pdf")), bbox_inches='tight')
+        plt.savefig("".join((save_dict, "\\f0z-sum-norm.pdf")), bbox_inches='tight')
         plt.show()
 
-        plt.figure("f2z - 1")
-        plt.title(f"f2z - sum - norm - order = {p_order}")
-        plt.fill_between(x, f2_min_rel_norms, f2_max_rel_norms, color="b", alpha=0.5)
-        plt.semilogy(f2_mean_rel_norms, "x--", color="r",
-                     label="$\\|\\|f_2(\\mu)-g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
-        plt.xlabel("$q$")
-        plt.grid()
-        plt.ylim(1-tol, 1+tol)
-        plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
-        plt.savefig("".join((save_dict, "\\f2z-sum-norm.pdf")), bbox_inches='tight')
-        plt.show()
 
         plt.figure("a - 2")
         plt.title(f"a - relnorm - order = {p_order}")
@@ -236,8 +196,7 @@ def main():
 
         plt.figure("f - 2")
         plt.title(f"f - relnorm - order = {p_order}")
-        plt.semilogy(f1_mean_norms, "x--", label="$\\|\\|g_qf_{1q}\\|\\|/\\|\\|f_1(\\mu)\\|\\|$")
-        plt.semilogy(f2_mean_norms, "x--", label="$\\|\\|g_qf_{2q}\\|\\|/\\|\\|f_2(\\mu)\\|\\|$")
+        plt.semilogy(f1_mean_norms, "x--", label="$\\|\\|g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
         plt.xlabel("$q$")
         plt.grid()
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
@@ -256,8 +215,7 @@ def main():
 
         plt.figure("f - 3")
         plt.title(f"f - norm - order = {p_order}")
-        plt.semilogy(f1_mean_norms2, "x--", label="$\\|\\|f_{1q}\\|\\|$")
-        plt.semilogy(f2_mean_norms2, "x--", label="$\\|\\|f_{2q}\\|\\|$")
+        plt.semilogy(f1_mean_norms2, "x--", label="$\\|\\|f_{0q}\\|\\|$")
         plt.xlabel("$q$")
         plt.grid()
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
@@ -270,8 +228,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    """
-    k = 2
-    a = [1, 2, 7, 3, 4, 5, 6]
-    b = a[:k] + a[k+1:]
-    print(b)"""

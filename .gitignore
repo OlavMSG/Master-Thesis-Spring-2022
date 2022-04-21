@@ -151,6 +151,14 @@ DR_mls_analysis_2/DR_snapshots_for_mls_order_analysis_log2.txt
 /DR_mls_analysis_2/plots_DR_mls_error_analysis
 /DR_mls_analysis_2/plots_pod
 
+DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log.txt
+DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log2.txt
+
+/DR_mls_analysis_EX/plots_DR_mls_order_analysis
+/DR_mls_analysis_EX/DR_mls_order_analysis
+/DR_mls_analysis_EX/plots_DR_mls_error_analysis
+/DR_mls_analysis_EX/plots_pod
+
 /SR_mls_analysis/plots_SR_mls_order_analysis
 SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log.txt
 SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log2.txt
