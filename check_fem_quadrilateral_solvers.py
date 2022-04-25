@@ -25,6 +25,8 @@ def main():
     d.matrix_lsq_setup(mls_order=order, use_experimental_expansion=True)
     print(d.sym_mls_funcs)
     print(len(d.sym_mls_funcs))
+    a = d.mls_funcs(0, 0)
+    print(a)
     # d.assemble(0.1, 0.2)
     # d.get_geo_param_limit_estimate(101)
     """print("------------")

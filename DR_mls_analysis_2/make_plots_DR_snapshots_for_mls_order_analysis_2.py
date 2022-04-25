@@ -27,13 +27,14 @@ plt.rcParams.update(new_params)
 
 def main():
     tol = 5e-3
-    max_order = 10
+    max_order1 = 10
+    max_order = 30
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
     print("-" * 50)
-    for p_order in range(1, max_order + 1):
+    for p_order in range(max_order1 + 1, max_order + 1):
         main_root = Path("DR_mls_order_analysis")
         root = main_root / f"p_order_{p_order}"
         print("root:", root)

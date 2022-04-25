@@ -52,6 +52,9 @@ class BaseSolver(Protocol):
     lower_left_corner: Tuple[float, float]
     is_assembled_and_free_from_root: bool
 
+    def set_geo_param_range(self, geo_range: Tuple[float, float]):
+        ...
+
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         ...
 
@@ -71,7 +74,6 @@ class BaseSolver(Protocol):
         ...
 
     def save_snapshots(self, root: Path, geo_grid: int,
-                       geo_range: Tuple[float, float] = None,
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,

@@ -119,13 +119,3 @@ class SnapshotSaver:
         e_young_vec = helpers.get_vec_from_range(self.e_young_range, self.material_grid, self.mode)
         nu_poisson_vec = helpers.get_vec_from_range(self.nu_poisson_range, self.material_grid, self.mode)
         return np.array(list(product(*repeat(geo_vec, len(solver.sym_geo_params)), e_young_vec, nu_poisson_vec)))
-
-    def vipe(self):
-        user_input = str(input(f"Do you really want to vipe storage in \'{self.root}\'? This will delete all the "
-                               f"files stored. y: "))
-        if user_input.lower() == "y":
-            root_mean = self.root / "mean"
-            for path in root_mean.glob('*'):
-                path.unlink()
-            root_mean.rmdir()
-            self.storage.vipe(user_confirm=False)

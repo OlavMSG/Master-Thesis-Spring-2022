@@ -67,6 +67,9 @@ class QuadrilateralSolver(BaseSolver):
     _pod: PodWithEnergyNorm
     _mls: MatrixLSQ
 
+    def set_geo_param_range(self, geo_range: Tuple[float, float]):
+        self.geo_param_range = geo_range
+
     @staticmethod
     def mu_to_vertices_dict():
         mu_to_vertices_dict = {"mu1": "a2 - 1", "mu2": "b2",
@@ -329,7 +332,7 @@ class QuadrilateralSolver(BaseSolver):
         def shift(x):
             return (2 * x - a_plus_b) * b_minus_a_1
 
-        for n, order in tqdm.tqdm(enumerate(mls_orders), desc="computing mls functions"):
+        for n, order in enumerate(mls_orders):
             for i, mu_i in enumerate(self.sym_geo_params):  # may need changing...
                 if order[i] >= 0:
                     # get legendre
@@ -347,8 +350,10 @@ class QuadrilateralSolver(BaseSolver):
             # may need changing...
             if order[-1] != 0:
                 sym_mls_funcs[n] *= k_term ** order[-1]
-
-        self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
+        if symengine_is_found:
+            self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
+        else:
+            self.sym_mls_funcs = sym.Matrix(np.asarray(sym_mls_funcs)[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
         # lambdify
         self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
 
@@ -594,14 +599,11 @@ class QuadrilateralSolver(BaseSolver):
         return rb_err_comp(self, e_young, nu_poisson, *geo_params, n_rom=n_rom)
 
     def save_snapshots(self, root: Path, geo_grid: int,
-                       geo_range: Tuple[float, float] = None,
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,
                        nu_poisson_range: Optional[Tuple[float, float]] = None):
         self.saver_root = root
-        if geo_range is not None:
-            self.geo_param_range = geo_range
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         saver = SnapshotSaver(self.saver_root, geo_grid, self.geo_param_range,

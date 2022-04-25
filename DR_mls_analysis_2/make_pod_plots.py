@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matrix_lsq import Snapshot
+from matrix_lsq import Snapshot, DiskStorage
 
 import helpers
 from fem_quadrilateral import DraggableCornerRectangleSolver
@@ -51,8 +51,9 @@ def make_pod_plots(p_order):
     plt.show()
 
     n_rom_max = d.n_rom_max
-    if n_rom_max > 25:
-        n_rom_max = 25
+    print(n_rom_max)
+    if n_rom_max > 50:
+        n_rom_max = 50
     max_errors = np.zeros(n_rom_max)
     mean_errors = np.zeros(n_rom_max)
     min_errors = np.zeros(n_rom_max)
@@ -75,6 +76,7 @@ def make_pod_plots(p_order):
         max_errors[k] = np.max(errors_p)
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)
+
     print("plotting")
     x = np.arange(n_rom_max) + 1
     plt.figure("err-1")
@@ -92,7 +94,7 @@ def make_pod_plots(p_order):
 def main():
     print(datetime.now().time())
     max_order = 10
-    p_order_list = [2, 4, 6]
+    p_order_list = [19]
     multiprocess = True
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())

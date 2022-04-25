@@ -37,26 +37,27 @@ def save_snapshots(p_order):
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
     print("Ant snapshots:", mu_grid ** 2)
-    print("Ratio:", mu_grid ** 2 / (len(d.sym_mls_funcs) * p_order))
+    print("Ratio:", len(d.sym_mls_funcs) / mu_grid ** 2)
     root = main_root / f"p_order_{p_order}"
     print("root:", root)
-    print("-" * 50)
     if len(DiskStorage(root)) == 0:
         d.save_snapshots(root, mu_grid)
     else:
         d.matrix_lsq(root)
-        print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
+        if p_order <= 10:
+            print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
     print("-" * 50)
 
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 30
+    max_order1 = 0
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())
         jobs = []
-        for p_order in range(1, max_order + 1):
+        for p_order in range(max_order1 + 1, max_order + 1):
             job = pool.apply_async(save_snapshots, [p_order])
             jobs.append(job)
         # collect results from the make_plots through the pool result queue
