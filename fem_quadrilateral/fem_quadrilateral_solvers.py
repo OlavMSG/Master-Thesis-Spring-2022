@@ -66,9 +66,19 @@ class QuadrilateralSolver(BaseSolver):
     geo_param_range = (-0.16, 0.16)  # < 1/6 = 0.1666...
     _pod: PodWithEnergyNorm
     _mls: MatrixLSQ
+    _solver_type = "QuadrilateralSolver"
+    _solver_type_short = "QS"
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):
         self.geo_param_range = geo_range
+
+    @property
+    def solver_type(self) -> str:
+        return self._solver_type
+
+    @property
+    def solver_type_short(self) -> str:
+        return self._solver_type_short
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -84,6 +94,11 @@ class QuadrilateralSolver(BaseSolver):
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
                  neumann_bc_func: Optional[Callable] = None,
                  element: str = "bq", x0: float = 0, y0: float = 0):
+        # save user inputed functions
+        self.input_f_func = f_func
+        self.input_dirichlet_bc_func = dirichlet_bc_func
+        self.input_get_dirichlet_edge_func = get_dirichlet_edge_func
+        self.input_neumann_bc_func = neumann_bc_func
 
         self._use_experimental_expansion_in_mls = False
         self._a1_set_n_rom_list = None
@@ -316,8 +331,8 @@ class QuadrilateralSolver(BaseSolver):
 
         # get orders to use
         arg_order = np.array(list(np.all(np.abs(order) <= self.mls_order)
-                                  and ((np.where(order > 0, order, 0).sum() <= self.mls_order)
-                                       and (-np.where(order < 0, order, 0).sum()) <= self.mls_order)
+                                  and ((np.where(order[:-1] > 0, order[:-1], 0).sum() <= self.mls_order)
+                                       and (-np.where(order[:-1] < 0, order[:-1], 0).sum()) <= self.mls_order)
                                   for order in mls_orders))
 
         mls_orders = mls_orders[arg_order]
@@ -613,6 +628,26 @@ class QuadrilateralSolver(BaseSolver):
                               nu_poisson_range=nu_poisson_range)
         saver(self)
 
+    def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
+                                       power_divider: int = 3,
+                                       mode: str = "uniform",
+                                       material_grid: Optional[int] = None,
+                                       e_young_range: Optional[Tuple[float, float]] = None,
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+        self.saver_root = root
+        if not self.mls_has_been_setup:
+            raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
+        from .multiprocessing_snapshot_saver import MultiprocessingSnapshotSaver
+        saver = MultiprocessingSnapshotSaver(self.saver_root, geo_grid, self.geo_param_range,
+                                             mode=mode,
+                                             material_grid=material_grid,
+                                             e_young_range=e_young_range,
+                                             nu_poisson_range=nu_poisson_range)
+        saver(self, power_divider=power_divider)
+        import sys
+        print(f"warning: Environmental variables have been set. This may effect further use of the solver.",
+              file=sys.stderr)
+
     def matrix_lsq_setup(self, mls_order: Optional[int] = 1, use_experimental_expansion: bool = False):
         self._use_experimental_expansion_in_mls = use_experimental_expansion
         # default mls_order is 1,
@@ -758,6 +793,8 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu5: 0, mu6: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
     geo_param_range = (-0.49, 0.49)  # < 1/2
+    _solver_type = "DraggableCornerRectangleSolver"
+    _solver_type_short = "DR"
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -790,6 +827,8 @@ class ScalableRectangleSolver(QuadrilateralSolver):
                                                            mu5: 0, mu6: ly - 1}))
     sym_params = sym.Matrix([x1, x2, lx, ly])
     geo_param_range = (0.1, 5.1)
+    _solver_type = "ScalableRectangleSolver"
+    _solver_type_short = "SR"
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -817,3 +856,17 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
     def get_geo_param_limit_estimate(self, **kwargs):
         print("The limit for the parameters is (0, inf).")
+
+
+def get_solver(solver_type: str, n: int, f_func: Union[Callable, int],
+               dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
+               neumann_bc_func: Optional[Callable] = None,
+               element: str = "bq", x0: float = 0, y0: float = 0) -> BaseSolver:
+    solver_dict = {"ScalableRectangleSolver": ScalableRectangleSolver,
+                   "DraggableCornerRectangleSolver": DraggableCornerRectangleSolver,
+                   "QuadrilateralSolver": QuadrilateralSolver,
+                   "SR": ScalableRectangleSolver,
+                   "DR": DraggableCornerRectangleSolver,
+                   "QS": QuadrilateralSolver}
+    return solver_dict[solver_type](n, f_func, dirichlet_bc_func, get_dirichlet_edge_func,
+                                    neumann_bc_func, element, x0, y0)

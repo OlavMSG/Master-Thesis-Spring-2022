@@ -19,6 +19,10 @@ else:
 
 
 class BaseSolver(Protocol):
+    input_f_func: Callable
+    input_dirichlet_bc_func: Callable
+    input_get_dirichlet_edge_func: Callable
+    input_neumann_bc_func: Callable
     ref_plate: Tuple[int, int]
     implemented_elements: List[str]
     sym_phi: sym.Matrix
@@ -51,6 +55,8 @@ class BaseSolver(Protocol):
     element: str
     lower_left_corner: Tuple[float, float]
     is_assembled_and_free_from_root: bool
+    _solver_type: str = "BaseSolver"
+    _solver_type_short: str = "BS"
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):
         ...
@@ -80,6 +86,14 @@ class BaseSolver(Protocol):
                        nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
+    def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
+                                       power_divider: int = 3,
+                                       mode: str = "uniform",
+                                       material_grid: Optional[int] = None,
+                                       e_young_range: Optional[Tuple[float, float]] = None,
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+        ...
+
     def matrix_lsq_setup(self, mls_order: Optional[int] = 1, use_experimental_expansion: bool = False):
         ...
 
@@ -91,6 +105,14 @@ class BaseSolver(Protocol):
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         ...
+
+    @property
+    def solver_type(self) -> str:
+        return self._solver_type
+
+    @property
+    def solver_type_short(self) -> str:
+        return self._solver_type_short
 
     @property
     def n(self) -> int:

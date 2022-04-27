@@ -4,6 +4,11 @@ Created on 04.04.2022
 
 @author: Olav Milian
 """
+import os
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
 from itertools import product, repeat
 from pathlib import Path
 
@@ -98,14 +103,8 @@ def main():
     multiprocess = True
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())
-        jobs = []
         for p_order in p_order_list:
-            job = pool.apply_async(make_pod_plots, [p_order])
-            jobs.append(job)
-        # collect results from the make_plots through the pool result queue
-        for job in jobs:
-            job.get()
-        # now we are done, kill the listener
+            pool.apply_async(make_pod_plots, [p_order])
         pool.close()
         pool.join()
     else:

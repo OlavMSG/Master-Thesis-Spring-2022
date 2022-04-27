@@ -2,11 +2,6 @@
 """
 @author: Olav M.S. Gran
 """
-import os
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +26,6 @@ def clamped_bc(x, y):
 
 
 def save_snapshots(p_order):
-
     n = 20
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
@@ -41,33 +35,19 @@ def save_snapshots(p_order):
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
     print("Ant snapshots:", mu_grid ** 2)
-    print("Ratio:", len(d.sym_mls_funcs) / mu_grid ** 2)
+    print("Ratio:", mu_grid ** 2 / (len(d.sym_mls_funcs) * p_order))
     root = main_root / f"p_order_{p_order}"
     print("root:", root)
-    if len(DiskStorage(root)) == 0:
-        d.save_snapshots(root, mu_grid)
-    else:
-        d.matrix_lsq(root)
-        if p_order <= 10:
-            print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
+    print("-" * 50)
+    print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
+    d.multiprocessing_save_snapshots(root, mu_grid, power_divider=3)
     print("-" * 50)
 
 
 def main():
     print(datetime.now().time())
-    max_order = 30
-    max_order1 = 0
-    multiprocess = False
-    if multiprocess:
-        pool = mp.Pool(mp.cpu_count())
-        for p_order in range(max_order1 + 1, max_order + 1):
-            pool.apply_async(save_snapshots, [p_order])
-        # now we are done, kill the listener
-        pool.close()
-        pool.join()
-    else:
-        for p_order in range(1, max_order + 1):
-            save_snapshots(p_order)
+    max_order = 10
+    save_snapshots(2)
     print(datetime.now().time())
 
 

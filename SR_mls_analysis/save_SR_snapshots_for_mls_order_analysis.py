@@ -2,7 +2,10 @@
 """
 @author: Olav M.S. Gran
 """
-
+import os
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 from pathlib import Path
 
 import numpy as np
@@ -44,13 +47,9 @@ def main():
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())
-        jobs = []
         for p_order in range(1, max_order + 1):
-            job = pool.apply_async(save_snapshots, [p_order])
-            jobs.append(job)
-        # collect results from the make_plots through the pool result queue
-        for job in jobs:
-            job.get()
+            pool.apply_async(save_snapshots, [p_order])
+
         # now we are done, kill the listener
         pool.close()
         pool.join()
