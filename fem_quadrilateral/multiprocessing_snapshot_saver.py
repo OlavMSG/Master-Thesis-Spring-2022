@@ -54,36 +54,38 @@ class MultiprocessingSnapshotSaver:
         # assert len(self.storage) == 0
 
     def __call__(self, solver: BaseSolver, power_divider=3):
-        # save the mean as a special Snapshot.
-        geo_mean = np.mean(self.geo_range)
-        e_mean = np.mean(self.e_young_range)
-        nu_mean = np.mean(self.nu_poisson_range)
-        # make the data
-        solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
-        data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
-        a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
-        # for now save
-        grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
-        ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
-        mode_and_element = np.array([self.mode, solver.element])
-        mls_order_and_llc = np.array([solver.mls_order, *solver.lower_left_corner])
-        # save it
         root_mean = self.root / "mean"
-        root_mean.mkdir(parents=True, exist_ok=True)
-        if solver.has_non_homo_dirichlet:
-            Snapshot(root_mean, data_mean, a=a_mean,
-                     p=solver.p, tri=solver.tri, edge=solver.edge,
-                     dirichlet_edge=solver.dirichlet_edge,
-                     neumann_edge=solver.neumann_edge,
-                     grid_params=grid_params, ranges=ranges,
-                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
-        else:
-            Snapshot(root_mean, data_mean, a=a_mean,
-                     p=solver.p, tri=solver.tri, edge=solver.edge,
-                     dirichlet_edge=solver.dirichlet_edge,
-                     neumann_edge=solver.neumann_edge,
-                     grid_params=grid_params, ranges=ranges,
-                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
+        if not root_mean.exists():
+            root_mean.mkdir(parents=True, exist_ok=True)
+            # save the mean as a special Snapshot.
+            geo_mean = np.mean(self.geo_range)
+            e_mean = np.mean(self.e_young_range)
+            nu_mean = np.mean(self.nu_poisson_range)
+            # make the data
+            solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
+            data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
+            a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
+            # for now save
+            grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
+            ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
+            mode_and_element = np.array([self.mode, solver.element])
+            mls_order_and_llc = np.array([solver.mls_order, *solver.lower_left_corner])
+            # save it
+            if solver.has_non_homo_dirichlet:
+                Snapshot(root_mean, data_mean, a=a_mean,
+                         p=solver.p, tri=solver.tri, edge=solver.edge,
+                         dirichlet_edge=solver.dirichlet_edge,
+                         neumann_edge=solver.neumann_edge,
+                         grid_params=grid_params, ranges=ranges,
+                         mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
+            else:
+                Snapshot(root_mean, data_mean, a=a_mean,
+                         p=solver.p, tri=solver.tri, edge=solver.edge,
+                         dirichlet_edge=solver.dirichlet_edge,
+                         neumann_edge=solver.neumann_edge,
+                         grid_params=grid_params, ranges=ranges,
+                         mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
+            print(f"Saved mean in {root_mean}")
 
         geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_gird, self.mode)
         geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))

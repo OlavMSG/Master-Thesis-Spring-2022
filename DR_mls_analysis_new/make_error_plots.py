@@ -40,7 +40,6 @@ def main():
         root = main_root / f"p_order_{p_order}"
         print(root)
         d = DraggableCornerRectangleSolver.from_root(root)
-        d.set_geo_param_range((-0.49, 0.49))
         d.matrix_lsq_setup()
         d.matrix_lsq(root)
 

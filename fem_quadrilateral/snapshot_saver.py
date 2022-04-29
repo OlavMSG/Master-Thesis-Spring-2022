@@ -78,6 +78,7 @@ class SnapshotSaver:
                      neumann_edge=solver.neumann_edge,
                      grid_params=grid_params, ranges=ranges,
                      mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
+        print(f"Saved mean in {root_mean}")
 
         # get all vectors from ranges
         geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_gird, self.mode)

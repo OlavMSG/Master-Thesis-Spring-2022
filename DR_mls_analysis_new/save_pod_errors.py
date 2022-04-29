@@ -44,7 +44,6 @@ def error_saver(root, st_main_root, n_rom):
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
 
     d = DraggableCornerRectangleSolver.from_root(root)
-    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -76,7 +75,6 @@ def save_pod_errors(p_order, power_divider=3):
 
     # must be done to get n_rom_max
     d = DraggableCornerRectangleSolver.from_root(root)
-    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -120,7 +118,6 @@ def plot_pod_errors(p_order):
 
     # must be done to get n_rom_max
     d = DraggableCornerRectangleSolver.from_root(root)
-    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
