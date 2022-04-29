@@ -30,6 +30,7 @@ def main():
     max_order = 10
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
     print("-" * 50)

@@ -6,6 +6,7 @@
 import numpy as np
 import sympy as sym
 from sympy.abc import x, y, a, b, s, t
+from fem_quadrilateral import QuadrilateralSolver
 
 from scipy.special import legendre
 
@@ -53,6 +54,27 @@ def main():
 
     print(z5)
 
+def compute_num_QS_sanpshots(n, p):
+    num = n ** 6
+    q = QuadrilateralSolver(2, 0)
+    q.matrix_lsq_setup(p)
+    ant = len(q.sym_mls_funcs)
+    print("ant snapshots:", num)
+    print("ant real snapshots:", num * 5 ** 2)
+    print("ant mls funcs:", ant)
+    print("ratio:", ant / num)
+    print(ant / num < 0.30)
+    step = (q.geo_param_range[1] - q.geo_param_range[0]) / num
+    step_goal = (0.5 + 0.5) / 25 ** 2
+    print("step:", step)
+    print("step_goal:", step_goal)
+    print("-"*50)
+    # print(q.sym_mls_funcs)
+    print("_"*50)
+
 
 if __name__ == '__main__':
-    main()
+    # main()
+    compute_num_QS_sanpshots(7, 9)
+
+

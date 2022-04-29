@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import DiskStorage, Snapshot
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import QuadrilateralSolver
 from fem_quadrilateral.matrix_least_squares import mls_compute_from_fit, MatrixLSQ, norm
 from datetime import datetime
 from tqdm import tqdm
@@ -27,11 +27,11 @@ plt.rcParams.update(new_params)
 def main():
     max_order = 30
     print(datetime.now().time())
-    d = DraggableCornerRectangleSolver(2, 0)
+    d = QuadrilateralSolver(2, 0)
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
     print("-"*50)
-    main_root = Path("DR_mls_order_analysis")
+    main_root = Path("QS_mls_order_analysis")
     a1_mean_norms = np.zeros(max_order)
     a2_mean_norms = np.zeros(max_order)
     f1_mean_norms = np.zeros(max_order)

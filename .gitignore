@@ -132,25 +132,35 @@ dmypy.json
 .idea
 test_storage1
 mls_log.txt
-/DR_mls_analysis/plots_DR_mls_order_analysis_old
-DR_mls_analysis/DR_snapshots_for_mls_order_analysis_log.txt
-DR_mls_analysis/DR_snapshots_for_mls_order_analysis_log2.txt
-/DR_mls_analysis/DR_mls_order_analysis_old
+/DR_mls_analysis_old/plots_DR_mls_order_analysis_old
+DR_mls_analysis_old/DR_snapshots_for_mls_order_analysis_log.txt
+DR_mls_analysis_old/DR_snapshots_for_mls_order_analysis_log2.txt
+/DR_mls_analysis_old/DR_mls_order_analysis_old
 
-/DR_mls_analysis/plots_DR_mls_order_analysis
-/DR_mls_analysis/DR_mls_order_analysis
-/DR_mls_analysis/plots_DR_mls_error_analysis
-/DR_mls_analysis/plots_pod
+/DR_mls_analysis_old/plots_DR_mls_order_analysis
+/DR_mls_analysis_old/DR_mls_order_analysis
+/DR_mls_analysis_old/plots_DR_mls_error_analysis
+/DR_mls_analysis_old/plots_pod
 
 
-DR_mls_analysis_2/DR_snapshots_for_mls_order_analysis_log.txt
-DR_mls_analysis_2/DR_snapshots_for_mls_order_analysis_log2.txt
+DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log.txt
+DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log2.txt
 
-/DR_mls_analysis_2/plots_DR_mls_order_analysis
-/DR_mls_analysis_2/DR_mls_order_analysis
-/DR_mls_analysis_2/plots_DR_mls_error_analysis
-/DR_mls_analysis_2/plots_pod
-/DR_mls_analysis_2/pod_errors_19
+/DR_mls_analysis_old_2/plots_DR_mls_order_analysis
+/DR_mls_analysis_old_2/DR_mls_order_analysis
+/DR_mls_analysis_old_2/plots_DR_mls_error_analysis
+/DR_mls_analysis_old_2/plots_pod
+/DR_mls_analysis_old_2/pod_errors_19
+/DR_mls_analysis_old_2/POD_errors_19_log.txt
+
+DR_mls_analysis_new/DR_snapshots_for_mls_order_analysis_log.txt
+
+/DR_mls_analysis_new/plots_DR_mls_order_analysis
+/DR_mls_analysis_new/DR_mls_order_analysis
+/DR_mls_analysis_new/plots_DR_mls_error_analysis
+/DR_mls_analysis_new/plots_pod
+/DR_mls_analysis_new/pod_errors_19
+/DR_mls_analysis_new/POD_errors_19_log.txt
 
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log.txt
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log2.txt
@@ -173,6 +183,8 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /SR_mls_analysis_2/plots_pod
 /SR_mls_analysis_2/pod_errors_2
 /SR_mls_analysis_2/pod_errors_8
+
+/QS_mls_analysis/QS_snapshots_for_mls_order_analysis_log.txt
 
 /fem_quadrilateral/test_storage_DR1
 /fem_quadrilateral/test_storage_SR1

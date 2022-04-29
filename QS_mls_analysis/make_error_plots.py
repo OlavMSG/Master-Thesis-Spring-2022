@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot
 
 import helpers
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import QuadrilateralSolver
 from datetime import datetime
 from tqdm import tqdm
 
@@ -32,14 +32,14 @@ def main():
     max_order = 30
     print(datetime.now().time())
     print("-" * 50)
-    main_root = Path("DR_mls_order_analysis")
+    main_root = Path("QS_mls_order_analysis")
     max_errors = np.zeros(max_order)
     mean_errors = np.zeros(max_order)
     min_errors = np.zeros(max_order)
     for k, p_order in enumerate(range(1, max_order + 1)):
         root = main_root / f"p_order_{p_order}"
         print(root)
-        d = DraggableCornerRectangleSolver.from_root(root)
+        d = QuadrilateralSolver.from_root(root)
         d.matrix_lsq_setup()
         d.matrix_lsq(root)
 
@@ -60,7 +60,7 @@ def main():
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)
     print("plotting")
-    save_dict = "plots_DR_mls_order_analysis"
+    save_dict = "plots_QS_mls_order_analysis"
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     x = np.arange(max_order) + 1
     plt.figure("err-1")

@@ -12,7 +12,7 @@ import numpy as np
 from matrix_lsq import DiskStorage
 
 import default_constants
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import QuadrilateralSolver
 from datetime import datetime
 import multiprocessing as mp
 
@@ -35,7 +35,7 @@ def save_snapshots(p_order):
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
 
-    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    d = QuadrilateralSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
     d.matrix_lsq_setup(p_order, use_experimental_expansion=True)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
@@ -45,7 +45,9 @@ def save_snapshots(p_order):
     print("root:", root)
     print("-" * 50)
     if len(DiskStorage(root)) == 0:
-        d.save_snapshots(root, mu_grid)
+        # run multi multiple times
+        # d.save_snapshots(root, mu_grid)
+        pass
     else:
         d.matrix_lsq(root)
         print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
@@ -57,7 +59,7 @@ def main():
     max_order = 10
     multiprocess = False
     if multiprocess:
-        pool = mp.Pool(mp.cpu_count(), maxtasksperchild=1)
+        pool = mp.Pool(mp.cpu_count())
         for p_order in range(1, max_order + 1):
             pool.apply_async(save_snapshots, [p_order])
 

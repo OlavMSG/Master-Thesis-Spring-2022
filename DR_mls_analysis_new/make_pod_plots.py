@@ -42,6 +42,7 @@ def make_pod_plots(p_order):
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     print(root)
     d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -98,7 +99,7 @@ def make_pod_plots(p_order):
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 25
     p_order_list = [19]
     multiprocess = True
     if multiprocess:

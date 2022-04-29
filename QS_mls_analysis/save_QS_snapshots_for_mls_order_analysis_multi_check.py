@@ -8,7 +8,7 @@ import numpy as np
 from matrix_lsq import DiskStorage
 
 import default_constants
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import QuadrilateralSolver
 from datetime import datetime
 import multiprocessing as mp
 
@@ -25,12 +25,12 @@ def clamped_bc(x, y):
     return abs(x) <= default_constants.default_tol
 
 
-def save_snapshots(p_order):
+def save_snapshots(p_order, power_divider):
     n = 20
-    mu_grid = 25
-    main_root = Path("DR_mls_order_analysis")
+    mu_grid = 7 # gives 117_649 snapshots...
+    main_root = Path("QS_mls_order_analysis")
 
-    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    d = QuadrilateralSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
     d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
@@ -40,14 +40,16 @@ def save_snapshots(p_order):
     print("root:", root)
     print("-" * 50)
     print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
-    d.multiprocessing_save_snapshots(root, mu_grid, power_divider=3)
+    d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
     print("-" * 50)
 
 
 def main():
     print(datetime.now().time())
-    max_order = 10
-    save_snapshots(3)
+    max_order = 9
+    p_order = 1
+    power_divider = 3
+    save_snapshots(p_order, power_divider)
     print(datetime.now().time())
 
 

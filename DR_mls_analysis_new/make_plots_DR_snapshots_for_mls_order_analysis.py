@@ -25,9 +25,10 @@ new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.fi
 plt.rcParams.update(new_params)
 
 def main():
-    max_order = 30
+    max_order = 25
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
     print("-"*50)

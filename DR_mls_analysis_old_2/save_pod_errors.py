@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot, DiskStorage
 
 import helpers
-from fem_quadrilateral import ScalableRectangleSolver
+from fem_quadrilateral import DraggableCornerRectangleSolver
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing as mp
@@ -43,7 +43,8 @@ def error_saver(root, st_main_root, n_rom):
     e_young_vec = helpers.get_vec_from_range(e_young_range, material_grid, mode)
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
 
-    d = ScalableRectangleSolver.from_root(root)
+    d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -62,7 +63,7 @@ def error_saver(root, st_main_root, n_rom):
 
 
 def save_pod_errors(p_order, power_divider=3):
-    main_root = Path("SR_mls_order_analysis")
+    main_root = Path("DR_mls_order_analysis")
     root = main_root / f"p_order_{p_order}"
 
     st_main_root = Path(f"pod_errors_{p_order}")
@@ -74,7 +75,8 @@ def save_pod_errors(p_order, power_divider=3):
     print(min_n_rom)
 
     # must be done to get n_rom_max
-    d = ScalableRectangleSolver.from_root(root)
+    d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -105,7 +107,7 @@ def save_pod_errors(p_order, power_divider=3):
 
 
 def plot_pod_errors(p_order):
-    main_root = Path("SR_mls_order_analysis")
+    main_root = Path("DR_mls_order_analysis")
     root = main_root / f"p_order_{p_order}"
 
     st_main_root = Path(f"pod_errors_{p_order}")
@@ -117,7 +119,8 @@ def plot_pod_errors(p_order):
     Path(save_dict).mkdir(parents=True, exist_ok=True)
 
     # must be done to get n_rom_max
-    d = ScalableRectangleSolver.from_root(root)
+    d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -156,8 +159,8 @@ def plot_pod_errors(p_order):
     for k, snapshot in enumerate(storage):
         n_roms[k] = k + 1
         max_errors[k], mean_errors[k], min_errors[k] = snapshot["errors"]
-        arg_errors = Snapshot["arg_errors"].astype(int)
-        print(f"N={k + 1}:\nMax error at {param_mat[arg_errors[0]]}\nMin error at {param_mat[arg_errors[1]]}")
+        arg_errors = snapshot["arg_errors"].astype(int)
+        print(f"N={k+1}:\nMax error at {param_mat[arg_errors[0]]}\nMin error at {param_mat[arg_errors[1]]}")
     print(dict(zip(n_roms, mean_errors)))
     print(np.all(n_roms - 1 - np.arange(len(n_roms)) == 0))
 
@@ -175,9 +178,9 @@ def plot_pod_errors(p_order):
 
 def main():
     print(datetime.now().time())
-    p_order = 2
+    p_order = 19
     power_divider = 3
-    save_pod_errors(p_order, power_divider=power_divider)
+    # save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())
     plot_pod_errors(p_order)
 

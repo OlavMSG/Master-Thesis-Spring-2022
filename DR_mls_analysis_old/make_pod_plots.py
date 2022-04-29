@@ -41,6 +41,7 @@ def make_pod_plots(p_order):
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     print(root)
     d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)

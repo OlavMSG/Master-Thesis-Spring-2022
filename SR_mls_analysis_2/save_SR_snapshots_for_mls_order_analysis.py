@@ -57,7 +57,7 @@ def main():
     max_order = 10
     multiprocess = False
     if multiprocess:
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(mp.cpu_count(), maxtasksperchild=1)
         for p_order in range(1, max_order + 1):
             pool.apply_async(save_snapshots, [p_order])
         # now we are done, kill the listener

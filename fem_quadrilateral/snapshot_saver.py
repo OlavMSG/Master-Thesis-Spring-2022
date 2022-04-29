@@ -64,26 +64,20 @@ class SnapshotSaver:
         # save it
         root_mean = self.root / "mean"
         root_mean.mkdir(parents=True, exist_ok=True)
-        # save a1, a2, f0, f1_dir, f2_dir for debugging.
         if solver.has_non_homo_dirichlet:
             Snapshot(root_mean, data_mean, a=a_mean,
                      p=solver.p, tri=solver.tri, edge=solver.edge,
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
                      grid_params=grid_params, ranges=ranges,
-                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc,
-                     a1=solver.a1, a2=solver.a2,
-                     f0=solver.f0, rg=solver.rg,
-                     f1_dir=solver.f1_dir, f2_dir=solver.f2_dir)
+                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
         else:
             Snapshot(root_mean, data_mean, a=a_mean,
                      p=solver.p, tri=solver.tri, edge=solver.edge,
                      dirichlet_edge=solver.dirichlet_edge,
                      neumann_edge=solver.neumann_edge,
                      grid_params=grid_params, ranges=ranges,
-                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc,
-                     a1=solver.a1, a2=solver.a2,
-                     f0=solver.f0)
+                     mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
 
         # get all vectors from ranges
         geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_gird, self.mode)

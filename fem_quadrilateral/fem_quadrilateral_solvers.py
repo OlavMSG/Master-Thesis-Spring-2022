@@ -15,6 +15,7 @@ from time import perf_counter
 from scipy.special import legendre
 import tqdm
 
+import default_constants
 import helpers
 from . import assembly
 from .solution_function_class import SolutionFunctionValues2D
@@ -63,7 +64,7 @@ class QuadrilateralSolver(BaseSolver):
         y0 + x2 + mu2 * x1 * (1 - x2) + mu4 * x1 * x2 + mu6 * (1 - x1) * x2
     ])
     sym_params = sym.Matrix([x1, x2, mu1, mu2, mu3, mu4, mu5, mu6])
-    geo_param_range = (-0.16, 0.16)  # < 1/6 = 0.1666...
+    geo_param_range = default_constants.QS_range  # (-0.1, 0.1)  abs(...)< 1/10 < 1/6 = 0.1666...
     _pod: PodWithEnergyNorm
     _mls: MatrixLSQ
     _solver_type = "QuadrilateralSolver"
@@ -792,7 +793,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu3: mu1, mu4: mu2,
                                                            mu5: 0, mu6: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
-    geo_param_range = (-0.49, 0.49)  # < 1/2
+    geo_param_range = (-0.49, 0.49) # default_constants.DR_range # (-0.3, 0.3)  abs(...) < 0.3 < 1/2
     _solver_type = "DraggableCornerRectangleSolver"
     _solver_type_short = "DR"
 
@@ -826,7 +827,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
                                                            mu3: lx - 1, mu4: ly - 1,
                                                            mu5: 0, mu6: ly - 1}))
     sym_params = sym.Matrix([x1, x2, lx, ly])
-    geo_param_range = (0.1, 5.1)
+    geo_param_range = default_constants.SR_range  # (0.1, 5.1)
     _solver_type = "ScalableRectangleSolver"
     _solver_type_short = "SR"
 

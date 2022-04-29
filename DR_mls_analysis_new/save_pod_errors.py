@@ -44,6 +44,7 @@ def error_saver(root, st_main_root, n_rom):
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
 
     d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -53,10 +54,11 @@ def error_saver(root, st_main_root, n_rom):
             product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
         errors_p[i] = d.rberror(root, e_young, nu_poisson, *geo_params, n_rom=n_rom)
     errors = np.array([np.max(errors_p), np.mean(errors_p), np.min(errors_p)])
+    arg_errors = np.array([np.argmax(errors_p), np.argmin(errors_p)])
     storage = DiskStorage(st_main_root)
     save_root = storage.root_of(n_rom - 1)
     save_root.mkdir(parents=True, exist_ok=True)
-    Snapshot(save_root, errors=errors)
+    Snapshot(save_root, errors=errors, arg_errors=arg_errors)
     print(f"saved in {save_root} using n_rom={n_rom}")
 
 
@@ -74,6 +76,7 @@ def save_pod_errors(p_order, power_divider=3):
 
     # must be done to get n_rom_max
     d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -117,6 +120,7 @@ def plot_pod_errors(p_order):
 
     # must be done to get n_rom_max
     d = DraggableCornerRectangleSolver.from_root(root)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -133,6 +137,18 @@ def plot_pod_errors(p_order):
     plt.savefig("".join((save_dict, f"\\pod_rel_info_cont_p_order_{p_order}.pdf")), bbox_inches='tight')
     plt.show()
 
+    root_mean = root / "mean"
+    mean_snapshot = Snapshot(root_mean)
+    geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
+    geo_range, e_young_range, nu_poisson_range = mean_snapshot["ranges"]
+    mode = mean_snapshot["mode_and_element"][0]
+
+    geo_vec = helpers.get_vec_from_range(geo_range, geo_gird, mode)
+    e_young_vec = helpers.get_vec_from_range(e_young_range, material_grid, mode)
+    nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
+
+    param_mat = np.array(list(product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)))
+
     # get errors
     storage = DiskStorage(st_main_root)
     max_errors = np.zeros(len(storage))
@@ -143,6 +159,8 @@ def plot_pod_errors(p_order):
     for k, snapshot in enumerate(storage):
         n_roms[k] = k + 1
         max_errors[k], mean_errors[k], min_errors[k] = snapshot["errors"]
+        arg_errors = snapshot["arg_errors"].astype(int)
+        print(f"N={k+1}:\nMax error at {param_mat[arg_errors[0]]}\nMin error at {param_mat[arg_errors[1]]}")
     print(dict(zip(n_roms, mean_errors)))
     print(np.all(n_roms - 1 - np.arange(len(n_roms)) == 0))
 
@@ -160,9 +178,9 @@ def plot_pod_errors(p_order):
 
 def main():
     print(datetime.now().time())
-    p_order = 2
+    p_order = 19
     power_divider = 3
-    save_pod_errors(p_order, power_divider=power_divider)
+    # save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())
     plot_pod_errors(p_order)
 

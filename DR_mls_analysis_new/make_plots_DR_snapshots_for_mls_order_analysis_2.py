@@ -28,9 +28,10 @@ plt.rcParams.update(new_params)
 def main():
     tol = 5e-3
     max_order1 = 10
-    max_order = 30
+    max_order = 25
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
+    d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
     print("-" * 50)

@@ -29,7 +29,7 @@ plt.rcParams.update(new_params)
 
 
 def main():
-    max_order = 10
+    max_order = 25
     print(datetime.now().time())
     print("-" * 50)
     main_root = Path("DR_mls_order_analysis")
@@ -40,6 +40,7 @@ def main():
         root = main_root / f"p_order_{p_order}"
         print(root)
         d = DraggableCornerRectangleSolver.from_root(root)
+        d.set_geo_param_range((-0.49, 0.49))
         d.matrix_lsq_setup()
         d.matrix_lsq(root)
 
