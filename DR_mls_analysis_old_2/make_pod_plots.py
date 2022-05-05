@@ -58,8 +58,8 @@ def make_pod_plots(p_order):
 
     n_rom_max = d.n_rom_max
     print(n_rom_max)
-    if n_rom_max > 50:
-        n_rom_max = 50
+    if n_rom_max > 25:
+        n_rom_max = 25
     max_errors = np.zeros(n_rom_max)
     mean_errors = np.zeros(n_rom_max)
     min_errors = np.zeros(n_rom_max)
@@ -86,7 +86,7 @@ def make_pod_plots(p_order):
     print("plotting")
     x = np.arange(n_rom_max) + 1
     plt.figure("err-1")
-    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-u_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
+    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-Vu_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
     plt.semilogy(x, max_errors, "x--", label="max")
     plt.semilogy(x, mean_errors, "x--", label="mean")
     plt.semilogy(x, min_errors, "x--", label="min")

@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.linalg import eigh, fractional_matrix_power
 
 import default_constants
+# we choose to not update to Compressed versions
 from matrix_lsq import Storage, DiskStorage, Snapshot
 import numpy as np
 
@@ -153,41 +154,8 @@ class PodWithEnergyNorm:
         plt.figure("Relative information content")
         plt.title("Relative information content, $I(N)$")
         plt.plot(np.arange(len(i_n)) + 1, i_n, "gD-")
-        plt.plot(self.n_rom, i_n[self.n_rom - 1], "bo", label=f"$(N, I(N))=({self.n_rom}, {i_n[self.n_rom-1]:.4f})$")
+        plt.plot(self.n_rom, i_n[self.n_rom - 1], "bo", label=f"$(N, I(N))=({self.n_rom}, {i_n[self.n_rom-1]:.5f})$")
         plt.xlabel("$N$")
         plt.ylabel("$I(N)$")
         plt.grid()
         plt.legend()
-
-
-if __name__ == '__main__':
-    from fem_quadrilateral import DraggableCornerRectangleSolver
-
-
-    def dir_bc(x, y):
-        return x, 0
-
-
-    n = 2
-    root = Path("test_storage2")
-
-    if len(DiskStorage(root)) == 0:
-        d = DraggableCornerRectangleSolver(3, 0, dirichlet_bc_func=dir_bc)
-        d.save_snapshots(root, 3)
-    d = DraggableCornerRectangleSolver(3, 0, dirichlet_bc_func=dir_bc)
-    d.assemble(0, 0)
-
-    p = PodWithEnergyNorm(root)
-    p()
-
-    print(p.v)
-    print(p.get_v_mat(5))
-    b = np.arange(d.n_free)
-    print("b")
-    print(b)
-    print(p.compute_rom(b))
-    a = np.arange(d.n_free ** 2).reshape((d.n_free, d.n_free))
-    a = a + a.T
-    print("a")
-    print(a)
-    print(p.compute_rom(a))

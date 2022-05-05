@@ -57,8 +57,8 @@ def make_pod_plots(p_order):
 
     n_rom_max = d.n_rom_max
     print(n_rom_max)
-    if n_rom_max > 50:
-        n_rom_max = 50
+    if n_rom_max > 25:
+        n_rom_max = 25
     max_errors = np.zeros(n_rom_max)
     mean_errors = np.zeros(n_rom_max)
     min_errors = np.zeros(n_rom_max)
@@ -85,7 +85,7 @@ def make_pod_plots(p_order):
     print("plotting")
     x = np.arange(n_rom_max) + 1
     plt.figure("err-1")
-    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-u_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
+    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-Vu_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
     plt.semilogy(x, max_errors, "x--", label="max")
     plt.semilogy(x, mean_errors, "x--", label="mean")
     plt.semilogy(x, min_errors, "x--", label="min")
@@ -99,10 +99,11 @@ def make_pod_plots(p_order):
 def main():
     print(datetime.now().time())
     max_order = 25
-    p_order_list = [19]
+    power_divider = 3
+    p_order_list = [2, 4, 6, 10, 12, 14, 16, 20, 25]
     multiprocess = True
     if multiprocess:
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(int(max(mp.cpu_count() // power_divider, 1)), maxtasksperchild=1)
         for p_order in p_order_list:
             pool.apply_async(make_pod_plots, [p_order])
         pool.close()

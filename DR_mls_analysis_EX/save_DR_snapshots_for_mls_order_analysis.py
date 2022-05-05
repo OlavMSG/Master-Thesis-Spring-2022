@@ -36,7 +36,7 @@ def save_snapshots(p_order):
     main_root = Path("DR_mls_order_analysis")
 
     d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
-    d.matrix_lsq_setup(p_order, use_experimental_expansion=True)
+    d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
     print("Ant snapshots:", mu_grid ** 2)

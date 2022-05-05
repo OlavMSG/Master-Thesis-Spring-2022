@@ -12,10 +12,9 @@ import helpers
 from .base_solver import BaseSolver
 
 import scipy.sparse as sp
-import tqdm
-from scipy.linalg import eigh, fractional_matrix_power
 
 import default_constants
+# we choose to not update to Compressed versions
 from matrix_lsq import Storage, DiskStorage, Snapshot
 import numpy as np
 

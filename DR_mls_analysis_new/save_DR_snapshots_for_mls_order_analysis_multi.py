@@ -5,6 +5,7 @@
 from pathlib import Path
 
 import numpy as np
+# we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage
 
 import default_constants
@@ -27,6 +28,7 @@ def clamped_bc(x, y):
 
 def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
     d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    print("mu_range:", d.geo_param_range)
     d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))

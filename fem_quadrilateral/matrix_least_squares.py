@@ -12,7 +12,7 @@ import scipy.sparse as sp
 import matplotlib.pyplot as plt
 import sympy as sym
 from scipy.sparse.linalg import norm as spnorm
-
+# we choose to not update to Compressed versions
 from matrix_lsq import LeastSquares, Storage, DiskStorage
 
 Matrix = Union[np.ndarray, sp.spmatrix]

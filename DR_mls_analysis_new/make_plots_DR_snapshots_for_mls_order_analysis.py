@@ -24,13 +24,14 @@ new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.fi
               'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
 plt.rcParams.update(new_params)
 
+
 def main():
     max_order = 25
     print(datetime.now().time())
     d = DraggableCornerRectangleSolver(2, 0)
     d.matrix_lsq_setup(max_order)
     print(d.sym_mls_funcs)
-    print("-"*50)
+    print("-" * 50)
     main_root = Path("DR_mls_order_analysis")
     a1_mean_norms = np.zeros(max_order)
     a2_mean_norms = np.zeros(max_order)

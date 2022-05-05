@@ -55,10 +55,6 @@ def sym_kron_product2x2(mat1: sym.Matrix, mat2: sym.Matrix) -> sym.Matrix:
 class QuadrilateralSolver(BaseSolver):
     ref_plate = (0, 1)
     implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
-    """sym_phi = sym.Matrix([
-        x0 + x1 + mu1 * (1 - x1) * (1 - x2) + mu3 * x1 * (1 - x2) + mu5 * x1 * x2 + mu7 * (1 - x1) * x2,
-        y0 + x2 + mu2 * (1 - x1) * (1 - x2) + mu4 * x1 * (1 - x2) + mu6 * x1 * x2 + mu8 * (1 - x1) * x2
-    ])"""
     sym_phi = sym.Matrix([
         x0 + x1 + mu1 * x1 * (1 - x2) + mu3 * x1 * x2 + mu5 * (1 - x1) * x2,
         y0 + x2 + mu2 * x1 * (1 - x2) + mu4 * x1 * x2 + mu6 * (1 - x1) * x2
@@ -88,20 +84,19 @@ class QuadrilateralSolver(BaseSolver):
                                "mu5": "a4", "mu6": "b4 - 1"}
         print("(x0, y0): are the coordinates of the lower left corner, default (0,0)")
         print("Given the Quadrilateral centered in (0, 0) with vertices in (0, 0), (a2, b2), (a3, b3) and (a4, "
-              "b4) the parameters mu1:8 are given as:")
+              "b4) the parameters mu1:6 are given as:")
         print(mu_to_vertices_dict)
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
                  neumann_bc_func: Optional[Callable] = None,
                  element: str = "bq", x0: float = 0, y0: float = 0):
-        # save user inputed functions
+        # save user inputted functions
         self.input_f_func = f_func
         self.input_dirichlet_bc_func = dirichlet_bc_func
         self.input_get_dirichlet_edge_func = get_dirichlet_edge_func
         self.input_neumann_bc_func = neumann_bc_func
 
-        self._use_experimental_expansion_in_mls = False
         self._a1_set_n_rom_list = None
         self._a2_set_n_rom_list = None
         self._f0_set_n_rom_list = None
@@ -187,6 +182,7 @@ class QuadrilateralSolver(BaseSolver):
                 self.has_non_homo_neumann = True
 
     def _from_root(self):
+        # we choose to not update to Compressed versions
         from matrix_lsq import Snapshot
         root_mean = self.saver_root / "mean"
         mean_snapshot = Snapshot(root_mean)
@@ -242,13 +238,15 @@ class QuadrilateralSolver(BaseSolver):
                                                       otypes=[float])
 
     def _sym_mls_params_setup(self):
-        ant = len(self.sym_geo_params) + 1
 
         # looking at Z =  top_z / det(jac)
         # 1 / det(jac) has gives a rational of form 1/(k + c*x)
         # Which has the Taylor expansion
         # 1 / (k + c*x) = 1/k - cx/k^2 + c^2x^2/k^3 - ... + ...
         # for |x|<|k/c|
+        # experimentation shows that if k!=1, not for SR, it is best to just use polynomials,
+        # since use of k^order gives bad condition number,
+        # polynomials is also what you get if you expand 1/k^order in mu_i
 
         # c here takes the form a_0*1 + sum (b_i * mu_i)
         # so c^order takes the form a_0*1 + sum (b_i * mu_i) + sum (c_ij * mu_i * mu_j)
@@ -267,52 +265,7 @@ class QuadrilateralSolver(BaseSolver):
         # k, c and top_z for Z matrix, and
         # c and (det_jac) top_z for f(phi) * det(jac).
         # conclusion: we do not nees top_z and get_jac, if we compute c 2 orders higher
-
-        # get k_term from det(jac) by setting x1=x2=0
-        k_term = self.sym_det_jac.subs({x1: 0, x2: 0})
-        k_orders = [np.zeros(ant, dtype=int)]
-        if k_term != 1:
-            if self.is_jac_constant:
-                # Jacobian is constant, i.e k is constant
-                if len(k_term.args) == len(self.sym_geo_params) and \
-                        all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
-                    # k has one component, that is PI_{i=1} mu_i
-                    k_order = - np.ones(ant, dtype=int)
-                    k_order[-1] = 0  # set total to zero, we only have one term
-                    k_orders.append(k_order)
-                else:
-                    # k has multiple components, form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
-                    k_order = np.zeros(ant, dtype=int)
-                    k_order[-1] = -2  # set total to neg two, we only have one term
-                    k_orders.append(k_order)
-
-            elif len(k_term.args) == len(self.sym_geo_params) and \
-                    all(k_arg in self.sym_geo_params for k_arg in self.sym_geo_params):
-                # Jacobian is not constant and k has one component, that is PI_{i=1} mu_i
-                for order in range(self.mls_order):
-                    k_order = -(order + 1) * np.ones(ant, dtype=int)
-                    k_order[-1] = 0  # set total to zero, we only have one term
-                    k_orders.append(k_order)
-            else:
-                # not tested
-                # Jacobian is not constant and k has multiple components,
-                # form a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
-                for order in range(self.mls_order // 2):
-                    k_order = np.zeros(ant, dtype=int)
-                    k_order[-1] = - 2 * (order + 1)  # set total, we have multiple terms
-                    k_orders.append(k_order)
-        # experimental expansions
-        if self._use_experimental_expansion_in_mls:
-            x1_term = self.sym_det_jac.subs({x1: 1, x2: 0}) - k_term
-            x2_term = self.sym_det_jac.subs({x1: 0, x2: 1}) - k_term
-            if (k_term == 1) and (x1_term in self.sym_geo_params) and (x2_term in self.sym_geo_params):
-                # add 1 / (x1_term * x2_term)
-                # here know len(self.sym_geo_params)=2
-                k_order = - np.ones(ant, dtype=int)
-                k_order[-1] = 0  # set total to zero, we only have one term
-                k_orders.append(k_order)
-
-        k_orders = np.unique(k_orders, axis=0)
+        ant = len(self.sym_geo_params)
 
         # get c
         c = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant - 1))))
@@ -320,24 +273,35 @@ class QuadrilateralSolver(BaseSolver):
         c_orders = np.zeros((c.shape[0], c.shape[1] + 1), dtype=int)
         c_orders[:, :-1] = c
 
-        # put it all together
+        # get k and put it all together
         mls_orders = [np.zeros(ant, dtype=int)]
-        # print(c_orders)
-        # print(k_orders)
-        for order1 in k_orders:
-            for order2 in c_orders:
-                sum_order = order1 + order2
-                mls_orders.append(sum_order)
-        mls_orders = np.unique(mls_orders, axis=0)
+        # get k_term from det(jac) by setting x1=x2=0
+        # k_term = self.sym_det_jac.subs({x1: 0, x2: 0})
+        if self.solver_type == "ScalableRectangleSolver":
+            k_orders = [np.zeros(ant, dtype=int)]
+            # Jacobian is constant, i.e k is constant
+            # k has one component, that is PI_{i=1} mu_i
+            k_order = - np.ones(ant, dtype=int)
+            # k_order[-1] = 0  # set total to zero, we only have one term
+            k_orders.append(k_order)
+
+            for order1 in k_orders:
+                for order2 in c_orders:
+                    sum_order = order1 + order2
+                    mls_orders.append(sum_order)
+            mls_orders = np.unique(mls_orders, axis=0)
+        else:
+            # DraggableCornerRectangleSolver and QuadrilateralSolver
+            # nothing to do
+            mls_orders = c_orders
 
         # get orders to use
         arg_order = np.array(list(np.all(np.abs(order) <= self.mls_order)
-                                  and ((np.where(order[:-1] > 0, order[:-1], 0).sum() <= self.mls_order)
-                                       and (-np.where(order[:-1] < 0, order[:-1], 0).sum()) <= self.mls_order)
-                                  for order in mls_orders))
-
+                                  and ((np.where(order > 0, order, 0).sum() <= self.mls_order)
+                                       and (-np.where(order < 0, order, 0).sum()) <= self.mls_order)
+                                  for order in mls_orders))  # back to old, add [:-1] on orders both in np.where
         mls_orders = mls_orders[arg_order]
-        # print(mls_orders)
+
         p_list = [legendre(p).coeffs[::-1] for p in range(self.mls_order + 1)]
         # make the mls_funcs
         sym_mls_funcs = sym.Matrix([sym.S.One] * len(mls_orders))
@@ -362,11 +326,12 @@ class QuadrilateralSolver(BaseSolver):
                         sym_mls_funcs[n] *= poly
                 else:
                     sym_mls_funcs[n] *= mu_i ** order[i]
+            # not needed
             # handel total
-            # may need changing...
-            if order[-1] != 0:
-                sym_mls_funcs[n] *= k_term ** order[-1]
-        if symengine_is_found:
+            # if order[-1] != 0:
+            # sym_mls_funcs[n] *= k_term ** (order[-1] // 2)
+        # sort the terms in rising absolute order
+        if find_spec("symengine") is not None:
             self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
         else:
             self.sym_mls_funcs = sym.Matrix(np.asarray(sym_mls_funcs)[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
@@ -384,12 +349,6 @@ class QuadrilateralSolver(BaseSolver):
                 self.nq_y = nq
 
     def _edges(self):
-        """
-        Get the edges
-        Returns
-        -------
-        None.
-        """
         # dirichlet edge
         if self.get_dirichlet_edge_func is not None:
             dirichlet_edge_func_vec = np.vectorize(self.get_dirichlet_edge_func, otypes=[bool])
@@ -428,13 +387,6 @@ class QuadrilateralSolver(BaseSolver):
         self.f0 = self.f0_full[self.expanded_free_index]
 
     def _set_f_load_dirichlet(self):
-        """
-        Compute the lifting function
-
-        Returns
-        -------
-        None.
-        """
         # compute a_dirichlet
         # x and y on the dirichlet_edge
         x_vec = self.p[self.dirichlet_edge_index][:, 0]
@@ -649,8 +601,7 @@ class QuadrilateralSolver(BaseSolver):
         print(f"warning: Environmental variables have been set. This may effect further use of the solver.",
               file=sys.stderr)
 
-    def matrix_lsq_setup(self, mls_order: Optional[int] = 1, use_experimental_expansion: bool = False):
-        self._use_experimental_expansion_in_mls = use_experimental_expansion
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 2):
         # default mls_order is 1,
         assert self.mls_order >= 0
         if self.mls_order != mls_order:
@@ -658,7 +609,6 @@ class QuadrilateralSolver(BaseSolver):
                 assert mls_order >= 0
                 self.mls_order = mls_order
             # else just use set self.mls_order
-
         self._sym_mls_params_setup()
         self.mls_has_been_setup = True
 
@@ -793,7 +743,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu3: mu1, mu4: mu2,
                                                            mu5: 0, mu6: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
-    geo_param_range = (-0.49, 0.49) # default_constants.DR_range # (-0.3, 0.3)  abs(...) < 0.3 < 1/2
+    geo_param_range = default_constants.DR_range  # (-0.3, 0.3)  abs(...) < 0.3 < 1/2
     _solver_type = "DraggableCornerRectangleSolver"
     _solver_type_short = "DR"
 

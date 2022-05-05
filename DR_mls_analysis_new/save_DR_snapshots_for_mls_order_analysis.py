@@ -47,6 +47,7 @@ def save_snapshots(p_order):
     if len(DiskStorage(root)) == 0:
         d.save_snapshots(root, mu_grid)
     else:
+        print("mu_range:", d.geo_param_range)
         d.matrix_lsq(root)
         if p_order <= 10:
             print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))

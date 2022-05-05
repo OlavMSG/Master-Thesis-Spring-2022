@@ -8,7 +8,7 @@ from fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleS
 
 def main():
     n = 2
-    order = 3
+    order = 2
     q = QuadrilateralSolver(n, 0)
     print(q.sym_phi)
     print(q.sym_jac)
@@ -34,7 +34,6 @@ def main():
     print(r.sym_mls_funcs)
     print(len(r.sym_mls_funcs))
     # r.get_geo_param_limit_estimate()
-
 
 
 if __name__ == '__main__':

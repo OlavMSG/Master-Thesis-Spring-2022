@@ -94,7 +94,7 @@ class BaseSolver(Protocol):
                                        nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
-    def matrix_lsq_setup(self, mls_order: Optional[int] = 1, use_experimental_expansion: bool = False):
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 2):
         ...
 
     def matrix_lsq(self, root: Path):
