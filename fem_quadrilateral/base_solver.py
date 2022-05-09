@@ -25,6 +25,7 @@ class BaseSolver(Protocol):
     input_neumann_bc_func: Callable
     ref_plate: Tuple[int, int]
     implemented_elements: List[str]
+    phi: Callable
     sym_phi: sym.Matrix
     sym_params: sym.Matrix
     sym_geo_params: sym.Matrix

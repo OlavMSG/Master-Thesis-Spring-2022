@@ -24,6 +24,7 @@ from .snapshot_saver import SnapshotSaver
 from .matrix_least_squares import MatrixLSQ, mls_compute_from_fit
 from .pod import PodWithEnergyNorm
 from .error_computers import HfErrorComputer, RbErrorComputer
+from .plotting import plot_mesh, plot_hf_displacment, plot_rb_displacment
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -89,7 +90,7 @@ class QuadrilateralSolver(BaseSolver):
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-                 neumann_bc_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "bq", x0: float = 0, y0: float = 0):
         # save user inputted functions
         self.input_f_func = f_func
@@ -122,6 +123,7 @@ class QuadrilateralSolver(BaseSolver):
         self.n_full = self._n * self._n * 2
         self.is_assembled_and_free = False
         self.is_assembled_and_free_from_root = False
+        self.bcs_are_on_reference_domain = bcs_are_on_reference_domain
 
         self.lower_left_corner = (x0, y0)
         self._sym_setup()
@@ -148,23 +150,39 @@ class QuadrilateralSolver(BaseSolver):
         if f_func == 0:
             self.f_func = helpers.VectorizedFunction2D(default_func)
             self.f_func_non_zero = False
+        elif isinstance(f_func, int):
+            raise ValueError("Only int-value for f_func allowed is 0.")
         else:
-            self.f_func = helpers.VectorizedFunction2D(
-                lambda x, y:
-                f_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
+            if self.bcs_are_on_reference_domain:
+                self.f_func = helpers.VectorizedFunction2D(f_func)
+            else:
+                self.f_func = helpers.VectorizedFunction2D(
+                    lambda x, y:
+                    f_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
 
         # dirichlet bc function
         self.has_non_homo_dirichlet = False
         if dirichlet_bc_func is None:
             self.dirichlet_bc_func = helpers.VectorizedFunction2D(default_func)
         else:
-            # no det_jac here implemented via a1 and a2
-            self.dirichlet_bc_func = helpers.VectorizedFunction2D(
-                lambda x, y: dirichlet_bc_func(*self.phi(x, y, *self.geo_params)))
+            if self.bcs_are_on_reference_domain:
+                self.dirichlet_bc_func = helpers.VectorizedFunction2D(dirichlet_bc_func)
+            else:
+                # no det_jac here implemented via a1 and a2
+                self.dirichlet_bc_func = helpers.VectorizedFunction2D(
+                    lambda x, y: dirichlet_bc_func(*self.phi(x, y, *self.geo_params)))
             self.has_non_homo_dirichlet = True
 
         # get_dirichlet_edge function
-        self.get_dirichlet_edge_func = get_dirichlet_edge_func
+        if get_dirichlet_edge_func is None:
+            self.get_dirichlet_edge_func = None
+        else:
+            if self.bcs_are_on_reference_domain:
+                self.get_dirichlet_edge_func = get_dirichlet_edge_func
+            else:
+                def get_dir_edge_func(x, y):
+                    return get_dirichlet_edge_func(*self.phi(x, y, *self.geo_params))
+                self.get_dirichlet_edge_func = get_dir_edge_func
         # neumann bc function
         self.has_non_homo_neumann = False
         if self.get_dirichlet_edge_func is None:
@@ -176,9 +194,12 @@ class QuadrilateralSolver(BaseSolver):
             if neumann_bc_func is None:
                 self.neumann_bc_func = helpers.VectorizedFunction2D(default_func)
             else:
-                self.neumann_bc_func = helpers.VectorizedFunction2D(
-                    lambda x, y:
-                    neumann_bc_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
+                if self.bcs_are_on_reference_domain:
+                    self.neumann_bc_func = helpers.VectorizedFunction2D(neumann_bc_func)
+                else:
+                    self.neumann_bc_func = helpers.VectorizedFunction2D(
+                        lambda x, y:
+                        neumann_bc_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
                 self.has_non_homo_neumann = True
 
     def _from_root(self):
@@ -326,10 +347,7 @@ class QuadrilateralSolver(BaseSolver):
                         sym_mls_funcs[n] *= poly
                 else:
                     sym_mls_funcs[n] *= mu_i ** order[i]
-            # not needed
-            # handel total
-            # if order[-1] != 0:
-            # sym_mls_funcs[n] *= k_term ** (order[-1] // 2)
+
         # sort the terms in rising absolute order
         if find_spec("symengine") is not None:
             self.sym_mls_funcs = sym.Matrix(sym_mls_funcs[np.argsort(np.sum(np.abs(mls_orders), axis=1))]).T
@@ -420,7 +438,8 @@ class QuadrilateralSolver(BaseSolver):
                                                                                  self.nq, self.nq_y)
             if self.has_non_homo_neumann:
                 self.f0_full += assembly.quadrilateral.bilinear.assemble_f_neumann(self._n, self.p, self.neumann_edge,
-                                                                                   self.neumann_bc_func, self.nq)
+                                                                                   self.neumann_bc_func,
+                                                                                   self.nq * self.nq_y)
 
         self.a1_full = self.a1_full.tocsr()
         self.a2_full = self.a2_full.tocsr()
@@ -601,7 +620,7 @@ class QuadrilateralSolver(BaseSolver):
         print(f"warning: Environmental variables have been set. This may effect further use of the solver.",
               file=sys.stderr)
 
-    def matrix_lsq_setup(self, mls_order: Optional[int] = 2):
+    def matrix_lsq_setup(self, mls_order: Optional[int] = 1):
         # default mls_order is 1,
         assert self.mls_order >= 0
         if self.mls_order != mls_order:
@@ -641,6 +660,30 @@ class QuadrilateralSolver(BaseSolver):
         if not self._pod_is_computed:
             raise ValueError("Pod is not computed.")
         self._pod.plot_relative_information_content()
+
+    def plot_mesh(self, *geo_params: Optional[float]):
+        if not self.is_assembled_and_free:
+            raise ValueError("Is not assembled.")
+        if len(geo_params) == 0:
+            plot_mesh(self, *self.geo_params, element=self.element)
+        else:
+            plot_mesh(self, *geo_params, element=self.element)
+
+    def hf_plot_displacement(self, *geo_params: Optional[float]):
+        if self.uh.values is None:
+            raise ValueError("High fidelity Problem has not been solved.")
+        if len(geo_params) == 0:
+            plot_hf_displacment(self, *self.geo_params, element=self.element)
+        else:
+            plot_hf_displacment(self, *geo_params, element=self.element)
+
+    def rb_plot_displacement(self, *geo_params: Optional[float]):
+        if self.uh_rom.values is None:
+            raise ValueError("Reduced Order Problem has not been solved.")
+        if len(geo_params) == 0:
+            plot_rb_displacment(self, *self.geo_params, element=self.element)
+        else:
+            plot_rb_displacment(self, *geo_params, element=self.element)
 
     def get_u_exact(self, u_exact_func):
         return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
@@ -757,9 +800,10 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-                 neumann_bc_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "bq", x0: float = 0, y0: float = 0):
-        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
+        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
+                         bcs_are_on_reference_domain, element, x0, y0)
 
     @classmethod
     def from_root(cls, root: Path):
@@ -791,9 +835,10 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-                 neumann_bc_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "bq", x0: float = 0, y0: float = 0):
-        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func, element, x0, y0)
+        super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
+                         bcs_are_on_reference_domain, element, x0, y0)
 
     @classmethod
     def from_root(cls, root: Path):

@@ -1,0 +1,54 @@
+10:54:43.296934
+p-order: 1
+Ant comp: 6
+Ant snapshots: 729
+Ratio: 121.5
+root: QS_mls_order_analysis\p_order_1
+--------------------------------------------------
+{0: 1.0, 1: 10.0*mu5, 2: 10.0*mu4, 3: 10.0*mu3, 4: 10.0*mu2, 5: 10.0*mu1}
+Interpolating: 729it [00:02, 362.15it/s]
+Interpolating: 729it [00:02, 361.25it/s]
+Interpolating: 729it [00:00, 2163.20it/s]
+--------------------------------------------------
+p-order: 2
+Ant comp: 21
+Ant snapshots: 729
+Ratio: 17.357142857142858
+root: QS_mls_order_analysis\p_order_2
+--------------------------------------------------
+warning: data matrix may be ill conditioned: 5.75e+16
+Interpolating: 729it [00:06, 112.67it/s]
+warning: data matrix may be ill conditioned: 5.75e+16
+Interpolating: 729it [00:06, 110.88it/s]
+warning: data matrix may be ill conditioned: 5.75e+16
+Interpolating: 729it [00:00, 1744.02it/s]
+--------------------------------------------------
+p-order: 3
+Ant comp: 56
+Ant snapshots: 729
+Ratio: 4.339285714285714
+root: QS_mls_order_analysis\p_order_3
+--------------------------------------------------
+warning: data matrix may be ill conditioned: 2.29e+17
+Interpolating: 729it [00:17, 42.81it/s]
+warning: data matrix may be ill conditioned: 2.29e+17
+Interpolating: 729it [00:16, 43.78it/s]
+warning: data matrix may be ill conditioned: 2.29e+17
+Interpolating: 729it [00:00, 1211.97it/s]
+--------------------------------------------------
+p-order: 4
+Ant comp: 126
+Ant snapshots: 729
+Ratio: 1.4464285714285714
+root: QS_mls_order_analysis\p_order_4
+--------------------------------------------------
+warning: data matrix may be ill conditioned: 2.12e+21
+Interpolating: 729it [00:58, 12.36it/s]
+warning: data matrix may be ill conditioned: 2.12e+21
+Interpolating: 729it [01:00, 12.03it/s]
+warning: data matrix may be ill conditioned: 2.12e+21
+Interpolating: 729it [00:01, 520.53it/s]
+--------------------------------------------------
+10:57:41.034753
+
+Process finished with exit code 0

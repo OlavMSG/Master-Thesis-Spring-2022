@@ -5,6 +5,7 @@ Created on 04.04.2022
 @author: Olav Milian
 """
 import os
+
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -55,6 +56,7 @@ def make_pod_plots(p_order):
     plt.show()
 
     n_rom_max = d.n_rom_max
+    print(n_rom_max)
     if n_rom_max > 25:
         n_rom_max = 25
     max_errors = np.zeros(n_rom_max)
@@ -93,13 +95,13 @@ def make_pod_plots(p_order):
     plt.show()
 
 
-def main():
+def main(p_order_list):
     print(datetime.now().time())
     max_order = 10
-    p_order_list = [2, 4, 6]
+    # p_order_list = [2, 4, 6]
     multiprocess = True
     if multiprocess:
-        pool = mp.Pool(int(max(mp.cpu_count() / 3, 1)), maxtasksperchild=1)
+        pool = mp.Pool(mp.cpu_count())
         for p_order in p_order_list:
             pool.apply_async(make_pod_plots, [p_order])
 
@@ -113,4 +115,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main([2, 4, 6, 8, 10])
