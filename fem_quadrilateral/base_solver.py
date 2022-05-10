@@ -58,6 +58,12 @@ class BaseSolver(Protocol):
     is_assembled_and_free_from_root: bool
     _solver_type: str = "BaseSolver"
     _solver_type_short: str = "BS"
+    a1_rom_list: List[sp.spmatrix]
+    a2_rom_list: List[sp.spmatrix]
+    f0_rom_list: List[np.ndarray]
+    f1_dir_rom_list: List[np.ndarray]
+    f2_dir_rom_list: List[np.ndarray]
+    bcs_are_on_reference_domain: bool
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):
         ...
@@ -84,7 +90,8 @@ class BaseSolver(Protocol):
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,
-                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+                       nu_poisson_range: Optional[Tuple[float, float]] = None,
+                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
         ...
 
     def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
@@ -92,7 +99,8 @@ class BaseSolver(Protocol):
                                        mode: str = "uniform",
                                        material_grid: Optional[int] = None,
                                        e_young_range: Optional[Tuple[float, float]] = None,
-                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None,
+                                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
         ...
 
     def matrix_lsq_setup(self, mls_order: Optional[int] = 2):

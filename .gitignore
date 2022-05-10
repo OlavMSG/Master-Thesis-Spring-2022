@@ -197,6 +197,8 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /QS_mls_analysis_ex/QS_mls_order_analysis_old
 /QS_mls_analysis_ex/plots_QS_mls_error_analysis
 /QS_mls_analysis_ex/plots_pod
+/QS_mls_analysis_ex/pod_errors_4
+/QS_mls_analysis_ex/hf_errors
 
 /fem_quadrilateral/test_storage_DR1
 /fem_quadrilateral/test_storage_SR1

@@ -27,7 +27,7 @@ plt.rcParams.update(new_params)
 
 def main(max_order):
     tol = 5e-3
-    max_order1 = 0
+    max_order1 = 5
     # max_order = 30
     print(datetime.now().time())
     d = QuadrilateralSolver(2, 0)

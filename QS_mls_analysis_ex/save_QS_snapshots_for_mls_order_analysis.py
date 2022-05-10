@@ -56,7 +56,7 @@ def save_snapshots(p_order):
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 1
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(mp.cpu_count())

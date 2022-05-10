@@ -101,7 +101,7 @@ def main(p_order_list):
     # p_order_list = [2, 4, 6]
     multiprocess = True
     if multiprocess:
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(min(mp.cpu_count(), len(p_order_list)), maxtasksperchild=1)
         for p_order in p_order_list:
             pool.apply_async(make_pod_plots, [p_order])
 
@@ -115,4 +115,4 @@ def main(p_order_list):
 
 
 if __name__ == '__main__':
-    main([2, 4, 6, 8, 10])
+    main([2, 5])

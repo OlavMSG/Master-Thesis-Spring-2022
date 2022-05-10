@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot, DiskStorage
 
 import helpers
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import QuadrilateralSolver
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing as mp
@@ -43,7 +43,7 @@ def error_saver(root, st_main_root, n_rom):
     e_young_vec = helpers.get_vec_from_range(e_young_range, material_grid, mode)
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
 
-    d = DraggableCornerRectangleSolver.from_root(root)
+    d = QuadrilateralSolver.from_root(root)
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -62,7 +62,7 @@ def error_saver(root, st_main_root, n_rom):
 
 
 def save_pod_errors(p_order, power_divider=3):
-    main_root = Path("DR_mls_order_analysis")
+    main_root = Path("QS_mls_order_analysis")
     root = main_root / f"p_order_{p_order}"
 
     st_main_root = Path(f"pod_errors_{p_order}")
@@ -74,7 +74,7 @@ def save_pod_errors(p_order, power_divider=3):
     print(min_n_rom)
 
     # must be done to get n_rom_max
-    d = DraggableCornerRectangleSolver.from_root(root)
+    d = QuadrilateralSolver.from_root(root)
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -117,7 +117,7 @@ def plot_pod_errors(p_order):
     Path(save_dict).mkdir(parents=True, exist_ok=True)
 
     # must be done to get n_rom_max
-    d = DraggableCornerRectangleSolver.from_root(root)
+    d = QuadrilateralSolver.from_root(root)
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
     d.build_rb_model(root)
@@ -175,7 +175,7 @@ def plot_pod_errors(p_order):
 
 def main():
     print(datetime.now().time())
-    p_order = 19
+    p_order = 2
     power_divider = 3
     save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())

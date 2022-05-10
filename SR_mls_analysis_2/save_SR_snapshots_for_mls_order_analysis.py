@@ -48,13 +48,19 @@ def save_snapshots(p_order):
         r.save_snapshots(root, mu_grid)
     else:
         r.matrix_lsq(root)
-        print(dict(zip(np.arange(len(r.sym_mls_funcs)), r.sym_mls_funcs)))
+        r.build_rb_model(root)
+        print(r.gen_rb_root_from_saver_root)
+        r.save_rb_model(r.gen_rb_root_from_saver_root)
+        r2 = ScalableRectangleSolver.from_root(root, r.gen_rb_root_from_saver_root)
+        r2.matrix_lsq_setup(p_order)
+        r2.rbsolve(310e3, 0.2, 1, 1)
+    print(dict(zip(np.arange(len(r.sym_mls_funcs)), r.sym_mls_funcs)))
     print("-" * 50)
 
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 1
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(mp.cpu_count(), maxtasksperchild=1)

@@ -25,6 +25,7 @@ from .matrix_least_squares import MatrixLSQ, mls_compute_from_fit
 from .pod import PodWithEnergyNorm
 from .error_computers import HfErrorComputer, RbErrorComputer
 from .plotting import plot_mesh, plot_hf_displacment, plot_rb_displacment
+from .rb_model_saver_and_loader import RBModelSaver, RBModelLoader
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -92,11 +93,6 @@ class QuadrilateralSolver(BaseSolver):
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
                  neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "bq", x0: float = 0, y0: float = 0):
-        # save user inputted functions
-        self.input_f_func = f_func
-        self.input_dirichlet_bc_func = dirichlet_bc_func
-        self.input_get_dirichlet_edge_func = get_dirichlet_edge_func
-        self.input_neumann_bc_func = neumann_bc_func
 
         self._a1_set_n_rom_list = None
         self._a2_set_n_rom_list = None
@@ -112,6 +108,7 @@ class QuadrilateralSolver(BaseSolver):
         self.a1_rom_list = None
         self._pod_is_computed = False
         self._mls_is_computed = False
+        self.rb_saver_root = None
         self.saver_root = None
         self.mls_has_been_setup = False
         self.uh = SolutionFunctionValues2D()
@@ -123,10 +120,16 @@ class QuadrilateralSolver(BaseSolver):
         self.n_full = self._n * self._n * 2
         self.is_assembled_and_free = False
         self.is_assembled_and_free_from_root = False
+        self.is_rb_from_root = False
         self.bcs_are_on_reference_domain = bcs_are_on_reference_domain
-
         self.lower_left_corner = (x0, y0)
         self._sym_setup()
+
+        # save user inputted functions
+        self.input_f_func = f_func
+        self.input_dirichlet_bc_func = dirichlet_bc_func
+        self.input_get_dirichlet_edge_func = get_dirichlet_edge_func
+        self.input_neumann_bc_func = neumann_bc_func
 
         if element.lower() in self.implemented_elements:
             self.element = element.lower()
@@ -182,6 +185,7 @@ class QuadrilateralSolver(BaseSolver):
             else:
                 def get_dir_edge_func(x, y):
                     return get_dirichlet_edge_func(*self.phi(x, y, *self.geo_params))
+
                 self.get_dirichlet_edge_func = get_dir_edge_func
         # neumann bc function
         self.has_non_homo_neumann = False
@@ -227,11 +231,18 @@ class QuadrilateralSolver(BaseSolver):
         self.n_full = self.p.shape[0] * 2
         self._n = int(np.sqrt(self.p.shape[0]))
         self.is_assembled_and_free_from_root = True
+        # load rb
+        if self.rb_saver_root is not None:
+            rb_loader = RBModelLoader(self.rb_saver_root)
+            self._pod = PodWithEnergyNorm(self.saver_root)
+            self._pod.v = rb_loader(self)
+            self.is_rb_from_root = True
 
     @classmethod
-    def from_root(cls, root: Path):
+    def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
+        out.rb_saver_root = rb_root
         out._from_root()
         return out
 
@@ -513,44 +524,59 @@ class QuadrilateralSolver(BaseSolver):
                 f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        if not self._mls_is_computed:
-            raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
-        if not self._pod_is_computed:
-            raise ValueError("Pod is not computed. Can not solve.")
-
-        if (n_rom is None) or (self._pod.n_rom == n_rom):
-            # for now, may be changed
-            data = self.mls_funcs(*geo_params)
-            a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
-            a2_fit_rom = mls_compute_from_fit(data, self.a2_rom_list)
-            f_load_rom = mls_compute_from_fit(data, self.f0_rom_list)
-            a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
-            if self.has_non_homo_dirichlet:
-                f1_dir_fit_rom = mls_compute_from_fit(data, self.f1_dir_rom_list)
-                f2_dir_fit_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
-                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
+        if self.is_rb_from_root:
+            if n_rom is None:
+                # for now, may be changed
+                data = self.mls_funcs(*geo_params)
+                a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
+                a2_fit_rom = mls_compute_from_fit(data, self.a2_rom_list)
+                f_load_rom = mls_compute_from_fit(data, self.f0_rom_list)
+                a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
+                if self.has_non_homo_dirichlet:
+                    f1_dir_fit_rom = mls_compute_from_fit(data, self.f1_dir_rom_list)
+                    f2_dir_fit_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
+                    f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
+            else:
+                raise ValueError("Can not set n_rom when loading RB model from root, call build_rb_model.")
         else:
-            # for now, may be changed
-            if (self._last_n_rom != n_rom) or (self._a1_set_n_rom_list is None):
-                self._a1_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
-                self._a2_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
-                self._f0_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f0_list]
+            if not self._mls_is_computed:
+                raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
+            if not self._pod_is_computed:
+                raise ValueError("Pod is not computed. Can not solve.")
 
-            data = self.mls_funcs(*geo_params)
-            a1_fit_rom = mls_compute_from_fit(data, self._a1_set_n_rom_list)
-            a2_fit_rom = mls_compute_from_fit(data, self._a2_set_n_rom_list)
-            f_load_rom = mls_compute_from_fit(data, self._f0_set_n_rom_list)
-            a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
-            if self.has_non_homo_dirichlet:
-                if (self._last_n_rom != n_rom) or (self._f1_dir_set_n_rom_list is None):
-                    self._f1_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
-                                                   for obj in self._mls.f1_dir_list]
-                    self._f2_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
-                                                   for obj in self._mls.f2_dir_list]
+            if (n_rom is None) or (self._pod.n_rom == n_rom):
+                # for now, may be changed
+                data = self.mls_funcs(*geo_params)
+                a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
+                a2_fit_rom = mls_compute_from_fit(data, self.a2_rom_list)
+                f_load_rom = mls_compute_from_fit(data, self.f0_rom_list)
+                a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
+                if self.has_non_homo_dirichlet:
+                    f1_dir_fit_rom = mls_compute_from_fit(data, self.f1_dir_rom_list)
+                    f2_dir_fit_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
+                    f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
+            else:
+                # for now, may be changed
+                if (self._last_n_rom != n_rom) or (self._a1_set_n_rom_list is None):
+                    self._a1_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
+                    self._a2_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
+                    self._f0_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.f0_list]
 
-                f1_dir_fit_rom = mls_compute_from_fit(data, self._f1_dir_set_n_rom_list)
-                f2_dir_fit_rom = mls_compute_from_fit(data, self._f2_dir_set_n_rom_list)
-                f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
+                data = self.mls_funcs(*geo_params)
+                a1_fit_rom = mls_compute_from_fit(data, self._a1_set_n_rom_list)
+                a2_fit_rom = mls_compute_from_fit(data, self._a2_set_n_rom_list)
+                f_load_rom = mls_compute_from_fit(data, self._f0_set_n_rom_list)
+                a_rom = helpers.compute_a(e_young, nu_poisson, a1_fit_rom, a2_fit_rom)
+                if self.has_non_homo_dirichlet:
+                    if (self._last_n_rom != n_rom) or (self._f1_dir_set_n_rom_list is None):
+                        self._f1_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
+                                                       for obj in self._mls.f1_dir_list]
+                        self._f2_dir_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom)
+                                                       for obj in self._mls.f2_dir_list]
+
+                    f1_dir_fit_rom = mls_compute_from_fit(data, self._f1_dir_set_n_rom_list)
+                    f2_dir_fit_rom = mls_compute_from_fit(data, self._f2_dir_set_n_rom_list)
+                    f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
         # set last n_rom
         self._last_n_rom = n_rom
         # initialize uh
@@ -589,7 +615,8 @@ class QuadrilateralSolver(BaseSolver):
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,
-                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+                       nu_poisson_range: Optional[Tuple[float, float]] = None,
+                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
         self.saver_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
@@ -597,7 +624,9 @@ class QuadrilateralSolver(BaseSolver):
                               mode=mode,
                               material_grid=material_grid,
                               e_young_range=e_young_range,
-                              nu_poisson_range=nu_poisson_range)
+                              nu_poisson_range=nu_poisson_range,
+                              use_latin_hypercube=use_latin_hypercube,
+                              latin_hypercube_seed=latin_hypercube_seed)
         saver(self)
 
     def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
@@ -605,7 +634,8 @@ class QuadrilateralSolver(BaseSolver):
                                        mode: str = "uniform",
                                        material_grid: Optional[int] = None,
                                        e_young_range: Optional[Tuple[float, float]] = None,
-                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None,
+                                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
         self.saver_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
@@ -614,7 +644,9 @@ class QuadrilateralSolver(BaseSolver):
                                              mode=mode,
                                              material_grid=material_grid,
                                              e_young_range=e_young_range,
-                                             nu_poisson_range=nu_poisson_range)
+                                             nu_poisson_range=nu_poisson_range,
+                                             use_latin_hypercube=use_latin_hypercube,
+                                             latin_hypercube_seed=latin_hypercube_seed)
         saver(self, power_divider=power_divider)
         import sys
         print(f"warning: Environmental variables have been set. This may effect further use of the solver.",
@@ -632,11 +664,17 @@ class QuadrilateralSolver(BaseSolver):
         self.mls_has_been_setup = True
 
     def matrix_lsq(self, root: Path):
+        self.saver_root = root
+        if not self.mls_has_been_setup:
+            raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         self._mls = MatrixLSQ(root)
         self._mls()
         self._mls_is_computed = True
 
     def build_rb_model(self, root: Path, eps_pod: Optional[float] = None):
+        self.saver_root = root
+        if not self.mls_has_been_setup:
+            raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         self._pod = PodWithEnergyNorm(root, eps_pod=eps_pod)
         self._pod()
         self._pod_is_computed = True
@@ -650,6 +688,14 @@ class QuadrilateralSolver(BaseSolver):
         if self.has_non_homo_dirichlet:
             self.f1_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f1_dir_list]
             self.f2_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f2_dir_list]
+        self.is_rb_from_root = False
+
+    def save_rb_model(self, root: Path):
+        if not self._pod_is_computed:
+            raise ValueError("Pod is not computed.")
+        self.rb_saver_root = root
+        rb_saver = RBModelSaver(root)
+        rb_saver(self, self._pod.v)
 
     def plot_pod_singular_values(self):
         if not self._pod_is_computed:
@@ -780,6 +826,12 @@ class QuadrilateralSolver(BaseSolver):
                 "Reduced Order Problem has not been solved, can not return uh_full.")
         return self.uh_rom.flatt_values
 
+    @property
+    def gen_rb_root_from_saver_root(self) -> Path:
+        if self.saver_root is None:
+            raise ValueError("Can not generate rb_saver_root from saver_root.")
+        return Path(str(self.saver_root) + "_rb")
+
 
 class DraggableCornerRectangleSolver(QuadrilateralSolver):
     sym_phi = sym.expand(QuadrilateralSolver.sym_phi.subs({mu1: 0, mu2: 0,
@@ -806,9 +858,10 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                          bcs_are_on_reference_domain, element, x0, y0)
 
     @classmethod
-    def from_root(cls, root: Path):
+    def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
+        out.rb_saver_root = rb_root
         out._from_root()
         return out
 
@@ -841,9 +894,10 @@ class ScalableRectangleSolver(QuadrilateralSolver):
                          bcs_are_on_reference_domain, element, x0, y0)
 
     @classmethod
-    def from_root(cls, root: Path):
+    def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
+        out.rb_saver_root = rb_root
         out._from_root()
         return out
 
@@ -856,7 +910,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
 def get_solver(solver_type: str, n: int, f_func: Union[Callable, int],
                dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-               neumann_bc_func: Optional[Callable] = None,
+               neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                element: str = "bq", x0: float = 0, y0: float = 0) -> BaseSolver:
     solver_dict = {"ScalableRectangleSolver": ScalableRectangleSolver,
                    "DraggableCornerRectangleSolver": DraggableCornerRectangleSolver,
@@ -864,5 +918,5 @@ def get_solver(solver_type: str, n: int, f_func: Union[Callable, int],
                    "SR": ScalableRectangleSolver,
                    "DR": DraggableCornerRectangleSolver,
                    "QS": QuadrilateralSolver}
-    return solver_dict[solver_type](n, f_func, dirichlet_bc_func, get_dirichlet_edge_func,
-                                    neumann_bc_func, element, x0, y0)
+    return solver_dict[solver_type](n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
+                                    bcs_are_on_reference_domain, element, x0, y0)

@@ -61,7 +61,7 @@ def error_saver(root, st_main_root, n_rom):
     print(f"saved in {save_root} using n_rom={n_rom}")
 
 
-def save_pod_errors(p_order, power_divider=3):
+def save_pod_errors(p_order, power_divider=3, set_n_rom_max=False):
     main_root = Path("QS_mls_order_analysis")
     root = main_root / f"p_order_{p_order}"
 
@@ -74,13 +74,15 @@ def save_pod_errors(p_order, power_divider=3):
     print(min_n_rom)
 
     # must be done to get n_rom_max
-    d = QuadrilateralSolver.from_root(root)
+    """d = QuadrilateralSolver.from_root(root)
     d.matrix_lsq_setup()
     d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.build_rb_model(root)"""
 
-    n_rom_max = d.n_rom_max
+    n_rom_max = 330  # here d.n_rom_max
     print(f"n_rom_max={n_rom_max}")
+    if set_n_rom_max:
+        n_rom_max = 25
     # only use "1/power_divider power"
     num = max(mp.cpu_count() // power_divider, 1)
     it, r = divmod(n_rom_max - min_n_rom, num)
@@ -175,8 +177,8 @@ def plot_pod_errors(p_order):
 
 def main():
     print(datetime.now().time())
-    p_order = 19
-    power_divider = 3
+    p_order = 4
+    power_divider = 10
     save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())
     plot_pod_errors(p_order)

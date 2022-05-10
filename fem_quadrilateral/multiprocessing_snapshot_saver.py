@@ -22,12 +22,13 @@ from .base_solver import BaseSolver
 from matrix_lsq import Storage, DiskStorage, Snapshot
 from itertools import product, repeat
 import multiprocessing as mp
+from scipy.stats.qmc import LatinHypercube
 
 
 class MultiprocessingSnapshotSaver:
     storage: DiskStorage
     root: Path
-    geo_gird: int
+    geo_grid: int
     geo_range: Tuple[float, float]
     mode: str
     material_grid: int = default_constants.e_nu_grid
@@ -38,12 +39,15 @@ class MultiprocessingSnapshotSaver:
                  mode: str = "uniform",
                  material_grid: Optional[int] = None,
                  e_young_range: Optional[Tuple[float, float]] = None,
-                 nu_poisson_range: Optional[Tuple[float, float]] = None):
+                 nu_poisson_range: Optional[Tuple[float, float]] = None,
+                 use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
         self.root = root
         self.storage = DiskStorage(root)
-        self.geo_gird = geo_grid
+        self.geo_grid = geo_grid
         self.geo_range = geo_range
         self.mode = mode
+        self.use_latin_hypercube = use_latin_hypercube
+        self.latin_hypercube_seed = latin_hypercube_seed
         if material_grid is not None:
             self.material_grid = material_grid
         if e_young_range is not None:
@@ -67,7 +71,7 @@ class MultiprocessingSnapshotSaver:
             data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
             a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
             # for now save
-            grid_params = np.array([self.geo_gird, self.material_grid, len(solver.sym_geo_params)])
+            grid_params = np.array([self.geo_grid, self.material_grid, len(solver.sym_geo_params)])
             ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
             mode_and_element = np.array([self.mode, solver.element])
             mls_order_and_llc = np.array([solver.mls_order, *solver.lower_left_corner])
@@ -88,9 +92,15 @@ class MultiprocessingSnapshotSaver:
                          mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
             print(f"Saved mean in {root_mean}")
 
-        geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_gird, self.mode)
-        geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))
-        n_max = self.geo_gird ** len(solver.sym_geo_params)
+        if self.use_latin_hypercube:
+            sampler = LatinHypercube(d=len(solver.sym_geo_params), seed=self.latin_hypercube_seed)
+            geo_mat = 0.5 * ((self.geo_range[1] - self.geo_range[0]) * sampler.random(n=self.geo_grid)
+                             + (self.geo_range[1] + self.geo_range[0]))
+            n_max = self.geo_grid
+        else:
+            geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_grid, self.mode)
+            geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))
+            n_max = self.geo_grid ** len(solver.sym_geo_params)
         n_min = len(self.storage)
         # only use "1/power_divider power"
         num = max(mp.cpu_count() // power_divider, 1)
@@ -104,6 +114,7 @@ class MultiprocessingSnapshotSaver:
                            self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
                            solver.input_f_func, solver.input_dirichlet_bc_func,
                            solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
+                           solver.bcs_are_on_reference_domain,
                            solver.element, solver.lower_left_corner]
                 pool.apply_async(one_snapshot_saver, input_i)
             pool.close()
@@ -116,11 +127,12 @@ class MultiprocessingSnapshotSaver:
                                  f"{max_k}.")
 
         pool = mp.Pool(num, maxtasksperchild=1)
-        for i in tqdm.tqdm(range(n_min + it * num, n_min + it * num + r), desc=f"Saving {it + 1} of {it + 1}"):
+        for i in tqdm.tqdm(range(n_min + it * num, n_min + it * num + r), desc=f"Saving batch {it + 1} of {it + 1}"):
             input_i = [i, self.root, geo_mat[i, :], self.mode, self.material_grid, self.e_young_range,
                        self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
                        solver.input_f_func, solver.input_dirichlet_bc_func,
                        solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
+                       solver.bcs_are_on_reference_domain,
                        solver.element, solver.lower_left_corner]
             pool.apply_async(one_snapshot_saver, input_i)
         pool.close()
@@ -138,14 +150,14 @@ def one_snapshot_saver(k: int, root: Path, geo_params: np.ndarray,
                        nu_poisson_range: Tuple[float, float], mls_order: int, solver_type: str, n: int,
                        f_func: Union[Callable, int], dirichlet_bc_func: Callable,
                        get_dirichlet_edge_func: Callable, neumann_bc_func: Callable,
+                       bcs_are_on_reference_domain: bool,
                        element: str, lower_left_corner: Tuple[float, float]):
     e_young_vec = helpers.get_vec_from_range(e_young_range, material_grid, mode)
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
-
     # set up new solver.
     from .fem_quadrilateral_solvers import get_solver
     solver = get_solver(solver_type, n, f_func, dirichlet_bc_func, get_dirichlet_edge_func,
-                        neumann_bc_func, element, *lower_left_corner)
+                        neumann_bc_func, bcs_are_on_reference_domain, element, *lower_left_corner)
     solver.matrix_lsq_setup(mls_order)
     solver.assemble(*geo_params)
     # compute solution and a-norm-squared for all e_young and nu_poisson

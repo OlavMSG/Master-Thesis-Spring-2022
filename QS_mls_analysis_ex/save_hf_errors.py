@@ -95,7 +95,7 @@ def save_pod_errors(max_order, power_divider=3):
     del pool
 
 
-def plot_pod_errors():
+def plot_hf_errors():
 
     st_main_root = Path(f"hf_errors")
     print(st_main_root)
@@ -130,11 +130,11 @@ def plot_pod_errors():
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 5
     power_divider = 3
-    save_pod_errors(max_order, power_divider=power_divider)
+    # save_pod_errors(max_order, power_divider=power_divider)
     print(datetime.now().time())
-    plot_pod_errors()
+    plot_hf_errors()
 
 
 if __name__ == '__main__':
