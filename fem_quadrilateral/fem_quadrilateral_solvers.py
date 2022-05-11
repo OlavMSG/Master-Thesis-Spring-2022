@@ -15,9 +15,7 @@ from time import perf_counter
 from scipy.special import legendre
 import tqdm
 
-import default_constants
-import helpers
-from . import assembly
+from . import assembly, default_constants, helpers
 from .solution_function_class import SolutionFunctionValues2D
 from .base_solver import BaseSolver
 from .snapshot_saver import SnapshotSaver

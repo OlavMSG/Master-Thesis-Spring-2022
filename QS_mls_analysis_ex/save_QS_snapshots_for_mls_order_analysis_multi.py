@@ -7,10 +7,8 @@ from pathlib import Path
 import numpy as np
 from matrix_lsq import DiskStorage
 
-import default_constants
-from fem_quadrilateral import QuadrilateralSolver
+from fem_quadrilateral import QuadrilateralSolver, default_constants
 from datetime import datetime
-import multiprocessing as mp
 
 # rho_steal = 8e3  # kg/m^3
 alpha = 8e3 * 100 * 9.81 * 0.01  # N/m^2

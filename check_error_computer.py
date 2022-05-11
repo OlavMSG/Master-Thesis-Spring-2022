@@ -6,13 +6,13 @@ from pathlib import Path
 
 import numpy as np
 
-import default_constants
+from fem_quadrilateral import default_constants
 
 
 def main():
     from fem_quadrilateral import ScalableRectangleSolver
     from fem_quadrilateral.error_computers import RbErrorComputer, HfErrorComputer
-    from matrix_lsq import LeastSquares, Storage, DiskStorage, Snapshot
+    from matrix_lsq import DiskStorage
 
     def dir_bc(x, y):
         return x, 0

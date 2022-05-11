@@ -16,8 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot, DiskStorage
 
-import helpers
-from fem_quadrilateral import QuadrilateralSolver
+from fem_quadrilateral import QuadrilateralSolver, helpers
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing as mp
@@ -107,7 +106,7 @@ def save_pod_errors(p_order, power_divider=3, set_n_rom_max=False):
 
 
 def plot_pod_errors(p_order):
-    main_root = Path("DR_mls_order_analysis")
+    main_root = Path("QS_mls_order_analysis")
     root = main_root / f"p_order_{p_order}"
 
     st_main_root = Path(f"pod_errors_{p_order}")
@@ -178,8 +177,8 @@ def plot_pod_errors(p_order):
 def main():
     print(datetime.now().time())
     p_order = 4
-    power_divider = 10
-    save_pod_errors(p_order, power_divider=power_divider)
+    power_divider = 3
+    # save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())
     plot_pod_errors(p_order)
 

@@ -8,12 +8,11 @@ from itertools import product
 from typing import Optional, Union, Iterable
 from pathlib import Path
 
-import helpers
 from .base_solver import BaseSolver
 
 import scipy.sparse as sp
 
-import default_constants
+from . import default_constants, helpers
 # we choose to not update to Compressed versions
 from matrix_lsq import Storage, DiskStorage, Snapshot
 import numpy as np

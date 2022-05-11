@@ -58,11 +58,11 @@ class BaseSolver(Protocol):
     is_assembled_and_free_from_root: bool
     _solver_type: str = "BaseSolver"
     _solver_type_short: str = "BS"
-    a1_rom_list: List[sp.spmatrix]
-    a2_rom_list: List[sp.spmatrix]
-    f0_rom_list: List[np.ndarray]
-    f1_dir_rom_list: List[np.ndarray]
-    f2_dir_rom_list: List[np.ndarray]
+    a1_rom_list: Union[List[sp.spmatrix], None]
+    a2_rom_list: Union[List[sp.spmatrix], None]
+    f0_rom_list: Union[List[np.ndarray], None]
+    f1_dir_rom_list: Union[List[np.ndarray], None]
+    f2_dir_rom_list: Union[List[np.ndarray], None]
     bcs_are_on_reference_domain: bool
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):

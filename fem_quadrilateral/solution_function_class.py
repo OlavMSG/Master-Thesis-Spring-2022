@@ -3,8 +3,8 @@
 @author: Olav M.S. Gran
 """
 
-from default_constants import default_tol
-from helpers import FunctionValues2D
+from fem_quadrilateral.default_constants import default_tol
+from fem_quadrilateral.helpers import FunctionValues2D
 
 
 class SolutionFunctionValues2D(FunctionValues2D):

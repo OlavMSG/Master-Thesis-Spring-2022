@@ -3,8 +3,6 @@
 @author: Olav M.S. Gran
 based on Specialization-Project-fall-2021
 """
-import os
-
 import numpy as np
 
 
@@ -152,36 +150,6 @@ def compute_a(e_young, nu_poisson, a1, a2):
     return 2 * mu * a1 + lambda_bar * a2
 
 
-def compute_a1_and_a2(int1, int2, int3, int4, int5):
-    """
-    Compute the matrices a1 and a2 from the 5 integrals
-
-    Parameters
-    ----------
-    int1 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix int1.
-    int2 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix int2.
-    int3 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix int3.
-    int4 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix int4.
-    int5 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix int5.
-
-
-    Returns
-    -------
-    a1 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix a1.
-    a2 : scipy.sparse.dox_matrix, np.array
-        bilinar form matrix a2.
-    """
-    a1 = int1 + 0.5 * (int2 + int3 + int4)
-    a2 = int1 + int3 + int5
-    return a1, a2
-
-
 def get_u_exact(p, u_exact_func):
     """
     Get a FunctionValues2D representation of the exact solution
@@ -204,37 +172,6 @@ def get_u_exact(p, u_exact_func):
 
     u_exact = FunctionValues2D.from_2xn(VectorizedFunction2D(u_exact_func)(x_vec, y_vec))
     return u_exact
-
-
-def check_and_make_folder(n, folder_path, n_counts_nodes=False):
-    """
-    Check if the folder/directory and its sub-folder exists, if not make it.
-    Check both the folders 'folder_path' and 'folder_path/_n{_n}'
-
-    Parameters
-    ----------
-    n : int
-        Discretization number
-    folder_path : str
-        the path to the folder to check and make, form 'folder_path/_n{_n}'.
-    n_counts_nodes: bool
-        True if _n counts the number of nodes along the axes. Default False
-
-    Returns
-    -------
-    str
-        the folder name .
-    """
-    if n_counts_nodes:
-        m = n - 1
-    else:
-        m = n
-    if not os.path.isdir(folder_path):
-        os.mkdir(folder_path)
-    folder_path = os.path.join(folder_path, f"_n{m}")
-    if not os.path.isdir(folder_path):
-        os.mkdir(folder_path)
-    return folder_path
 
 
 def get_vec_from_range(range_, m, mode):

@@ -6,7 +6,7 @@
 import numpy as np
 
 from fem_quadrilateral import DraggableCornerRectangleSolver
-from default_constants import e_young_range, nu_poisson_range
+from fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
 
 
 def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt", nq=None):

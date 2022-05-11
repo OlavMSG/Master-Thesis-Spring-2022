@@ -7,7 +7,7 @@ based on Specialization-Project-fall-2021
 import numpy as np
 
 from fem_quadrilateral.assembly.neumann.gauss_quadrature import line_integral_with_linear_basis
-from helpers import expand_index
+from fem_quadrilateral.helpers import expand_index
 
 
 def assemble_f_neumann(n, p, neumann_edge, neumann_bc_func, nq=4):

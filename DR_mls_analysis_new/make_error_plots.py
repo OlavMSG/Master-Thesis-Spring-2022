@@ -11,8 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot
 
-import helpers
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import DraggableCornerRectangleSolver, helpers
 from datetime import datetime
 from tqdm import tqdm
 

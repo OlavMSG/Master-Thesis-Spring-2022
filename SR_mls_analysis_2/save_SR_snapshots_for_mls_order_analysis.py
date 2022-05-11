@@ -11,8 +11,7 @@ from pathlib import Path
 import numpy as np
 from matrix_lsq import DiskStorage
 
-import default_constants
-from fem_quadrilateral import ScalableRectangleSolver
+from fem_quadrilateral import ScalableRectangleSolver, default_constants
 from datetime import datetime
 import multiprocessing as mp
 

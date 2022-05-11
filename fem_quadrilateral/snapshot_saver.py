@@ -10,11 +10,10 @@ from pathlib import Path
 import numpy as np
 import tqdm
 
-import default_constants
-import helpers
+from . import default_constants, helpers
 from .base_solver import BaseSolver
 # we choose to not update to Compressed versions
-from matrix_lsq import Storage, DiskStorage, Snapshot
+from matrix_lsq import DiskStorage, Snapshot
 from itertools import product, repeat
 from scipy.stats.qmc import LatinHypercube
 

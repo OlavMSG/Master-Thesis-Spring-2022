@@ -3,7 +3,7 @@
 @author: Olav M.S. Gran
 """
 
-from sympy import symbols, simplify, factor, flatten, S, latex
+from sympy import symbols, simplify, factor, flatten, S, latex, nsimplify
 from sympy.matrices import Matrix
 from sympy.physics.quantum import TensorProduct
 
@@ -38,7 +38,7 @@ subs_dict = {x1: symbols("\\Tilde{x}_1"),
              v22: symbols("\\frac{\\partial\\Tilde{v}_2}{\\partial\\Tilde{x}_2}")}
 
 
-def print_ints(ints, unique_z, det_j=None, print_latex=False):
+def print_ints(ints, det_j=None, print_latex=False):
     if det_j is None:
         det_j_string = ""
         det_j_latex1 = ""
@@ -57,36 +57,43 @@ def print_ints(ints, unique_z, det_j=None, print_latex=False):
         if intn.equals(S.Zero):
             print("+{", S.Zero, "}")
         else:
+            unique_z = []
+            intn2 = S.Zero
+            for uij in flatten(nabla_u):
+                for vij in flatten(nabla_v):
+                    form = factor(intn.coeff(uij * vij, 1))
+                    intn2 += form * uij * vij
+                    if form not in unique_z:
+                        unique_z.append(form)
             for comp in unique_z:
-                comp = simplify(comp)
                 if comp.is_constant():
                     pass
                 else:
-                    form = intn.coeff(comp, 1)
-                    intn -= comp * form
+                    form = intn2.coeff(comp, 1)
+                    intn2 -= comp * form
                     if form.equals(S.Zero):
                         pass
                     else:
                         print("+ {", form, "} * (", comp, ")" + det_j_string)
                         if print_latex:
                             if len(latex_string) == 0:
-                                latex_string += f"\\displaystyle \n I_{n + 1}="
+                                latex_string += f"I_{n + 1}="
                             else:
-                                latex_string += "\\\\\\\\ \n \\displaystyle \n +"
+                                latex_string += "\\\\\\\\ \n  +"
                             latex_string += "\\int_{\\Tilde{\\Omega}}\n" \
                                             + det_j_latex1 + pplatex(comp) + det_j_latex2 + "\n" \
                                             + "\\left(" + pplatex(form) + "\\right)" \
                                             + "\n \\,d \\Tilde{\\Omega} \n"
-                    if intn.equals(S.Zero):
+                    if intn2.equals(S.Zero):
                         break
-            if not intn.equals(S.Zero):
-                form = intn.coeff(S.One, 1)
+            if not intn2.equals(S.Zero):
+                form = intn2.coeff(S.One, 1)
                 print("+ 1 * (", form, ")" + det_j_string)
                 if print_latex:
                     if len(latex_string) == 0:
-                        latex_string += f"\\displaystyle \n I_{n + 1}="
+                        latex_string += f"I_{n + 1}="
                     else:
-                        latex_string += "\\\\\\\\ \n \\displaystyle \n +"
+                        latex_string += "\\\\\\\\ \n  +"
                     latex_string += "\\int_{\\Tilde{\\Omega}}\n" \
                                     + det_j_latex1 + det_j_latex3 + det_j_latex2 \
                                     + "\\left(" + pplatex(form) + "\\right)" \
@@ -153,21 +160,27 @@ def compute_terms(phi_func, scale_det_j=True, print_latex=False):
         print("Z * det(j)")
         print_sympy_matrix(z_mat * det_j)
         if print_latex:
-            print(pplatex(z_mat * det_j))
+            z2 = z_mat * det_j
+            for i in range(4):
+                for j in range(4):
+                    z2[i, j] = factor(simplify(z2[i, j]))
+            print(pplatex(z2))
         print("det(j):")
         print(factor(det_j))
         unique_z = Matrix(list(set(flatten(z_mat * det_j))))
+        for i in range(len(unique_z)):
+            unique_z[i] = factor(simplify(unique_z[i]))
         unique_z2 = []
         for el in unique_z:
             unique_z2.append(factor(simplify(el)))
         print("Unique values in Z * det(j): count:", len(unique_z))
         print(unique_z2)
+        if print_latex:
+            print(pplatex(Matrix(unique_z2)))
         print("ints:")
         for i in range(5):
-            ints[i] = simplify(ints[i] * det_j)
-        if print_latex:
-            print(pplatex(unique_z))
-        print_ints(ints, unique_z, det_j=det_j, print_latex=print_latex)
+            ints[i] = simplify(factor(ints[i] * det_j))
+        print_ints(ints, det_j=det_j, print_latex=print_latex)
     else:
         print("Jacoian inverse")
         print_sympy_matrix(j_inv)
@@ -186,7 +199,7 @@ def compute_terms(phi_func, scale_det_j=True, print_latex=False):
         print("ints:")
         if print_latex:
             print(pplatex(unique_z))
-        print_ints(ints, unique_z, print_latex=print_latex)
+        print_ints(ints, print_latex=print_latex)
     print("-" * 40)
 
 
@@ -239,17 +252,17 @@ def dragging_all_corners_of_rectangle():
         x1 + a1 * (1. - x1) * (1. - x2) + (a2 - 1.) * x1 * (1. - x2) + (a3 - 1.) * x1 * x2 + a4 * (1. - x1) * x2,
         x2 + b1 * (1. - x1) * (1. - x2) + b2 * x1 * (1. - x2) + (b3 - 1.) * x1 * x2 + (b4 - 1) * (1. - x1) * x2
     ])
-    mu1, mu2, mu3, mu4 = symbols("mu1, mu2, mu3, mu4")
-    nu1, nu2, nu3, nu4 = symbols("nu1, nu2, nu3, nu4")
+    mu1, mu2, mu3 = symbols("mu1, mu3, mu5")
+    nu1, nu2, nu3 = symbols("mu2, mu4, mu6")
 
     print(phi.evalf(subs={x1: 0., x2: 0.}))
     print(phi.evalf(subs={x1: 1., x2: 0.}))
     print(phi.evalf(subs={x1: 1., x2: 1.}))
     print(phi.evalf(subs={x1: 0., x2: 1.}))
-    mu_nu_dict = {a1: mu1, b1: nu1,
-                  a2: mu2 + 1, b2: nu2,
-                  a3: mu3 + 1, b3: nu3 + 1,
-                  a4: mu4, b4: nu4 + 1}
+    mu_nu_dict = {a1: 0, b1: 0,
+                  a2: mu1 + 1, b2: nu1,
+                  a3: mu2 + 1, b3: nu2 + 1,
+                  a4: mu3, b4: nu3 + 1}
     to_scaling_dict = {a1: 0, b1: 0,
                        a2: lx, b2: 0,
                        a3: lx, b3: ly,
