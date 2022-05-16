@@ -12,7 +12,7 @@ from . import assembly
 def sigma_lt(e_young: float, nu_poisson: float, ck: np.ndarray, i: int, d: int, phi_jac_inv: np.ndarray):
     # get Lambert's coeffs.
     mu, lambda_bar = get_lambda_mu(e_young, nu_poisson)
-    nabla_grad_non_ref = phi_jac_inv.T @ src.fem_quadrilateral.assembly.triangle.linear.nabla_grad(ck, i, d)
+    nabla_grad_non_ref = phi_jac_inv.T @ assembly.triangle.linear.nabla_grad(ck, i, d)
     return mu * (nabla_grad_non_ref + nabla_grad_non_ref.T) + lambda_bar * np.trace(nabla_grad_non_ref) * np.identity(2)
 
 
@@ -20,7 +20,7 @@ def sigma_bq(e_young: float, nu_poisson: float, ck: np.ndarray, i: int, d: int, 
              x: float, y: float):
     # get Lambert's coeffs.
     mu, lambda_bar = get_lambda_mu(e_young, nu_poisson)
-    nabla_grad_non_ref = phi_jac_inv.T @ src.fem_quadrilateral.assembly.quadrilateral.bilinear.nabla_grad(x, y, ck, i, d)
+    nabla_grad_non_ref = phi_jac_inv.T @ assembly.quadrilateral.bilinear.nabla_grad(x, y, ck, i, d)
     return mu * (nabla_grad_non_ref + nabla_grad_non_ref.T) + lambda_bar * np.trace(nabla_grad_non_ref) * np.identity(2)
 
 
@@ -37,7 +37,7 @@ def get_element_stress(solver: BaseSolver, compute_for_rb: bool = False) -> np.n
         # using indexmap k = 2 * i + d, d=0 for x, 1 for y, i is the node number
         # and basis functions coef. or Jacobin inverse
         if solver.element in ("triangle triangle", "lt"):
-            ck = src.fem_quadrilateral.assembly.triangle.linear.get_basis_coef(solver.p[nk, :])
+            ck = assembly.triangle.linear.get_basis_coef(solver.p[nk, :])
             for i in range(3):
                 if compute_for_rb:
                     jac_phi_inv = solver.jac_phi_inv(*solver.p[nk[i], :], *solver.uh_rom.geo_params)
@@ -56,7 +56,7 @@ def get_element_stress(solver: BaseSolver, compute_for_rb: bool = False) -> np.n
                                                                   solver.uh.nu_poisson,
                                                                   ck, i, d, jac_phi_inv)
         else:
-            ck = src.fem_quadrilateral.assembly.quadrilateral.bilinear.get_basis_coef(solver.p[nk, :])
+            ck = assembly.quadrilateral.bilinear.get_basis_coef(solver.p[nk, :])
             for i in range(4):
                 if compute_for_rb:
                     jac_phi_inv = solver.jac_phi_inv(*solver.p[nk[i], :], *solver.uh_rom.geo_params)

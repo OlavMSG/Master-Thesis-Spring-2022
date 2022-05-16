@@ -13,7 +13,7 @@ import tqdm
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh, fractional_matrix_power
 
-from src.fem_quadrilateral import default_constants
+from . import default_constants
 # we choose to not update to Compressed versions
 from matrix_lsq import Storage, DiskStorage, Snapshot
 import numpy as np

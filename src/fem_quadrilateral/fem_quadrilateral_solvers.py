@@ -1022,15 +1022,26 @@ class ScalableRectangleSolver(QuadrilateralSolver):
         print("The limit for the parameters is (0, inf).")
 
 
-def get_solver(solver_type: str, n: int, f_func: Union[Callable, int],
-               dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-               neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
-               element: str = "bq", x0: float = 0, y0: float = 0) -> BaseSolver:
-    solver_dict = {"ScalableRectangleSolver": ScalableRectangleSolver,
-                   "DraggableCornerRectangleSolver": DraggableCornerRectangleSolver,
-                   "QuadrilateralSolver": QuadrilateralSolver,
-                   "SR": ScalableRectangleSolver,
-                   "DR": DraggableCornerRectangleSolver,
-                   "QS": QuadrilateralSolver}
-    return solver_dict[solver_type](n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
-                                    bcs_are_on_reference_domain, element, x0, y0)
+class GetSolver:
+    _solver_dict = {"ScalableRectangleSolver": ScalableRectangleSolver,
+                    "DraggableCornerRectangleSolver": DraggableCornerRectangleSolver,
+                    "QuadrilateralSolver": QuadrilateralSolver,
+                    "SR": ScalableRectangleSolver,
+                    "DR": DraggableCornerRectangleSolver,
+                    "QS": QuadrilateralSolver}
+
+    def __init__(self, solver_type: str):
+        self.solver = self._solver_dict[solver_type]
+
+    def __call__(self, n: int, f_func: Union[Callable, int],
+                 dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
+                 element: str = "bq", x0: float = 0, y0: float = 0) -> \
+            Union[QuadrilateralSolver, DraggableCornerRectangleSolver, ScalableRectangleSolver]:
+        return self.solver(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
+                           bcs_are_on_reference_domain, element, x0, y0)
+
+    @staticmethod
+    def solver_dict():
+        print("Available solvers: ")
+        print(GetSolver._solver_dict)

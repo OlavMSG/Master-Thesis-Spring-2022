@@ -4,11 +4,11 @@
 """
 
 from .fem_quadrilateral_solvers import QuadrilateralSolver, DraggableCornerRectangleSolver, ScalableRectangleSolver, \
-    get_solver
+    GetSolver
 
 __all__ = [
     "QuadrilateralSolver",
     "DraggableCornerRectangleSolver",
     "ScalableRectangleSolver",
-    "get_solver"
+    "GetSolver"
 ]

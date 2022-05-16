@@ -8,8 +8,8 @@ from time import perf_counter
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleSolver, QuadrilateralSolver, \
-    default_constants
+from fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleSolver, QuadrilateralSolver, \
+    default_constants, GetSolver
 
 rho_steal = 8e3  # kg/m^3
 alpha = 8e3 * 100 * 9.81 * 0.01  # N/m^2
@@ -58,8 +58,8 @@ def main():
         s = perf_counter()
         d.assemble(0.2, 0.2)
         print(f"time assemble {n}:", perf_counter() - s)"""
-
-    d = DraggableCornerRectangleSolver(2, f, get_dirichlet_edge_func=clamped_bc)
+    d = GetSolver("DR")
+    d = d(2, f, get_dirichlet_edge_func=clamped_bc)
     d.assemble(0.2, 0.2)
     print(d.det_jac_func(-1, -1, -1, -1))
     d.plot_mesh(0.6, 0.2)
