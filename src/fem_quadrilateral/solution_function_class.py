@@ -3,8 +3,8 @@
 @author: Olav M.S. Gran
 """
 
-from fem_quadrilateral.default_constants import default_tol
-from fem_quadrilateral.helpers import FunctionValues2D
+from src.fem_quadrilateral.default_constants import default_tol
+from src.fem_quadrilateral.helpers import FunctionValues2D
 
 
 class SolutionFunctionValues2D(FunctionValues2D):
@@ -21,8 +21,25 @@ class SolutionFunctionValues2D(FunctionValues2D):
         super().__init__()
         self._e_young = None
         self._nu_poisson = None
+        self._geo_params = None
         self._nodal_stress = None
         self._von_mises = None
+
+    def set_geo_params(self, geo_params):
+        """
+        set which geometry parameters that was used
+
+        Parameters
+        ----------
+        geo_params : tuple
+            geometry parameters
+
+        Returns
+        -------
+        None.
+
+        """
+        self._geo_params = geo_params
 
     def set_e_young_and_nu_poisson(self, e_young, nu_poisson):
         """
@@ -98,6 +115,19 @@ class SolutionFunctionValues2D(FunctionValues2D):
 
         """
         self._von_mises = von_mises
+
+    @property
+    def geo_params(self):
+        """
+        The geometry parameters
+
+        Returns
+        -------
+        tuple
+            the geometry parameters
+
+        """
+        return self._geo_params
 
     @property
     def e_young(self):

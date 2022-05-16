@@ -6,7 +6,7 @@
 import numpy as np
 import sympy as sym
 from sympy.abc import x, y, a, b, s, t
-from fem_quadrilateral import QuadrilateralSolver
+from src.fem_quadrilateral import QuadrilateralSolver
 
 from scipy.special import legendre
 

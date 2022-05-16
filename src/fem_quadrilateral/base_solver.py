@@ -9,6 +9,7 @@ from typing import Protocol, Optional, List, Tuple, Callable, Union, Iterable
 from importlib.util import find_spec
 import numpy as np
 import scipy.sparse as sp
+
 from .solution_function_class import SolutionFunctionValues2D
 
 symengine_is_found = (find_spec("symengine") is not None)
@@ -26,6 +27,7 @@ class BaseSolver(Protocol):
     ref_plate: Tuple[int, int]
     implemented_elements: List[str]
     phi: Callable
+    jac_phi_inv: Callable
     sym_phi: sym.Matrix
     sym_params: sym.Matrix
     sym_geo_params: sym.Matrix
@@ -51,6 +53,7 @@ class BaseSolver(Protocol):
     dirichlet_edge: np.ndarray
     neumann_edge: np.ndarray
     geo_param_range: Tuple[float, float]
+    _max_geo_param_range: Tuple[float, float]
     uh: SolutionFunctionValues2D
     uh_rom: SolutionFunctionValues2D
     element: str
@@ -66,6 +69,11 @@ class BaseSolver(Protocol):
     bcs_are_on_reference_domain: bool
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):
+        ...
+
+    def vectorized_phi(self, x_vec: Union[int, float, List[Union[float, int]], np.ndarray],
+                       y_vec: Union[int, float, List[Union[float, int]], np.ndarray],
+                       *geo_params: float) -> np.ndarray:
         ...
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
@@ -114,6 +122,13 @@ class BaseSolver(Protocol):
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         ...
+
+    def rb_pod_mode(self, i: int) -> SolutionFunctionValues2D:
+        ...
+
+    @property
+    def max_geo_param_range(self) -> Tuple[float, float]:
+        return self._max_geo_param_range
 
     @property
     def solver_type(self) -> str:

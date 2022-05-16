@@ -73,20 +73,21 @@ class MultiprocessingSnapshotSaver:
             ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
             mode_and_element = np.array([self.mode, solver.element])
             mls_order_and_llc = np.array([solver.mls_order, *solver.lower_left_corner])
+            solver_type = np.array([solver.solver_type])
             # save it
             if solver.has_non_homo_dirichlet:
                 Snapshot(root_mean, data_mean, a=a_mean,
                          p=solver.p, tri=solver.tri, edge=solver.edge,
                          dirichlet_edge=solver.dirichlet_edge,
                          neumann_edge=solver.neumann_edge,
-                         grid_params=grid_params, ranges=ranges,
+                         grid_params=grid_params, ranges=ranges, solver_type=solver_type,
                          mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
             else:
                 Snapshot(root_mean, data_mean, a=a_mean,
                          p=solver.p, tri=solver.tri, edge=solver.edge,
                          dirichlet_edge=solver.dirichlet_edge,
                          neumann_edge=solver.neumann_edge,
-                         grid_params=grid_params, ranges=ranges,
+                         grid_params=grid_params, ranges=ranges, solver_type=solver_type,
                          mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
             print(f"Saved mean in {root_mean}")
 

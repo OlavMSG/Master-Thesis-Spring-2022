@@ -10,7 +10,7 @@ from scipy.special import roots_legendre
 
 def line_integral_with_linear_basis(a, b, g, nq):
     """
-    Line integral with local linear basis functions on the line from a to b
+    Line integral with local triangle basis functions on the line from a to b
 
     Parameters
     ----------

@@ -6,19 +6,19 @@ from pathlib import Path
 
 import numpy as np
 
-from fem_quadrilateral import default_constants
+from src.fem_quadrilateral import default_constants
 
 
 def main():
-    from fem_quadrilateral import ScalableRectangleSolver
-    from fem_quadrilateral.error_computers import RbErrorComputer, HfErrorComputer
+    from src.fem_quadrilateral import ScalableRectangleSolver
+    from src.fem_quadrilateral import RbErrorComputer, HfErrorComputer
     from matrix_lsq import DiskStorage
 
     def dir_bc(x, y):
         return x, 0
 
     n = 20
-    root = Path("test_storage1")
+    root = Path("../test_storage1")
     if len(DiskStorage(root)) == 0:
         r = ScalableRectangleSolver(n, 0, dirichlet_bc_func=dir_bc, x0=1.1, y0=2.1)
         r.matrix_lsq_setup(2)

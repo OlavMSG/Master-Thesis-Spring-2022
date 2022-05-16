@@ -3,11 +3,11 @@
 @author: Olav M.S. Gran
 """
 
-from sympy import symbols, simplify, factor, flatten, S, latex, nsimplify
+from sympy import symbols, simplify, factor, flatten, S, latex
 from sympy.matrices import Matrix
 from sympy.physics.quantum import TensorProduct
 
-from index_functions import *
+from old_no_longer_in_use.index_functions import *
 
 x1, x2 = symbols("x1, x2")
 x_vec = Matrix([x1, x2])

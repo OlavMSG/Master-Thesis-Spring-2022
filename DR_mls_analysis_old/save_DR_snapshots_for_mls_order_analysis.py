@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 from matrix_lsq import DiskStorage
-from fem_quadrilateral import DraggableCornerRectangleSolver
+from src.fem_quadrilateral import DraggableCornerRectangleSolver
 from datetime import datetime
 import multiprocessing as mp
 

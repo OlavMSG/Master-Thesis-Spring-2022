@@ -19,7 +19,7 @@
 # code taken from Specialization-Project-fall-2021
 
 import numpy as np
-from fem_quadrilateral.assembly.get_plate_base import make_p, make_edge
+from src.fem_quadrilateral.assembly.get_plate_base import make_p, make_edge
 
 
 def getPlate(n, a=0, b=1):

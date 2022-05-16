@@ -7,10 +7,23 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sp
 
-from fem_quadrilateral.assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
-from fem_quadrilateral.helpers import expand_index, index_map
+from src.fem_quadrilateral.assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
+from src.fem_quadrilateral.helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
+from src.fem_quadrilateral.assembly.neumann.linear import assemble_f_neumann
+
+__all__ = [
+    "assemble_f_neumann",
+    "get_basis_coef",
+    "phi",
+    "ddx_phi",
+    "ddy_phi",
+    "nabla_grad",
+    "assemble_a1_a2_local",
+    "assemble_f_local",
+    "assemble_a1_a2_and_f_body_force"
+]
 
 
 def get_basis_coef(p_vec):
@@ -35,7 +48,7 @@ def get_basis_coef(p_vec):
 
 def phi(x, y, ck, i):
     """
-    The linear basis functions on a quadrilateral
+    The triangle basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -68,7 +81,7 @@ def phi(x, y, ck, i):
 
 def ddx_phi(x, y, ck, i):
     """
-    The linear basis functions on a quadrilateral
+    The triangle basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -101,7 +114,7 @@ def ddx_phi(x, y, ck, i):
 
 def ddy_phi(x, y, ck, i):
     """
-    The linear basis functions on a quadrilateral
+    The triangle basis functions on a quadrilateral
 
     Parameters
     ----------
@@ -130,6 +143,36 @@ def ddy_phi(x, y, ck, i):
     # phi3 = lambda x, y: [1, x, y, xy] @ Ck[:, 2]
     # phi3 = lambda x, y: [1, x, y, xy] @ Ck[:, 3]
     return ck[2, i] + ck[3, i] * x
+
+
+def nabla_grad(x, y, ck, i, d):
+    """
+
+    Parameters
+    ----------
+    x : float
+        x-value.
+    y : float
+        y-value.
+    ck : np.array
+        basis function coef. matrix.
+    i : int
+        which basis function to use.
+    d : int
+        which dimension.
+    Returns
+    -------
+    np.array
+        reference gradient.
+    """
+    if d == 0:
+        # case y-part equal 0 of basisfunc
+        return np.array([[ddx_phi(x, y, ck, i), 0.],
+                         [ddy_phi(x, y, ck, i), 0.]], dtype=float)
+    else:
+        # case x-part equal 0 of basisfunc
+        return np.array([[0., ddx_phi(x, y, ck, i)],
+                         [0., ddy_phi(x, y, ck, i)]], dtype=float)
 
 
 def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
@@ -303,9 +346,9 @@ def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
     return f_local
 
 
-def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq_x=2, nq_y=None):
+def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq_x=2, nq_y=None):
     """
-    Assemble the ints matrices and the body force load vector
+    Assemble the a1 and a2 matrices and the body force load vector
 
     Parameters
     ----------
@@ -335,7 +378,7 @@ def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f
     a2 : np.array
         full matrix a2.
     f_body_force : np.array
-        load vector for the linear form.
+        load vector for the triangle form.
     """
     if nq_y is None:
         nq_y = nq_x

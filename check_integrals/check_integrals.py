@@ -8,7 +8,7 @@ from sympy.matrices import Matrix
 from sympy.physics.quantum import TensorProduct
 
 from find_integrals_uv import print_div_uv, print_uvt, print_uv, get_from_int_1_5_terms, compute_from_ints
-from index_functions import *
+from old_no_longer_in_use.index_functions import *
 import numpy as np
 
 x1, x2 = symbols("x1, x2")

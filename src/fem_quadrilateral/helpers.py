@@ -123,7 +123,7 @@ def get_e_young_nu_poisson(mu, lambda_bar):
 
 def compute_a(e_young, nu_poisson, a1, a2):
     """
-    Compute the matrix a from the linear elasticity problem,
+    Compute the matrix a from the triangle elasticity problem,
     depending on the young's module and the poisson ratio,
     and the matrices a1 and a2
 

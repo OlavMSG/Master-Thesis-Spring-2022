@@ -6,7 +6,7 @@
 from sympy import symbols, expand, S
 from sympy.matrices import Matrix, zeros
 from sympy.physics.quantum import TensorProduct
-from index_functions import *
+from old_no_longer_in_use.index_functions import *
 
 x1, x2 = symbols("x1, x2")
 x_vec = Matrix([x1, x2])

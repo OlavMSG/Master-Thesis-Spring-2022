@@ -6,7 +6,7 @@
 from pathlib import Path
 import time
 
-from fem_quadrilateral import QuadrilateralSolver
+from src.fem_quadrilateral import QuadrilateralSolver
 
 
 def main():

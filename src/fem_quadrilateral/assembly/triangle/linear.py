@@ -7,10 +7,22 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sp
 
-from fem_quadrilateral.assembly.triangle.gauss_quadrature import quadrature2D, quadrature2D_vector
-from fem_quadrilateral.helpers import expand_index, index_map
+from src.fem_quadrilateral.assembly.triangle.gauss_quadrature import quadrature2D, quadrature2D_vector
+from src.fem_quadrilateral.helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
+from src.fem_quadrilateral.assembly.neumann.linear import assemble_f_neumann
+
+__all__ = [
+    "assemble_f_neumann",
+    "get_basis_coef",
+    "phi",
+    "nabla_grad",
+    "assemble_a1_a2_local",
+    "assemble_f_local",
+    "assemble_a1_a2_and_f_body_force"
+]
+
 
 def get_basis_coef(p_vec):
     """
@@ -34,7 +46,7 @@ def get_basis_coef(p_vec):
 
 def phi(x, y, ck, i):
     """
-    The linear basis functions on a triangle
+    The triangle basis functions on a triangle
 
     Parameters
     ----------
@@ -61,6 +73,32 @@ def phi(x, y, ck, i):
     # phi2 = lambda x, y: [1, x, y] @ Ck[:, 1]
     # phi3 = lambda x, y: [1, x, y] @ Ck[:, 2]
     return ck[0, i] + ck[1, i] * x + ck[2, i] * y
+
+
+def nabla_grad(ck, i, d):
+    """
+
+    Parameters
+    ----------
+    ck : np.array
+        basis function coef. matrix.
+    i : int
+        which basis function to use.
+    d : int
+        which dimension.
+    Returns
+    -------
+    np.array
+        reference gradient.
+    """
+    if d == 0:
+        # case y-part equal 0 of basisfunc
+        return np.array([[ck[1, i], 0.],
+                         [ck[2, i], 0.]], dtype=float)
+    else:
+        # case x-part equal 0 of basisfunc
+        return np.array([[0., ck[1, i]],
+                         [0., ck[2, i]]], dtype=float)
 
 
 def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq):
@@ -97,6 +135,7 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq):
         for j in range(4):
             def z_mat_funcs_ij(x, y):
                 return z_mat_funcs[i, j](x, y, *geo_params)
+
             z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
 
     # matrices are symmetric by construction, so only compute on part.
@@ -198,9 +237,9 @@ def assemble_f_local(ck, f_func, p_mat, nq):
     return f_local
 
 
-def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
+def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
     """
-    Assemble the ints matrices and the body force load vector
+    Assemble the a1 and a2 matrices and the body force load vector
 
     Parameters
     ----------
@@ -228,7 +267,7 @@ def assemble_ints_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f
     a2 : np.array
         full matrix a2.
     f_body_force : np.array
-        load vector for the linear form.
+        load vector for the triangle form.
 
     """
     n2d = n * n * 2

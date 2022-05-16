@@ -4,10 +4,11 @@
 """
 from __future__ import annotations
 
+import sys
 from importlib.util import find_spec
 from itertools import product, repeat
 from pathlib import Path
-from typing import Optional, Tuple, Callable, Union, Iterable
+from typing import Optional, Tuple, Callable, Union, Iterable, List
 
 from scipy.sparse.linalg import spsolve
 import numpy as np
@@ -22,8 +23,10 @@ from .snapshot_saver import SnapshotSaver
 from .matrix_least_squares import MatrixLSQ, mls_compute_from_fit
 from .pod import PodWithEnergyNorm
 from .error_computers import HfErrorComputer, RbErrorComputer
-from .plotting import plot_mesh, plot_hf_displacment, plot_rb_displacment
+from .plotting import plot_mesh, plot_hf_displacment, plot_rb_displacment, plot_rb_von_mises, plot_hf_von_mises, \
+    plot_pod_mode
 from .rb_model_saver_and_loader import RBModelSaver, RBModelLoader
+from .stress_recovery import get_von_mises_stress, get_nodal_stress
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -54,19 +57,25 @@ def sym_kron_product2x2(mat1: sym.Matrix, mat2: sym.Matrix) -> sym.Matrix:
 
 class QuadrilateralSolver(BaseSolver):
     ref_plate = (0, 1)
-    implemented_elements = ["linear triangle", "lt", "bilinear quadrilateral", "bq"]
+    implemented_elements = ["triangle triangle", "lt", "bilinear quadrilateral", "bq"]
     sym_phi = sym.Matrix([
         x0 + x1 + mu1 * x1 * (1 - x2) + mu3 * x1 * x2 + mu5 * (1 - x1) * x2,
         y0 + x2 + mu2 * x1 * (1 - x2) + mu4 * x1 * x2 + mu6 * (1 - x1) * x2
     ])
     sym_params = sym.Matrix([x1, x2, mu1, mu2, mu3, mu4, mu5, mu6])
     geo_param_range = default_constants.QS_range  # (-0.1, 0.1)  abs(...)< 1/10 < 1/6 = 0.1666...
+    _max_geo_param_range = (-1 / 6, 1 / 6)
     _pod: PodWithEnergyNorm
     _mls: MatrixLSQ
     _solver_type = "QuadrilateralSolver"
     _solver_type_short = "QS"
 
     def set_geo_param_range(self, geo_range: Tuple[float, float]):
+        if self._max_geo_param_range[0] < geo_range[0] < geo_range[1] < self._max_geo_param_range[1]:
+            pass
+        else:
+            raise ValueError(f"Geometry range is larger than the valid range. Range is {geo_range}. "
+                             f"Largest valid range is {self._max_geo_param_range}, not including the endpoints.")
         self.geo_param_range = geo_range
 
     @property
@@ -76,6 +85,17 @@ class QuadrilateralSolver(BaseSolver):
     @property
     def solver_type_short(self) -> str:
         return self._solver_type_short
+
+    @property
+    def max_geo_param_range(self) -> Tuple[float, float]:
+        return self._max_geo_param_range
+
+    def _check_in_geo_range(self, geo_param: float):
+        if self.geo_param_range[0] <= geo_param <= self.geo_param_range[1]:
+            pass
+        else:
+            raise ValueError(f"Geometry parameter is outside of chosen parameter range. "
+                             f"{geo_param} not in {self.geo_param_range}.")
 
     @staticmethod
     def mu_to_vertices_dict():
@@ -92,6 +112,7 @@ class QuadrilateralSolver(BaseSolver):
                  neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "bq", x0: float = 0, y0: float = 0):
 
+        self._geo_params = None
         self._a1_set_n_rom_list = None
         self._a2_set_n_rom_list = None
         self._f0_set_n_rom_list = None
@@ -136,7 +157,9 @@ class QuadrilateralSolver(BaseSolver):
                          + "Implemented elements: " + str(self.implemented_elements)
             raise NotImplementedError(error_text)
 
-        if self.element in ("linear triangle", "lt"):
+        if self.element in ("triangle triangle", "lt"):
+            print(f"Waring: the mapping to the reference element is bilinear, linear triangle elements are "
+                  f"therefore not ideal, try bilinear quadrilateral elements (default).", file=sys.stderr)
             self.nq = 4
             self.nq_y = None
         else:
@@ -159,7 +182,7 @@ class QuadrilateralSolver(BaseSolver):
             else:
                 self.f_func = helpers.VectorizedFunction2D(
                     lambda x, y:
-                    f_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
+                    f_func(*self.phi(x, y, *self._geo_params)) * self.det_jac_func(x, y, *self._geo_params))
 
         # dirichlet bc function
         self.has_non_homo_dirichlet = False
@@ -171,7 +194,7 @@ class QuadrilateralSolver(BaseSolver):
             else:
                 # no det_jac here implemented via a1 and a2
                 self.dirichlet_bc_func = helpers.VectorizedFunction2D(
-                    lambda x, y: dirichlet_bc_func(*self.phi(x, y, *self.geo_params)))
+                    lambda x, y: dirichlet_bc_func(*self.phi(x, y, *self._geo_params)))
             self.has_non_homo_dirichlet = True
 
         # get_dirichlet_edge function
@@ -182,7 +205,7 @@ class QuadrilateralSolver(BaseSolver):
                 self.get_dirichlet_edge_func = get_dirichlet_edge_func
             else:
                 def get_dir_edge_func(x, y):
-                    return get_dirichlet_edge_func(*self.phi(x, y, *self.geo_params))
+                    return get_dirichlet_edge_func(*self.phi(x, y, *self._geo_params))
 
                 self.get_dirichlet_edge_func = get_dir_edge_func
         # neumann bc function
@@ -201,7 +224,8 @@ class QuadrilateralSolver(BaseSolver):
                 else:
                     self.neumann_bc_func = helpers.VectorizedFunction2D(
                         lambda x, y:
-                        neumann_bc_func(*self.phi(x, y, *self.geo_params)) * self.det_jac_func(x, y, *self.geo_params))
+                        neumann_bc_func(*self.phi(x, y, *self._geo_params)) * self.det_jac_func(x, y,
+                                                                                                *self._geo_params))
                 self.has_non_homo_neumann = True
 
     def _from_root(self):
@@ -209,6 +233,9 @@ class QuadrilateralSolver(BaseSolver):
         from matrix_lsq import Snapshot
         root_mean = self.saver_root / "mean"
         mean_snapshot = Snapshot(root_mean)
+        solver_type = mean_snapshot["solver_type"][0]
+        if not (solver_type == self.solver_type or solver_type == self.solver_type_short):
+            raise ValueError(f"{self.saver_root} is for {solver_type} not {self.solver_type}.")
         self.geo_param_range = mean_snapshot["ranges"][0]
         self.p, self.tri, self.edge = mean_snapshot["p"], mean_snapshot["tri"], mean_snapshot["edge"]
         self.dirichlet_edge = mean_snapshot["dirichlet_edge"]
@@ -234,6 +261,7 @@ class QuadrilateralSolver(BaseSolver):
             rb_loader = RBModelLoader(self.rb_saver_root)
             self._pod = PodWithEnergyNorm(self.saver_root)
             self._pod.v = rb_loader(self)
+            self._pod.n_rom = self._pod.v.shape[1]
             self.is_rb_from_root = True
 
     @classmethod
@@ -258,7 +286,7 @@ class QuadrilateralSolver(BaseSolver):
         self.is_jac_constant = (x1 and x2 not in self.sym_jac.free_symbols)
         sym_jac_inv_det = sym.Matrix([[self.sym_jac[1, 1], - self.sym_jac[0, 1]],
                                       [-self.sym_jac[1, 0], self.sym_jac[0, 0]]])
-
+        self.jac_phi_inv = sym_Lambdify(self.sym_params, sym_jac_inv_det / self.sym_det_jac)
         self.sym_z_mat = sym_kron_product2x2(sym_jac_inv_det, sym_jac_inv_det) / self.sym_det_jac
 
         self.z_mat_funcs = np.empty((4, 4), dtype=object)
@@ -266,6 +294,24 @@ class QuadrilateralSolver(BaseSolver):
             for j in range(4):
                 self.z_mat_funcs[i, j] = np.vectorize(sym_Lambdify(self.sym_params, self.sym_z_mat[i, j]),
                                                       otypes=[float])
+
+    def vectorized_phi(self, x_vec: Union[int, float, List[Union[float, int]], np.ndarray],
+                       y_vec: Union[int, float, List[Union[float, int]], np.ndarray],
+                       *geo_params: float) -> np.ndarray:
+        try:
+            for geo_parm in geo_params:
+                self._check_in_geo_range(geo_parm)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+        if isinstance(x_vec, (float, int)):
+            x_vec = np.array([x_vec])
+        if isinstance(y_vec, (float, int)):
+            y_vec = np.array([y_vec])
+        x_vals = np.zeros_like(x_vec, dtype=float)
+        y_vals = np.zeros_like(x_vec, dtype=float)
+        for i, (x, y) in enumerate(zip(x_vec, y_vec)):
+            x_vals[i], y_vals[i] = self.phi(x, y, *geo_params)
+        return np.column_stack((x_vals, y_vals))
 
     def _sym_mls_params_setup(self):
 
@@ -366,14 +412,14 @@ class QuadrilateralSolver(BaseSolver):
         self.mls_funcs = sym_Lambdify(self.sym_geo_params, self.sym_mls_funcs)
 
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
-        if self.element in ("linear triangle", "lt"):
+        if self.element in ("triangle triangle", "lt"):
             self.nq = nq
         else:
             self.nq = nq
             if nq_y is None:
                 self.nq_y = nq
             else:
-                self.nq_y = nq
+                self.nq_y = nq_y
 
     def _edges(self):
         # dirichlet edge
@@ -427,24 +473,26 @@ class QuadrilateralSolver(BaseSolver):
         self.f2_dir = self.a2_full[dirichlet_xy_index] @ self.rg
 
     def _assemble(self, geo_params):
-        self.geo_params = geo_params
-        if self.element in ("linear triangle", "lt"):
+        for geo_parm in geo_params:
+            self._check_in_geo_range(geo_parm)
+        self._geo_params = geo_params
+        if self.element in ("triangle triangle", "lt"):
             self.p, self.tri, self.edge = assembly.triangle.get_plate.getPlate(self._n)
             self.a1_full, self.a2_full, self.f0_full \
-                = assembly.triangle.linear.assemble_ints_and_f_body_force(self._n, self.p, self.tri,
-                                                                          self.z_mat_funcs, self.geo_params,
-                                                                          self.f_func, self.f_func_non_zero,
-                                                                          self.nq)
+                = assembly.triangle.linear.assemble_a1_a2_and_f_body_force(self._n, self.p, self.tri,
+                                                                           self.z_mat_funcs, self._geo_params,
+                                                                           self.f_func, self.f_func_non_zero,
+                                                                           self.nq)
             if self.has_non_homo_neumann:
                 self.f0_full += assembly.triangle.linear.assemble_f_neumann(self._n, self.p, self.neumann_edge,
                                                                             self.neumann_bc_func, self.nq)
         else:
             self.p, self.tri, self.edge = assembly.quadrilateral.get_plate.getPlate(self._n)
             self.a1_full, self.a2_full, self.f0_full \
-                = assembly.quadrilateral.bilinear.assemble_ints_and_f_body_force(self._n, self.p, self.tri,
-                                                                                 self.z_mat_funcs, self.geo_params,
-                                                                                 self.f_func, self.f_func_non_zero,
-                                                                                 self.nq, self.nq_y)
+                = assembly.quadrilateral.bilinear.assemble_a1_a2_and_f_body_force(self._n, self.p, self.tri,
+                                                                                  self.z_mat_funcs, self._geo_params,
+                                                                                  self.f_func, self.f_func_non_zero,
+                                                                                  self.nq, self.nq_y)
             if self.has_non_homo_neumann:
                 self.f0_full += assembly.quadrilateral.bilinear.assemble_f_neumann(self._n, self.p, self.neumann_edge,
                                                                                    self.neumann_bc_func,
@@ -471,6 +519,9 @@ class QuadrilateralSolver(BaseSolver):
             if len(geo_params) != len(self.sym_geo_params):
                 raise ValueError(
                     f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
+            for geo_param in geo_params:
+                self._check_in_geo_range(geo_param)
+            self._geo_params = geo_params
             if not self.mls_has_been_setup:
                 raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
             if not self._mls_is_computed:
@@ -494,7 +545,7 @@ class QuadrilateralSolver(BaseSolver):
             if self.has_non_homo_dirichlet:
                 f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_dir, self.f2_dir)
         elif self.is_assembled_and_free_from_root:
-            raise ValueError("Matrices and vectors are assembled from saved data, geo_params must therefor be given.")
+            raise ValueError("Matrices and vectors are assembled from saved data, _geo_params must therefor be given.")
         else:
             raise ValueError("Matrices and vectors are not assembled.")
 
@@ -509,6 +560,7 @@ class QuadrilateralSolver(BaseSolver):
             uh[self.expanded_dirichlet_edge_index] = self.rg
         # set uh, and save it in a nice way.
         self.uh = SolutionFunctionValues2D.from_1x2n(uh)
+        self.uh.set_geo_params(self._geo_params)
         self.uh.set_e_young_and_nu_poisson(e_young, nu_poisson)
         if print_info:
             print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
@@ -520,6 +572,9 @@ class QuadrilateralSolver(BaseSolver):
         if len(geo_params) != len(self.sym_geo_params):
             raise ValueError(
                 f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
+        for geo_param in geo_params:
+            self._check_in_geo_range(geo_param)
+        self._geo_params = geo_params
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         if self.is_rb_from_root:
@@ -592,6 +647,7 @@ class QuadrilateralSolver(BaseSolver):
             uh_rom[self.expanded_dirichlet_edge_index] = self.rg
         # set uh_rom, save it in a nice way.
         self.uh_rom = SolutionFunctionValues2D.from_1x2n(uh_rom)
+        self.uh_rom.set_geo_params(self._geo_params)
         self.uh_rom.set_e_young_and_nu_poisson(e_young, nu_poisson)
         if print_info:
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
@@ -608,6 +664,38 @@ class QuadrilateralSolver(BaseSolver):
         # get relative RB error between true HF and RB systems
         rb_err_comp = RbErrorComputer(root)
         return rb_err_comp(self, e_young, nu_poisson, *geo_params, n_rom=n_rom)
+
+    def hf_nodal_stress(self, print_info=True):
+        if self.uh.values is None:
+            raise ValueError("High fidelity Problem has not been solved.")
+        get_nodal_stress(self, compute_for_rb=False)
+        if print_info:
+            print("Get nodal stress by the property uh.nodal_stress of the class.")
+
+    def rb_nodal_stress(self, print_info=True):
+        if self.uh_rom.values is None:
+            raise ValueError("Reduced order Problem has not been solved.")
+        get_nodal_stress(self, compute_for_rb=True)
+        if print_info:
+            print("Get nodal stress by the property uh_rom.nodal_stress of the class.")
+
+    def hf_von_mises_stress(self, print_info=True):
+        if self.uh.values is None:
+            raise ValueError("High fidelity Problem has not been solved.")
+        if self.uh.nodal_stress is None:
+            self.hf_nodal_stress(print_info=False)
+        get_von_mises_stress(self, compute_for_rb=False)
+        if print_info:
+            print("Get von Mises yield by the property uh.von_mises of the class.")
+
+    def rb_von_mises_stress(self, print_info=True):
+        if self.uh_rom.values is None:
+            raise ValueError("Reduced order Problem has not been solved.")
+        if self.uh_rom.nodal_stress is None:
+            self.rb_nodal_stress(print_info=False)
+        get_von_mises_stress(self, compute_for_rb=True)
+        if print_info:
+            print("Get von Mises yield by the property uh_rom.von_mises of the class.")
 
     def save_snapshots(self, root: Path, geo_grid: int,
                        mode: str = "uniform",
@@ -709,28 +797,54 @@ class QuadrilateralSolver(BaseSolver):
         if not self.is_assembled_and_free:
             raise ValueError("Is not assembled.")
         if len(geo_params) == 0:
-            plot_mesh(self, *self.geo_params, element=self.element)
+            plot_mesh(self, *self._geo_params)
         else:
-            plot_mesh(self, *geo_params, element=self.element)
+            plot_mesh(self, *geo_params)
 
-    def hf_plot_displacement(self, *geo_params: Optional[float]):
+    def hf_plot_displacement(self):
         if self.uh.values is None:
             raise ValueError("High fidelity Problem has not been solved.")
-        if len(geo_params) == 0:
-            plot_hf_displacment(self, *self.geo_params, element=self.element)
-        else:
-            plot_hf_displacment(self, *geo_params, element=self.element)
+        plot_hf_displacment(self)
 
-    def rb_plot_displacement(self, *geo_params: Optional[float]):
+    def rb_plot_displacement(self):
         if self.uh_rom.values is None:
             raise ValueError("Reduced Order Problem has not been solved.")
-        if len(geo_params) == 0:
-            plot_rb_displacment(self, *self.geo_params, element=self.element)
+        plot_rb_displacment(self)
+
+    def hf_plot_von_mises(self):
+        if self.uh.von_mises is None:
+            self.hf_von_mises_stress(print_info=False)
+        plot_hf_von_mises(self)
+
+    def rb_plot_von_mises(self):
+        if self.uh_rom.von_mises is None:
+            self.rb_von_mises_stress(print_info=False)
+        plot_rb_von_mises(self)
+
+    def rb_pod_mode(self, i: int) -> SolutionFunctionValues2D:
+        pod_mode = np.zeros(self.n_full)
+        # get mode form V matrix
+        if i < self.n_rom:
+            if not (self._pod_is_computed or self.is_rb_from_root):
+                raise ValueError("POD is not computed or no reduced order model from root.")
+            pod_mode[self.expanded_free_index] = self._pod.v[:, i]
         else:
-            plot_rb_displacment(self, *geo_params, element=self.element)
+            if not self._pod_is_computed:
+                raise ValueError("POD is not computed.")
+            pod_mode[self.expanded_free_index] = self._pod.v_mat_n_max[:, i]
+
+        # lifting function
+        if self.has_non_homo_dirichlet:
+            pod_mode[self.expanded_dirichlet_edge_index] = self.rg
+        pod_mode = SolutionFunctionValues2D.from_1x2n(pod_mode)
+        pod_mode.set_geo_params(self._geo_params)
+        return pod_mode
+
+    def rb_plot_pod_mode(self, i: int):
+        plot_pod_mode(self, i)
 
     def get_u_exact(self, u_exact_func):
-        return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self.geo_params)))
+        return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self._geo_params)))
 
     def get_geo_param_limit_estimate(self, num, round_decimal=6):
         # 1 / det(jac) has gives a rational of form 1/(k + c*x)
@@ -778,8 +892,8 @@ class QuadrilateralSolver(BaseSolver):
 
     @property
     def n_rom(self) -> int:
-        if not self._pod_is_computed:
-            raise ValueError("Pod is not computed.")
+        if not (self._pod_is_computed or self.is_rb_from_root):
+            raise ValueError("POD is not computed or no reduced order model from root.")
         return self._pod.n_rom
 
     @property
@@ -837,6 +951,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
                                                            mu5: 0, mu6: 0}))
     sym_params = sym.Matrix([x1, x2, mu1, mu2])
     geo_param_range = default_constants.DR_range  # (-0.3, 0.3)  abs(...) < 0.3 < 1/2
+    _max_geo_param_range = (-0.5, 0.5)
     _solver_type = "DraggableCornerRectangleSolver"
     _solver_type_short = "DR"
 
@@ -873,6 +988,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
                                                            mu5: 0, mu6: ly - 1}))
     sym_params = sym.Matrix([x1, x2, lx, ly])
     geo_param_range = default_constants.SR_range  # (0.1, 5.1)
+    _max_geo_param_range = (0, np.inf)
     _solver_type = "ScalableRectangleSolver"
     _solver_type_short = "SR"
 

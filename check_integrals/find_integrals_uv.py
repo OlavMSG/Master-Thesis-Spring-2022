@@ -9,7 +9,7 @@ from sympy.physics.quantum import TensorProduct
 
 from find_integrals_int15 import scaling_of_rectangle, dragging_one_corner_of_rectangle, \
     dragging_all_corners_of_rectangle
-from index_functions import *
+from old_no_longer_in_use.index_functions import *
 
 x1, x2 = symbols("x1, x2")
 x_vec = Matrix([x1, x2])

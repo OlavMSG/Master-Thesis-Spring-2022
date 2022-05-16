@@ -32,9 +32,9 @@ class HfErrorComputer:
 
     def __call__(self, solver: BaseSolver, e_young: float, nu_poisson: float, *geo_params: float,
                  drop: Union[Iterable[int], int] = None) -> float:
-        # check if e_young, nu_poisson and geo_params matches an uh saved,
+        # check if e_young, nu_poisson and _geo_params matches an uh saved,
         # get data or hfsolve system, then
-        # hfsolve system with geo_params
+        # hfsolve system with _geo_params
         root_mean = self.root / "mean"
         mean_snapshot = Snapshot(root_mean)
         geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
@@ -43,7 +43,7 @@ class HfErrorComputer:
         mode = mean_snapshot["mode_and_element"][0]
         geo_vec = helpers.get_vec_from_range(geo_range, geo_gird, mode)
         # print(geo_vec)
-        # check if geo_params exist in saves and get index "via small hack"...
+        # check if _geo_params exist in saves and get index "via small hack"...
         if any((index_geo := j) == j and
                all(abs(geo_params[i] - check_geo_params[i]) < default_constants.default_tol for i in
                    range(num_geo_param)) for j, check_geo_params in
@@ -61,7 +61,7 @@ class HfErrorComputer:
                 true_a2 = snapshot["a2"]
                 true_uh_free = snapshot["s_mat"][:, index_e_nu]
                 true_uh_anorm2 = snapshot["uh_anorm2"][index_e_nu]
-                # hfsolve system with geo_params and drop for dropping mls components
+                # hfsolve system with _geo_params and drop for dropping mls components
                 solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False, drop=drop)
 
                 # print(true_uh_free.shape)
@@ -81,7 +81,7 @@ class HfErrorComputer:
         if solver.is_assembled_and_free_from_root:
             raise ValueError("Solver comes from root, can not compute error; missing true a-matrix.")
         print("solving hf.")
-        # assemble system for geo_params
+        # assemble system for _geo_params
         solver.assemble(*geo_params)
         solver.hfsolve(e_young, nu_poisson, print_info=False)
         # save true hf data
@@ -89,7 +89,7 @@ class HfErrorComputer:
         true_a2 = solver.a2
         true_uh_free = solver.uh_free
         true_uh_anorm2 = solver.uh_anorm2
-        # hfsolve system with geo_params
+        # hfsolve system with _geo_params
         solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False, drop=drop)
 
         # print(true_uh_free.shape)
@@ -118,7 +118,7 @@ class RbErrorComputer:
 
     def __call__(self, solver: BaseSolver, e_young: float, nu_poisson: float, *geo_params: float,
                  n_rom: Optional[int] = None) -> float:
-        # check if e_young, nu_poisson and geo_params matches an uh saved,
+        # check if e_young, nu_poisson and _geo_params matches an uh saved,
         # get data or hfsolve system, then
         # rbsolve system
         root_mean = self.root / "mean"
@@ -129,7 +129,7 @@ class RbErrorComputer:
         mode = mean_snapshot["mode_and_element"][0]
         geo_vec = helpers.get_vec_from_range(geo_range, geo_gird, mode)
         # print(geo_vec)
-        # check if geo_params exist in saves and get index "via small hack"...
+        # check if _geo_params exist in saves and get index "via small hack"...
         if any((index_geo := j) == j and
                all(abs(geo_params[i] - check_geo_params[i]) < default_constants.default_tol for i in
                    range(num_geo_param)) for j, check_geo_params in
@@ -168,7 +168,7 @@ class RbErrorComputer:
         if solver.is_assembled_and_free_from_root:
             raise ValueError("Solver comes from root, can not compute error; missing true a-matrix.")
         print("solving hf")
-        # assemble system for geo_params
+        # assemble system for _geo_params
         solver.assemble(*geo_params)
         solver.hfsolve(e_young, nu_poisson, print_info=False)
         uh_anorm2 = solver.uh_anorm2

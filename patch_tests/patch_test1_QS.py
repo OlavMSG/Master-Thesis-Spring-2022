@@ -5,8 +5,8 @@
 
 import numpy as np
 
-from fem_quadrilateral import QuadrilateralSolver
-from fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
+from src.fem_quadrilateral import QuadrilateralSolver
+from src.fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
 
 
 def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt", nq=None):
@@ -23,7 +23,7 @@ def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt", nq=None)
     s_rec.hfsolve(e_mean, nu_mean, print_info=False)
     u_exact = s_rec.get_u_exact(u_exact_func)
 
-    # discrete max norm, holds if u_exact is linear (Terms 1, x, y)
+    # discrete max norm, holds if u_exact is triangle (Terms 1, x, y)
     test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
     print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
     print("quadrature rule {}x{}".format(s_rec.nq, s_rec.nq_y))

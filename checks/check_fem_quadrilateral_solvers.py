@@ -2,8 +2,13 @@
 """
 @author: Olav M.S. Gran
 """
+from pathlib import Path
 from time import perf_counter
-from fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleSolver, QuadrilateralSolver, \
+
+import numpy as np
+from matplotlib import pyplot as plt
+
+from src.fem_quadrilateral import DraggableCornerRectangleSolver, ScalableRectangleSolver, QuadrilateralSolver, \
     default_constants
 
 rho_steal = 8e3  # kg/m^3
@@ -20,7 +25,7 @@ def clamped_bc(x, y):
 
 
 def main():
-    n = 2
+    """n = 2
     order = 2
     q = QuadrilateralSolver(n, 0)
     print(q.sym_phi)
@@ -45,15 +50,31 @@ def main():
     print(r.sym_phi)
     r.matrix_lsq_setup(mls_order=order)
     print(r.sym_mls_funcs)
-    print(len(r.sym_mls_funcs))
+    print(len(r.sym_mls_funcs))"""
     # r.get_geo_param_limit_estimate()
 
-    for n in [20, 40, 80]:
+    """for n in [20, 40, 80]:
         d = DraggableCornerRectangleSolver(n, f, get_dirichlet_edge_func=clamped_bc)
         s = perf_counter()
         d.assemble(0.2, 0.2)
-        print(f"time assemble {n}:", perf_counter() - s)
+        print(f"time assemble {n}:", perf_counter() - s)"""
 
+    d = DraggableCornerRectangleSolver(2, f, get_dirichlet_edge_func=clamped_bc)
+    d.assemble(0.2, 0.2)
+    print(d.det_jac_func(-1, -1, -1, -1))
+    d.plot_mesh(0.6, 0.2)
+    plt.show()
+    d.hfsolve(210e3, 0.2)
+    d.hf_plot_displacement()
+    plt.show()
+    d.hf_von_mises_stress()
+    d.hf_plot_von_mises()
+    plt.show()
+    # d.rb_pod_mode(1)
+
+    print(d.jac_phi_inv(0.5, 0.5, 0.5, -0.2))
+    print(0 < 1 < np.inf)
+    print(d.tri)
 
 if __name__ == '__main__':
     main()
