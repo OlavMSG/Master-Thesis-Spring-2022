@@ -96,14 +96,14 @@ def make_pod_plots(p_order):
 def main():
     print(datetime.now().time())
     max_order = 10
-    p_order_list = [3]
+    p_order_list = [1, 3, 4]
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(int(min(mp.cpu_count() / 3, len(p_order_list))), maxtasksperchild=1)
         for p_order in p_order_list:
             pool.apply_async(make_pod_plots, [p_order])
 
-        # now we are done, kill the listener
+        # now we are done,
         pool.close()
         pool.join()
     else:

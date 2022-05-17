@@ -180,7 +180,7 @@ def main():
     print(datetime.now().time())
     p_order = 19
     power_divider = 3
-    # save_pod_errors(p_order, power_divider=power_divider)
+    save_pod_errors(p_order, power_divider=power_divider)
     print(datetime.now().time())
     plot_pod_errors(p_order)
 

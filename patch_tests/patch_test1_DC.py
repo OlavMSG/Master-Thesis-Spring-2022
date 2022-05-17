@@ -14,25 +14,27 @@ def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt", nq=None)
         f = 0
     e_mean = np.mean(e_young_range)
     nu_mean = np.mean(nu_poisson_range)
+    for bcs_bool in [True, False]:
+        s_rec = DraggableCornerRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element,
+                                               bcs_are_on_reference_domain=bcs_bool)
+        if nq is not None:
+            s_rec.set_quadrature_scheme_order(nq)
+        s_rec.assemble(mu1, mu2)
 
-    s_rec = DraggableCornerRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element)
-    if nq is not None:
-        s_rec.set_quadrature_scheme_order(nq)
-    s_rec.assemble(mu1, mu2)
+        s_rec.hfsolve(e_mean, nu_mean, print_info=False)
+        u_exact = s_rec.get_u_exact(u_exact_func)
 
-    s_rec.hfsolve(e_mean, nu_mean, print_info=False)
-    u_exact = s_rec.get_u_exact(u_exact_func)
+        # discrete max norm, holds if u_exact is triangle (Terms 1, x, y)
+        test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
+        print(f"BC are on ref: {bcs_bool}")
+        print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
+        print("quadrature rule {}x{}".format(s_rec.nq, s_rec.nq_y))
+        print("tolerance {}".format(tol))
+        print("ref plate limits {}".format(s_rec.ref_plate))
+        print("element type: {}".format(element))
+        print("test {} for n={}".format(test_res, n))
 
-    # discrete max norm, holds if u_exact is triangle (Terms 1, x, y)
-    test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
-    print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
-    print("quadrature rule {}x{}".format(s_rec.nq, s_rec.nq_y))
-    print("tolerance {}".format(tol))
-    print("ref plate limits {}".format(s_rec.ref_plate))
-    print("element type: {}".format(element))
-    print("test {} for _n={}".format(test_res, n))
-
-    print("-" * 10)
+        print("-" * 10)
 
 
 def case_1(n, tol, element="lt", nq=None):
@@ -111,10 +113,10 @@ def main(run_for=False):
 
 
 if __name__ == '__main__':
-    print(DraggableCornerRectangleSolver.mu_to_vertices_dict())
+    DraggableCornerRectangleSolver.mu_to_vertices_dict()
     # play with the numbers'
     # element="lt" passes for some
     # element="bq" passes for all tested so far...
-    mu1 = 0.02
-    mu2 = -0.01
+    mu1 = 0.2
+    mu2 = 0.2
     main(False)

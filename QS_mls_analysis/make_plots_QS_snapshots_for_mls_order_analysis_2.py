@@ -28,7 +28,7 @@ plt.rcParams.update(new_params)
 def main():
     tol = 5e-3
     max_order1 = 0
-    max_order = 5
+    max_order = 4
     print(datetime.now().time())
     d = QuadrilateralSolver(2, 0)
     d.matrix_lsq_setup(max_order)

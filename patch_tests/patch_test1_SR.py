@@ -14,22 +14,24 @@ def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt"):
         f = 0
     e_mean = np.mean(e_young_range)
     nu_mean = np.mean(nu_poisson_range)
+    for bcs_bool in [True, False]:
+        s_rec = ScalableRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element,
+                                        bcs_are_on_reference_domain=bcs_bool)
+        s_rec.assemble(lx, ly)
 
-    s_rec = ScalableRectangleSolver(n, f, dirichlet_bc_func=dirichlet_bc_func, element=element)
-    s_rec.assemble(lx, ly)
+        s_rec.hfsolve(e_mean, nu_mean, print_info=False)
+        u_exact = s_rec.get_u_exact(u_exact_func)
 
-    s_rec.hfsolve(e_mean, nu_mean, print_info=False)
-    u_exact = s_rec.get_u_exact(u_exact_func)
+        # discrete max norm, holds if u_exact is triangle (Terms 1, x, y)
+        test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
+        print(f"BC are on ref: {bcs_bool}")
+        print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
+        print("tolerance {}".format(tol))
+        print("plate limits {}".format(s_rec.ref_plate))
+        print("element type: {}".format(element))
+        print("test {} for n={}".format(test_res, n))
 
-    # discrete max norm, holds if u_exact is triangle (Terms 1, x, y)
-    test_res = np.all(np.abs(s_rec.uh_full - u_exact.flatt_values) < tol)
-    print("max norm {}".format(np.max(np.abs(s_rec.uh_full - u_exact.flatt_values))))
-    print("tolerance {}".format(tol))
-    print("plate limits {}".format(s_rec.ref_plate))
-    print("element type: {}".format(element))
-    print("test {} for _n={}".format(test_res, n))
-
-    print("-" * 10)
+        print("-" * 10)
 
 
 def case_1(n, tol, element="lt"):
@@ -83,11 +85,12 @@ def case_4(n, tol, element="lt"):
 def main():
     n = 2
     tol = 1e-14
+    ScalableRectangleSolver.mu_to_vertices_dict()
     case_1(n, tol, element="lt")
     case_2(n, tol, element="lt")
     case_3(n, tol, element="lt")
     case_4(n, tol, element="lt")
-
+    print("*"*40)
     case_1(n, tol, element="bq")
     case_2(n, tol, element="bq")
     case_3(n, tol, element="bq")
@@ -95,7 +98,7 @@ def main():
 
 
 if __name__ == '__main__':
-    lx = 2
-    ly = 3
+    lx = 1
+    ly = 5
     main()
 

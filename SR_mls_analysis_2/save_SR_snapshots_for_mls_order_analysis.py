@@ -34,7 +34,8 @@ def save_snapshots(p_order):
     mu_grid = 25
     main_root = Path("SR_mls_order_analysis")
 
-    r = ScalableRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    r = ScalableRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc,
+                                bcs_are_on_reference_domain=False)
     r.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
     print("Ant comp:", len(r.sym_mls_funcs))

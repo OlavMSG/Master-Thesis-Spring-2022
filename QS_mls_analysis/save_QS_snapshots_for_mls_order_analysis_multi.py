@@ -25,7 +25,7 @@ def clamped_bc(x, y):
 
 def save_snapshots(p_order, power_divider):
     n = 20
-    mu_grid = 3  # gives 749 snapshots...
+    mu_grid = 3  # gives 729 snapshots...
     main_root = Path("QS_mls_order_analysis")
 
     d = QuadrilateralSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
@@ -40,7 +40,14 @@ def save_snapshots(p_order, power_divider):
     print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
     if len(DiskStorage(root)) != mu_grid ** 6:
         d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
-        print("-" * 50)
+        # use to stopp making more if this fails
+        try:
+            q = QuadrilateralSolver.from_root(root)
+            q.matrix_lsq_setup()
+            q.matrix_lsq(root)
+            print("-" * 50)
+        except Exception as e:
+            raise e
     else:
         q = QuadrilateralSolver.from_root(root)
         q.matrix_lsq_setup()
@@ -50,7 +57,7 @@ def save_snapshots(p_order, power_divider):
 
 def main():
     print(datetime.now().time())
-    max_order = 10
+    max_order = 4
     power_divider = 3
     for p_order in range(1, max_order + 1):
         save_snapshots(p_order, power_divider)

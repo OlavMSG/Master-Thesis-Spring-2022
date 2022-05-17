@@ -5,9 +5,10 @@
 from pathlib import Path
 
 import numpy as np
+# we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage
 
-from src.fem_quadrilateral import QuadrilateralSolver, default_constants
+from src.fem_quadrilateral import DraggableCornerRectangleSolver, default_constants
 from datetime import datetime
 
 # rho_steal = 8e3  # kg/m^3
@@ -23,50 +24,43 @@ def clamped_bc(x, y):
     return abs(x) <= default_constants.default_tol
 
 
-def save_snapshots(p_order, power_divider):
-    n = 20
-    mu_grid = 5  # gives 15_625 snapshots...
-    main_root = Path("QS_mls_order_analysis")
-
-    d = QuadrilateralSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
+    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    print("mu_range:", d.geo_param_range)
     d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
-    print("Ant snapshots:", mu_grid ** 6)
-    print("Ratio:", mu_grid ** 6 / (len(d.sym_mls_funcs) * p_order))
-    root = main_root / f"p_order_{p_order}"
+    print("Ant snapshots:", mu_grid ** 2)
+    print("Ratio:", mu_grid ** 2 / (len(d.sym_mls_funcs) * p_order))
     print("root:", root)
     print("-" * 50)
     print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
-    check_running_folder = main_root / "check_running_folder"
-    check_running_folder.mkdir(parents=True, exist_ok=True)
-    if len(DiskStorage(root)) != mu_grid ** 6:
+    if len(DiskStorage(root)) != mu_grid ** 2:
         d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
         # use to stopp making more if this fails
         try:
-            q = QuadrilateralSolver.from_root(root)
+            q = DraggableCornerRectangleSolver.from_root(root)
             q.matrix_lsq_setup()
             q.matrix_lsq(root)
             print("-" * 50)
         except Exception as e:
-            # delete running folder
-            check_running_folder.unlink()
             raise e
     else:
-        q = QuadrilateralSolver.from_root(root)
+        q = DraggableCornerRectangleSolver.from_root(root)
         q.matrix_lsq_setup()
         q.matrix_lsq(root)
         print("-" * 50)
 
-    check_running_folder.unlink()
-
 
 def main():
-    print(datetime.now().time())
-    max_order = 10
+    p_order = 19
     power_divider = 3
-    for p_order in range(10, max_order + 1):
-        save_snapshots(p_order, power_divider)
+    n = 80
+    mu_grid = 25
+    main_root = Path("DR_mls_order_analysis")
+    print(datetime.now().time())
+    root = main_root / f"p_order_{p_order}"
+    save_snapshots(n, mu_grid, root, p_order, power_divider)
     print(datetime.now().time())
 
 

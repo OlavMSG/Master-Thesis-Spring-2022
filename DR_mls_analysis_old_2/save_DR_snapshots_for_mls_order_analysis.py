@@ -35,7 +35,8 @@ def save_snapshots(p_order):
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
 
-    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc,
+                                       bcs_are_on_reference_domain=False)
     d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)

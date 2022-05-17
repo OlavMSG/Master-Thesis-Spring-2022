@@ -113,7 +113,7 @@ class MultiprocessingSnapshotSaver:
                            self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
                            solver.input_f_func, solver.input_dirichlet_bc_func,
                            solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
-                           solver.bcs_are_on_reference_domain,
+                           solver.bcs_are_on_reference_domain, solver.geo_param_range,
                            solver.element, solver.lower_left_corner]
                 pool.apply_async(one_snapshot_saver, input_i)
             pool.close()
@@ -131,7 +131,7 @@ class MultiprocessingSnapshotSaver:
                        self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
                        solver.input_f_func, solver.input_dirichlet_bc_func,
                        solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
-                       solver.bcs_are_on_reference_domain,
+                       solver.bcs_are_on_reference_domain, solver.geo_param_range,
                        solver.element, solver.lower_left_corner]
             pool.apply_async(one_snapshot_saver, input_i)
         pool.close()
@@ -149,17 +149,19 @@ def one_snapshot_saver(k: int, root: Path, geo_params: np.ndarray,
                        nu_poisson_range: Tuple[float, float], mls_order: int, solver_type: str, n: int,
                        f_func: Union[Callable, int], dirichlet_bc_func: Callable,
                        get_dirichlet_edge_func: Callable, neumann_bc_func: Callable,
-                       bcs_are_on_reference_domain: bool,
+                       bcs_are_on_reference_domain: bool, geo_param_range: Tuple[float, float],
                        element: str, lower_left_corner: Tuple[float, float]):
     e_young_vec = helpers.get_vec_from_range(e_young_range, material_grid, mode)
     nu_poisson_vec = helpers.get_vec_from_range(nu_poisson_range, material_grid, mode)
     # set up new solver.
     from .fem_quadrilateral_solvers import GetSolver
+
     solver = GetSolver(solver_type)(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func,
                                     neumann_bc_func, bcs_are_on_reference_domain, element, *lower_left_corner)
-
+    solver.set_geo_param_range(geo_param_range)
     solver.matrix_lsq_setup(mls_order)
     solver.assemble(*geo_params)
+
     # compute solution and a-norm-squared for all e_young and nu_poisson
     # put in solution matrix and anorm2 vector
     s_mat = np.zeros((solver.n_free, material_grid ** 2))

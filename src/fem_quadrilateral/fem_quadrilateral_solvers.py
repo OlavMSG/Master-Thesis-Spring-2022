@@ -178,7 +178,8 @@ class QuadrilateralSolver(BaseSolver):
             raise ValueError("Only int-value for f_func allowed is 0.")
         else:
             if self.bcs_are_on_reference_domain:
-                self.f_func = helpers.VectorizedFunction2D(f_func)
+                self.f_func = helpers.VectorizedFunction2D(
+                    lambda x, y: self.phi(*f_func(x, y), *self._geo_params))
             else:
                 self.f_func = helpers.VectorizedFunction2D(
                     lambda x, y:
@@ -190,7 +191,8 @@ class QuadrilateralSolver(BaseSolver):
             self.dirichlet_bc_func = helpers.VectorizedFunction2D(default_func)
         else:
             if self.bcs_are_on_reference_domain:
-                self.dirichlet_bc_func = helpers.VectorizedFunction2D(dirichlet_bc_func)
+                self.dirichlet_bc_func = helpers.VectorizedFunction2D(
+                    lambda x, y: self.phi(*dirichlet_bc_func(x, y), *self._geo_params))
             else:
                 # no det_jac here implemented via a1 and a2
                 self.dirichlet_bc_func = helpers.VectorizedFunction2D(
@@ -220,7 +222,8 @@ class QuadrilateralSolver(BaseSolver):
                 self.neumann_bc_func = helpers.VectorizedFunction2D(default_func)
             else:
                 if self.bcs_are_on_reference_domain:
-                    self.neumann_bc_func = helpers.VectorizedFunction2D(neumann_bc_func)
+                    self.neumann_bc_func = helpers.VectorizedFunction2D(
+                        lambda x, y: self.phi(*neumann_bc_func(x, y), *self._geo_params))
                 else:
                     self.neumann_bc_func = helpers.VectorizedFunction2D(
                         lambda x, y:
@@ -342,12 +345,9 @@ class QuadrilateralSolver(BaseSolver):
         # c and (det_jac) top_z for f(phi) * det(jac).
         # conclusion: we do not nees top_z and get_jac, if we compute c 2 orders higher
         ant = len(self.sym_geo_params)
-
         # get c
-        c = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant - 1))))
-        c = c[np.argwhere(np.sum(c, axis=1) <= self.mls_order + 2).ravel()]
-        c_orders = np.zeros((c.shape[0], c.shape[1] + 1), dtype=int)
-        c_orders[:, :-1] = c
+        c_orders = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant))))
+        c_orders = c_orders[np.argwhere(np.sum(c_orders, axis=1) <= self.mls_order + 2).ravel()]
 
         # get k and put it all together
         mls_orders = [np.zeros(ant, dtype=int)]
@@ -467,7 +467,6 @@ class QuadrilateralSolver(BaseSolver):
 
         # lifting function
         self.rg = helpers.FunctionValues2D.from_2xn(self.dirichlet_bc_func(x_vec, y_vec)).flatt_values
-
         dirichlet_xy_index = np.ix_(self.expanded_free_index, self.expanded_dirichlet_edge_index)
         self.f1_dir = self.a1_full[dirichlet_xy_index] @ self.rg
         self.f2_dir = self.a2_full[dirichlet_xy_index] @ self.rg
@@ -844,7 +843,13 @@ class QuadrilateralSolver(BaseSolver):
         plot_pod_mode(self, i)
 
     def get_u_exact(self, u_exact_func):
-        return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self._geo_params)))
+        if self.bcs_are_on_reference_domain:
+            # return helpers.get_u_exact(self.p, u_exact_func)
+            # print(u_exact_func(0.5, 0.5))
+            # print(self.phi(*u_exact_func(0.5, 0.5), *self._geo_params).ravel())
+            return helpers.get_u_exact(self.p, lambda x, y: self.phi(*u_exact_func(x, y), *self._geo_params).ravel())
+        else:
+            return helpers.get_u_exact(self.p, lambda x, y: u_exact_func(*self.phi(x, y, *self._geo_params)))
 
     def get_geo_param_limit_estimate(self, num, round_decimal=6):
         # 1 / det(jac) has gives a rational of form 1/(k + c*x)

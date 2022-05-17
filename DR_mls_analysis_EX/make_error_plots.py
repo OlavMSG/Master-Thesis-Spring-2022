@@ -29,7 +29,7 @@ plt.rcParams.update(new_params)
 
 
 def main():
-    max_order = 10
+    max_order = 7
     print(datetime.now().time())
     print("-" * 50)
     main_root = Path("DR_mls_order_analysis")

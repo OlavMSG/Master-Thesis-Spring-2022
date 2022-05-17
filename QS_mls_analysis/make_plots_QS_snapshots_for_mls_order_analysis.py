@@ -25,7 +25,7 @@ new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.fi
 plt.rcParams.update(new_params)
 
 def main():
-    max_order = 5
+    max_order = 3
     print(datetime.now().time())
     d = QuadrilateralSolver(2, 0)
     d.matrix_lsq_setup(max_order)

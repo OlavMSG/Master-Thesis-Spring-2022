@@ -27,8 +27,11 @@ def clamped_bc(x, y):
 def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
     d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc,
                                        bcs_are_on_reference_domain=False)
+    print("prev mu_range:", d.geo_param_range)
+    d.set_geo_param_range((-0.49, 0.49))
     print("mu_range:", d.geo_param_range)
     d.matrix_lsq_setup(p_order)
+    print(d.sym_geo_params)
     print("p-order:", p_order)
     print("Ant comp:", len(d.sym_mls_funcs))
     print("Ant snapshots:", mu_grid ** 2)
@@ -36,6 +39,7 @@ def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
     print("root:", root)
     print("-" * 50)
     print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
+
     d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
     print("-" * 50)
 
@@ -46,6 +50,8 @@ def main():
     n = 20
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
+    check_running_folder = main_root / "check_running_folder"
+    check_running_folder.mkdir(parents=True, exist_ok=True)
     print(datetime.now().time())
     for p_order in range(1, max_order + 1):
         root = main_root / f"p_order_{p_order}"
@@ -54,7 +60,7 @@ def main():
             save_snapshots(n, mu_grid, root, p_order, power_divider)
             print(datetime.now().time())
     print(datetime.now().time())
-
+    check_running_folder.unlink()
 
 if __name__ == '__main__':
     main()
