@@ -8,7 +8,7 @@ import sys
 from importlib.util import find_spec
 from itertools import product, repeat
 from pathlib import Path
-from typing import Optional, Tuple, Callable, Union, Iterable, List
+from typing import Optional, Tuple, Callable, Union, List
 
 from scipy.sparse.linalg import spsolve
 import numpy as np
@@ -127,8 +127,8 @@ class QuadrilateralSolver(BaseSolver):
         self.a1_rom_list = None
         self._pod_is_computed = False
         self._mls_is_computed = False
-        self.rb_saver_root = None
-        self.saver_root = None
+        self.rb_root = None
+        self.hf_root = None
         self.mls_has_been_setup = False
         self.uh = SolutionFunctionValues2D()
         self.neumann_edge = np.array([])
@@ -236,16 +236,16 @@ class QuadrilateralSolver(BaseSolver):
     def _from_root(self):
         # we choose to not update to Compressed versions
         from matrix_lsq import Snapshot
-        root_mean = self.saver_root / "mean"
+        root_mean = self.hf_root / "mean"
         mean_snapshot = Snapshot(root_mean)
         solver_type = mean_snapshot["solver_type"][0]
         if not (solver_type == self.solver_type or solver_type == self.solver_type_short):
-            raise ValueError(f"{self.saver_root} is for {solver_type} not {self.solver_type}.")
+            raise ValueError(f"{self.hf_root} is for {solver_type} not {self.solver_type}.")
         self.geo_param_range = mean_snapshot["ranges"][0]
         self.p, self.tri, self.edge = mean_snapshot["p"], mean_snapshot["tri"], mean_snapshot["edge"]
         self.dirichlet_edge = mean_snapshot["dirichlet_edge"]
         self.neumann_edge = mean_snapshot["neumann_edge"]
-        self.has_non_homo_dirichlet = (self.saver_root / "object-0" / "obj-f1_dir.npy").exists()
+        self.has_non_homo_dirichlet = (self.hf_root / "object-0" / "obj-f1_dir.npy").exists()
         if self.has_non_homo_dirichlet:
             self.rg = mean_snapshot["rg"]
         # note here it does not matter if we have non-homogeneous or not, or if we have neumann conditions
@@ -262,9 +262,9 @@ class QuadrilateralSolver(BaseSolver):
         self._n = int(np.sqrt(self.p.shape[0]))
         self.is_assembled_and_free_from_root = True
         # load rb
-        if self.rb_saver_root is not None:
-            rb_loader = RBModelLoader(self.rb_saver_root)
-            self._pod = PodWithEnergyNorm(self.saver_root)
+        if self.rb_root is not None:
+            rb_loader = RBModelLoader(self.rb_root)
+            self._pod = PodWithEnergyNorm(self.hf_root)
             self._pod.v = rb_loader(self)
             self._pod.n_rom = self._pod.v.shape[1]
             self.is_rb_from_root = True
@@ -272,13 +272,13 @@ class QuadrilateralSolver(BaseSolver):
     @classmethod
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
-        out.saver_root = root
+        out.hf_root = root
         if rb_root is None:
-            # try to generate from saver_root
-            if (rb_root := out.gen_rb_root_from_saver_root).exists():
-                out.rb_saver_root = rb_root
+            # try to generate from hf_root
+            if (rb_root := out.gen_rb_root_from_hf_root).exists():
+                out.rb_root = rb_root
         else:
-            out.rb_saver_root = rb_root
+            out.rb_root = rb_root
         out._from_root()
         return out
 
@@ -324,33 +324,6 @@ class QuadrilateralSolver(BaseSolver):
         return np.column_stack((x_vals, y_vals))
 
     def _sym_mls_params_setup(self):
-
-        # looking at Z =  top_z / det(jac)
-        # 1 / det(jac) has gives a rational of form 1/(k + c*x)
-        # Which has the Taylor expansion
-        # 1 / (k + c*x) = 1/k - cx/k^2 + c^2x^2/k^3 - ... + ...
-        # for |x|<|k/c|
-        # experimentation shows that if k!=1, not for SR, it is best to just use polynomials,
-        # since use of k^order gives bad condition number,
-        # polynomials is also what you get if you expand 1/k^order in mu_i
-
-        # c here takes the form a_0*1 + sum (b_i * mu_i)
-        # so c^order takes the form a_0*1 + sum (b_i * mu_i) + sum (c_ij * mu_i * mu_j)
-        # + sum (d_ijk * mu_i * mu_j * mu_k) + ...
-
-        # Furthermore, the numerator in Z takes the form
-        # a_0*1 + sum (b_i * mu_i) + sum (c_ij * mu_i * mu_j), i.e order 2
-
-        # looking at f(phi) * det(jac)
-        # f(phi) to the order m takes the same form as c^order above
-        # det(jac) takes the form
-        # a_0*1 + sum (b_i * mu_i) + sum_{i!=j} (c_ij * mu_i * mu_j)
-        # and is contained in order 2
-
-        # putting it all together we have
-        # k, c and top_z for Z matrix, and
-        # c and (det_jac) top_z for f(phi) * det(jac).
-        # conclusion: we do not nees top_z and get_jac, if we compute c 2 orders higher
         ant = len(self.sym_geo_params)
         # get c
         c_orders = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant))))
@@ -519,8 +492,7 @@ class QuadrilateralSolver(BaseSolver):
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6]))
 
-    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True,
-                drop: Union[Iterable[int], int] = None):
+    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
         if len(geo_params) != 0:
             if len(geo_params) != len(self.sym_geo_params):
                 raise ValueError(
@@ -534,13 +506,13 @@ class QuadrilateralSolver(BaseSolver):
                 raise ValueError("Matrices and vectors are not computed, by Matrix LSQ.")
 
             data = self.mls_funcs(*geo_params)
-            a1_fit = mls_compute_from_fit(data, self._mls.a1_list, drop=drop)
-            a2_fit = mls_compute_from_fit(data, self._mls.a2_list, drop=drop)
-            f_load = mls_compute_from_fit(data, self._mls.f0_list, drop=drop)
+            a1_fit = mls_compute_from_fit(data, self._mls.a1_list)
+            a2_fit = mls_compute_from_fit(data, self._mls.a2_list)
+            f_load = mls_compute_from_fit(data, self._mls.f0_list)
             a = helpers.compute_a(e_young, nu_poisson, a1_fit, a2_fit)
             if self.has_non_homo_dirichlet:
-                f1_dir_fit = mls_compute_from_fit(data, self._mls.f1_dir_list, drop=drop)
-                f2_dir_fit = mls_compute_from_fit(data, self._mls.f2_dir_list, drop=drop)
+                f1_dir_fit = mls_compute_from_fit(data, self._mls.f1_dir_list)
+                f2_dir_fit = mls_compute_from_fit(data, self._mls.f2_dir_list)
                 f_load -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit, f2_dir_fit)
         elif self.is_assembled_and_free:
             # compute a
@@ -657,16 +629,34 @@ class QuadrilateralSolver(BaseSolver):
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
                   "The property uh_rom, extra properties values, x and y are available.\n")
 
-    def hferror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: Optional[float],
-                drop: Union[Iterable[int], int] = None) -> float:
+    def hferror(self, e_young: float, nu_poisson: float, *geo_params: Optional[float],
+                root: Optional[Path] = None) -> float:
+        if root is not None:
+            if self.hf_root is not None:
+                if self.hf_root != root:
+                    print(f"Warning: root and saved hf_root do not match. <{root}> v. <{self.hf_root}>.",
+                          file=sys.stderr)
+            self.hf_root = root
+        else:
+            if self.hf_root is None:
+                raise ValueError("hf_root is None, root must be given.")
         # get relative HF error between true HF and MatrixLSQ HF systems
-        hf_err_comp = HfErrorComputer(root)
-        return hf_err_comp(self, e_young, nu_poisson, *geo_params, drop=drop)
+        hf_err_comp = HfErrorComputer(self.hf_root)
+        return hf_err_comp(self, e_young, nu_poisson, *geo_params)
 
-    def rberror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: float,
-                n_rom: Optional[int] = None) -> float:
+    def rberror(self, e_young: float, nu_poisson: float, *geo_params: float,
+                n_rom: Optional[int] = None, root: Optional[Path] = None) -> float:
+        if root is not None:
+            if self.hf_root is not None:
+                if self.hf_root != root:
+                    print(f"Warning: root and saved hf_root do not match. <{root}> v. <{self.hf_root}>.",
+                          file=sys.stderr)
+            self.hf_root = root
+        else:
+            if self.hf_root is None:
+                raise ValueError("hf_root is None, root must be given.")
         # get relative RB error between true HF and RB systems
-        rb_err_comp = RbErrorComputer(root)
+        rb_err_comp = RbErrorComputer(self.hf_root)
         return rb_err_comp(self, e_young, nu_poisson, *geo_params, n_rom=n_rom)
 
     def hf_nodal_stress(self, print_info=True):
@@ -707,10 +697,10 @@ class QuadrilateralSolver(BaseSolver):
                        e_young_range: Optional[Tuple[float, float]] = None,
                        nu_poisson_range: Optional[Tuple[float, float]] = None,
                        use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
-        self.saver_root = root
+        self.hf_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        saver = SnapshotSaver(self.saver_root, geo_grid, self.geo_param_range,
+        saver = SnapshotSaver(self.hf_root, geo_grid, self.geo_param_range,
                               mode=mode,
                               material_grid=material_grid,
                               e_young_range=e_young_range,
@@ -726,11 +716,11 @@ class QuadrilateralSolver(BaseSolver):
                                        e_young_range: Optional[Tuple[float, float]] = None,
                                        nu_poisson_range: Optional[Tuple[float, float]] = None,
                                        use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
-        self.saver_root = root
+        self.hf_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         from .multiprocessing_snapshot_saver import MultiprocessingSnapshotSaver
-        saver = MultiprocessingSnapshotSaver(self.saver_root, geo_grid, self.geo_param_range,
+        saver = MultiprocessingSnapshotSaver(self.hf_root, geo_grid, self.geo_param_range,
                                              mode=mode,
                                              material_grid=material_grid,
                                              e_young_range=e_young_range,
@@ -755,26 +745,33 @@ class QuadrilateralSolver(BaseSolver):
 
     def matrix_lsq(self, root: Optional[Path] = None):
         if root is not None:
-            self.saver_root = root
+            if self.hf_root is not None:
+                if self.hf_root != root:
+                    print(f"Warning: root and saved hf_root do not match. <{root}> v. <{self.hf_root}>.",
+                          file=sys.stderr)
+            self.hf_root = root
         else:
-            if self.saver_root is None:
-                raise ValueError("saver_root is None, root must be given.")
-
+            if self.hf_root is None:
+                raise ValueError("hf_root is None, root must be given.")
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        self._mls = MatrixLSQ(self.saver_root)
+        self._mls = MatrixLSQ(self.hf_root)
         self._mls()
         self._mls_is_computed = True
 
     def build_rb_model(self, root: Optional[Path] = None, eps_pod: Optional[float] = None):
         if root is not None:
-            self.saver_root = root
+            if self.hf_root is not None:
+                if self.hf_root != root:
+                    print(f"Warning: root and saved hf_root do not match. <{root}> v. <{self.hf_root}>.",
+                          file=sys.stderr)
+            self.hf_root = root
         else:
-            if self.saver_root is None:
-                raise ValueError("saver_root is None, root must be given.")
+            if self.hf_root is None:
+                raise ValueError("hf_root is None, root must be given.")
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        self._pod = PodWithEnergyNorm(self.saver_root, eps_pod=eps_pod)
+        self._pod = PodWithEnergyNorm(self.hf_root, eps_pod=eps_pod)
         self._pod()
         self._pod_is_computed = True
         if not self._mls_is_computed:
@@ -791,15 +788,15 @@ class QuadrilateralSolver(BaseSolver):
 
     def save_rb_model(self, root: Optional[Path] = None):
         if root is None:
-            self.rb_saver_root = self.gen_rb_root_from_saver_root
+            self.rb_root = self.gen_rb_root_from_hf_root
         else:
-            self.rb_saver_root = root
-        if self.rb_saver_root == self.saver_root:
-            raise ValueError(f"root can not be equal to saver_root: {self.saver_root}.")
+            self.rb_root = root
+        if self.rb_root == self.hf_root:
+            raise ValueError(f"root can not be equal to hf_root: {self.hf_root}.")
         if not self._pod_is_computed:
             raise ValueError("Pod is not computed.")
 
-        rb_saver = RBModelSaver(self.rb_saver_root)
+        rb_saver = RBModelSaver(self.rb_root)
         rb_saver(self, self._pod.v)
 
     def plot_pod_singular_values(self):
@@ -969,10 +966,10 @@ class QuadrilateralSolver(BaseSolver):
         return self.uh_rom.flatt_values
 
     @property
-    def gen_rb_root_from_saver_root(self) -> Path:
-        if self.saver_root is None:
-            raise ValueError("Can not generate rb_saver_root from saver_root.")
-        return Path(str(self.saver_root) + "_rb")
+    def gen_rb_root_from_hf_root(self) -> Path:
+        if self.hf_root is None:
+            raise ValueError("Can not generate rb_root from hf_root.")
+        return Path(str(self.hf_root) + "_rb")
 
 
 class DraggableCornerRectangleSolver(QuadrilateralSolver):
@@ -1003,13 +1000,13 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
     @classmethod
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
-        out.saver_root = root
+        out.hf_root = root
         if rb_root is None:
-            # try to generate from saver_root
-            if (rb_root := out.gen_rb_root_from_saver_root).exists():
-                out.rb_saver_root = rb_root
+            # try to generate from hf_root
+            if (rb_root := out.gen_rb_root_from_hf_root).exists():
+                out.rb_root = rb_root
         else:
-            out.rb_saver_root = rb_root
+            out.rb_root = rb_root
         out._from_root()
         return out
 
@@ -1045,13 +1042,13 @@ class ScalableRectangleSolver(QuadrilateralSolver):
     @classmethod
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
-        out.saver_root = root
+        out.hf_root = root
         if rb_root is None:
-            # try to generate from saver_root
-            if (rb_root := out.gen_rb_root_from_saver_root).exists():
-                out.rb_saver_root = rb_root
+            # try to generate from hf_root
+            if (rb_root := out.gen_rb_root_from_hf_root).exists():
+                out.rb_root = rb_root
         else:
-            out.rb_saver_root = rb_root
+            out.rb_root = rb_root
         out._from_root()
         return out
 

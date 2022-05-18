@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol, Optional, List, Tuple, Callable, Union, Iterable
+from typing import Protocol, Optional, List, Tuple, Callable, Union
 from importlib.util import find_spec
 import numpy as np
 import scipy.sparse as sp
@@ -79,19 +79,19 @@ class BaseSolver(Protocol):
     def set_quadrature_scheme_order(self, nq: int, nq_y: Optional[int] = None):
         ...
 
-    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True,
-                drop: Union[Iterable[int], int] = None):
+    def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
         ...
 
     def rbsolve(self, e_young: float, nu_poisson: float, *geo_params: float, n_rom: Optional[int] = None,
                 print_info: bool = True):
         ...
 
-    def hferror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: Optional[float]) -> float:
+    def hferror(self, e_young: float, nu_poisson: float, *geo_params: Optional[float],
+                root: Optional[Path] = None) -> float:
         ...
 
-    def rberror(self, root: Path, e_young: float, nu_poisson: float, *geo_params: float,
-                n_rom: Optional[int] = None) -> float:
+    def rberror(self, e_young: float, nu_poisson: float, *geo_params: float,
+                n_rom: Optional[int] = None, root: Optional[Path] = None) -> float:
         ...
 
     def save_snapshots(self, root: Path, geo_grid: int,

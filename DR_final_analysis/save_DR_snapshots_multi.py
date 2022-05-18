@@ -42,14 +42,14 @@ def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
         try:
             q = DraggableCornerRectangleSolver.from_root(root)
             q.matrix_lsq_setup()
-            q.matrix_lsq(root)
+            q.matrix_lsq()
             print("-" * 50)
         except Exception as e:
             raise e
     else:
         q = DraggableCornerRectangleSolver.from_root(root)
         q.matrix_lsq_setup()
-        q.matrix_lsq(root)
+        q.matrix_lsq()
         print("-" * 50)
 
 

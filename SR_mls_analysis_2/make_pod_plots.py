@@ -75,7 +75,7 @@ def make_pod_plots(p_order):
         errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
         for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
                 product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-            errors_p[i] = r.rberror(root, e_young, nu_poisson, *geo_params, n_rom=n_rom)
+            errors_p[i] = r.rberror(e_young, nu_poisson, *geo_params, n_rom=n_rom)
         max_errors[k] = np.max(errors_p)
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)

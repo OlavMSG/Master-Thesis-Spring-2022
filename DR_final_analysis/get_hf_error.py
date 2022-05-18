@@ -42,7 +42,7 @@ def main():
     errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
     for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
             product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-        errors_p[i] = d.hferror(root, e_young, nu_poisson, *geo_params)
+        errors_p[i] = d.hferror(e_young, nu_poisson, *geo_params)
     print(f"max error: {np.max(errors_p)}")
     print(f"mean error: {np.mean(errors_p)}")
     print(f"min error: {np.min(errors_p)}")

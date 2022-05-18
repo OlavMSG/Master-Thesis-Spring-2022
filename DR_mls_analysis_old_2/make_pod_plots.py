@@ -44,8 +44,8 @@ def make_pod_plots(p_order):
     d = DraggableCornerRectangleSolver.from_root(root)
     d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     d.plot_pod_singular_values()
     plt.savefig("".join((save_dict, f"\\pod_singular_values_p_order_{p_order}.pdf")), bbox_inches='tight')
@@ -78,7 +78,7 @@ def make_pod_plots(p_order):
         errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
         for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
                 product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-            errors_p[i] = d.rberror(root, e_young, nu_poisson, *geo_params, n_rom=n_rom)
+            errors_p[i] = d.rberror(e_young, nu_poisson, *geo_params, n_rom=n_rom)
         max_errors[k] = np.max(errors_p)
         mean_errors[k] = np.mean(errors_p)
         min_errors[k] = np.min(errors_p)

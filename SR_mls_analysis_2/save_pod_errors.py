@@ -45,13 +45,13 @@ def error_saver(root, st_main_root, n_rom):
 
     d = ScalableRectangleSolver.from_root(root)
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
     for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
             product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-        errors_p[i] = d.rberror(root, e_young, nu_poisson, *geo_params, n_rom=n_rom)
+        errors_p[i] = d.rberror(e_young, nu_poisson, *geo_params, n_rom=n_rom)
     errors = np.array([np.max(errors_p), np.mean(errors_p), np.min(errors_p)])
     arg_errors = np.array([np.argmax(errors_p), np.argmin(errors_p)])
     storage = DiskStorage(st_main_root)
@@ -76,8 +76,8 @@ def save_pod_errors(p_order, power_divider=3):
     # must be done to get n_rom_max
     d = ScalableRectangleSolver.from_root(root)
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     n_rom_max = d.n_rom_max
     print(f"n_rom_max={n_rom_max}")
@@ -156,7 +156,7 @@ def plot_pod_errors(p_order):
     for k, snapshot in enumerate(storage):
         n_roms[k] = k + 1
         max_errors[k], mean_errors[k], min_errors[k] = snapshot["errors"]
-        arg_errors = Snapshot["arg_errors"].astype(int)
+        arg_errors = snapshot["arg_errors"].astype(int)
         print(f"N={k + 1}:\nMax error at {param_mat[arg_errors[0]]}\nMin error at {param_mat[arg_errors[1]]}")
     print(dict(zip(n_roms, mean_errors)))
     print(np.all(n_roms - 1 - np.arange(len(n_roms)) == 0))

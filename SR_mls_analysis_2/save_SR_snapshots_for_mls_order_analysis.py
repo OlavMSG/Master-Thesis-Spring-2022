@@ -49,9 +49,9 @@ def save_snapshots(p_order):
     else:
         r.matrix_lsq(root)
         r.build_rb_model(root)
-        print(r.gen_rb_root_from_saver_root)
-        r.save_rb_model(r.gen_rb_root_from_saver_root)
-        r2 = ScalableRectangleSolver.from_root(root, r.gen_rb_root_from_saver_root)
+        print(r.gen_rb_root_from_hf_root)
+        r.save_rb_model(r.gen_rb_root_from_hf_root)
+        r2 = ScalableRectangleSolver.from_root(root, r.gen_rb_root_from_hf_root)
         r2.matrix_lsq_setup(p_order)
         r2.rbsolve(310e3, 0.2, 1, 1)
     print(dict(zip(np.arange(len(r.sym_mls_funcs)), r.sym_mls_funcs)))

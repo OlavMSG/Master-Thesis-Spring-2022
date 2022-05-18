@@ -46,13 +46,13 @@ def error_saver(root, st_main_root, n_rom):
     d = DraggableCornerRectangleSolver.from_root(root)
     d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     errors_p = np.zeros(geo_gird ** num_geo_param * material_grid ** 2)
     for i, (*geo_params, e_young, nu_poisson) in tqdm(enumerate(
             product(*repeat(geo_vec, num_geo_param), e_young_vec, nu_poisson_vec)), desc="Computing errors"):
-        errors_p[i] = d.rberror(root, e_young, nu_poisson, *geo_params, n_rom=n_rom)
+        errors_p[i] = d.rberror(e_young, nu_poisson, *geo_params, n_rom=n_rom)
     errors = np.array([np.max(errors_p), np.mean(errors_p), np.min(errors_p)])
     arg_errors = np.array([np.argmax(errors_p), np.argmin(errors_p)])
     storage = DiskStorage(st_main_root)
@@ -78,8 +78,8 @@ def save_pod_errors(p_order, power_divider=3):
     d = DraggableCornerRectangleSolver.from_root(root)
     d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     n_rom_max = d.n_rom_max
     print(f"n_rom_max={n_rom_max}")
@@ -122,8 +122,8 @@ def plot_pod_errors(p_order):
     d = DraggableCornerRectangleSolver.from_root(root)
     d.set_geo_param_range((-0.49, 0.49))
     d.matrix_lsq_setup()
-    d.matrix_lsq(root)
-    d.build_rb_model(root)
+    d.matrix_lsq()
+    d.build_rb_model()
 
     n_rom_max = d.n_rom_max
     print(n_rom_max)

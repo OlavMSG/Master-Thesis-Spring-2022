@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Union, Iterable
+from typing import List, Union
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import norm as spnorm
@@ -24,20 +24,13 @@ def norm(mat: Matrix) -> float:
         return np.linalg.norm(mat)
 
 
-def mls_compute_from_fit(data: np.ndarray, mats: List[Matrix], drop: Union[Iterable[int], int] = None) -> Matrix:
-    if drop is None:
-        drop = []
-    elif isinstance(drop, int):
-        drop = [drop]
-    if not all(isinstance(drop_i, int) for drop_i in drop):
-        raise ValueError("All indexes in drop must be integers.")
+def mls_compute_from_fit(data: np.ndarray, mats: List[Matrix]) -> Matrix:
     if isinstance(mats[0], sp.spmatrix):
         out = sp.csr_matrix(mats[0].shape, dtype=float)
     else:
         out = np.zeros_like(mats[0], dtype=float)
     for i, coeff in enumerate(data.ravel()):
-        if i not in drop:
-            out += coeff * mats[i]
+        out += coeff * mats[i]
     return out
 
 

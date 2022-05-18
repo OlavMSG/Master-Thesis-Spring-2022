@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Optional, Union, Iterable
+from typing import Optional, Union
 from pathlib import Path
 
 from .base_solver import BaseSolver
@@ -29,8 +29,7 @@ class HfErrorComputer:
 
         assert len(self.storage) != 0
 
-    def __call__(self, solver: BaseSolver, e_young: float, nu_poisson: float, *geo_params: float,
-                 drop: Union[Iterable[int], int] = None) -> float:
+    def __call__(self, solver: BaseSolver, e_young: float, nu_poisson: float, *geo_params: float) -> float:
         # check if e_young, nu_poisson and _geo_params matches an uh saved,
         # get data or hfsolve system, then
         # hfsolve system with _geo_params
@@ -61,7 +60,7 @@ class HfErrorComputer:
                 true_uh_free = snapshot["s_mat"][:, index_e_nu]
                 true_uh_anorm2 = snapshot["uh_anorm2"][index_e_nu]
                 # hfsolve system with _geo_params and drop for dropping mls components
-                solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False, drop=drop)
+                solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False)
 
                 # print(true_uh_free.shape)
                 # print(solver.uh_free.shape)
@@ -89,7 +88,7 @@ class HfErrorComputer:
         true_uh_free = solver.uh_free
         true_uh_anorm2 = solver.uh_anorm2
         # hfsolve system with _geo_params
-        solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False, drop=drop)
+        solver.hfsolve(e_young, nu_poisson, *geo_params, print_info=False)
 
         # print(true_uh_free.shape)
         # print(solver.uh_free.shape)
