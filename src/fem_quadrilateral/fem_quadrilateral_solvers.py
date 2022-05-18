@@ -977,7 +977,7 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = False,
                  element: str = "bq", x0: float = 0, y0: float = 0):
         super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
                          bcs_are_on_reference_domain, element, x0, y0)
@@ -1019,7 +1019,7 @@ class ScalableRectangleSolver(QuadrilateralSolver):
 
     def __init__(self, n: int, f_func: Union[Callable, int],
                  dirichlet_bc_func: Optional[Callable] = None, get_dirichlet_edge_func: Optional[Callable] = None,
-                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
+                 neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = False,
                  element: str = "bq", x0: float = 0, y0: float = 0):
         super().__init__(n, f_func, dirichlet_bc_func, get_dirichlet_edge_func, neumann_bc_func,
                          bcs_are_on_reference_domain, element, x0, y0)

@@ -25,7 +25,8 @@ def clamped_bc(x, y):
 
 
 def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
-    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc)
+    d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc,
+                                       bcs_are_on_reference_domain=False)
     print("mu_range:", d.geo_param_range)
     d.matrix_lsq_setup(p_order)
     print("p-order:", p_order)
