@@ -40,27 +40,39 @@ def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
     print("-" * 50)
     print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
 
-    d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
+    if len(DiskStorage(root)) != mu_grid ** 2:
+        d.multiprocessing_save_snapshots(root, mu_grid, power_divider=power_divider)
+        # use to stopp making more if this fails
+        try:
+            q = DraggableCornerRectangleSolver.from_root(root)
+            q.matrix_lsq_setup()
+            q.matrix_lsq(root)
+            print("-" * 50)
+        except Exception as e:
+            raise e
+    else:
+        q = DraggableCornerRectangleSolver.from_root(root)
+        q.matrix_lsq_setup()
+        q.matrix_lsq(root)
+        print("-" * 50)
+
     print("-" * 50)
 
 
 def main():
     max_order = 25
-    power_divider = 2
+    power_divider = 3
     n = 20
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
-    check_running_folder = main_root / "check_running_folder"
-    check_running_folder.mkdir(parents=True, exist_ok=True)
     print(datetime.now().time())
     for p_order in range(1, max_order + 1):
         root = main_root / f"p_order_{p_order}"
-        if len(DiskStorage(root)) != mu_grid ** 2:
-            print(datetime.now().time())
-            save_snapshots(n, mu_grid, root, p_order, power_divider)
-            print(datetime.now().time())
+        print(datetime.now().time())
+        save_snapshots(n, mu_grid, root, p_order, power_divider)
+        print(datetime.now().time())
     print(datetime.now().time())
-    check_running_folder.unlink()
+
 
 if __name__ == '__main__':
     main()

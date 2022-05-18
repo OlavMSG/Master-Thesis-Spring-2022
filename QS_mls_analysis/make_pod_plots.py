@@ -95,8 +95,8 @@ def make_pod_plots(p_order):
 
 def main():
     print(datetime.now().time())
-    max_order = 10
-    p_order_list = [1, 3, 4]
+    max_order = 3
+    p_order_list = [1, 3]
     multiprocess = False
     if multiprocess:
         pool = mp.Pool(int(min(mp.cpu_count() / 3, len(p_order_list))), maxtasksperchild=1)

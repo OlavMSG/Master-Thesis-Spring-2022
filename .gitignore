@@ -191,6 +191,7 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /QS_mls_analysis/plots_QS_mls_error_analysis
 /QS_mls_analysis/plots_pod
 /QS_mls_analysis/pod_errors_2
+/QS_mls_analysis/POD_errors_2_log.txt
 
 /QS_mls_analysis_ex/QS_snapshots_for_mls_order_analysis_log.txt
 /QS_mls_analysis_ex/plots_QS_mls_order_analysis

@@ -49,7 +49,7 @@ def save_snapshots(p_order):
         d.save_snapshots(root, mu_grid)
     else:
         d.matrix_lsq(root)
-        if p_order <= 10:
+        if p_order <= 5:
             print(dict(zip(np.arange(len(d.sym_mls_funcs)), d.sym_mls_funcs)))
     print("-" * 50)
 

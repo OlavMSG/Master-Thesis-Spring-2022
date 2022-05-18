@@ -172,6 +172,7 @@ class QuadrilateralSolver(BaseSolver):
         # body force function
         self.f_func_non_zero = True
         if f_func == 0:
+            # f_func = 0
             self.f_func = helpers.VectorizedFunction2D(default_func)
             self.f_func_non_zero = False
         elif isinstance(f_func, int):
@@ -188,6 +189,7 @@ class QuadrilateralSolver(BaseSolver):
         # dirichlet bc function
         self.has_non_homo_dirichlet = False
         if dirichlet_bc_func is None:
+            # dirichlet_bc_func = 0
             self.dirichlet_bc_func = helpers.VectorizedFunction2D(default_func)
         else:
             if self.bcs_are_on_reference_domain:
@@ -219,6 +221,7 @@ class QuadrilateralSolver(BaseSolver):
                 raise ValueError(error_text)
         else:
             if neumann_bc_func is None:
+                # neumann_bc_func = 0
                 self.neumann_bc_func = helpers.VectorizedFunction2D(default_func)
             else:
                 if self.bcs_are_on_reference_domain:
@@ -226,9 +229,8 @@ class QuadrilateralSolver(BaseSolver):
                         lambda x, y: self.phi(*neumann_bc_func(x, y), *self._geo_params))
                 else:
                     self.neumann_bc_func = helpers.VectorizedFunction2D(
-                        lambda x, y:
-                        neumann_bc_func(*self.phi(x, y, *self._geo_params)) * self.det_jac_func(x, y,
-                                                                                                *self._geo_params))
+                        lambda x, y: neumann_bc_func(*self.phi(x, y, *self._geo_params)) * self.det_jac_func(
+                            x, y, *self._geo_params))
                 self.has_non_homo_neumann = True
 
     def _from_root(self):
@@ -271,7 +273,12 @@ class QuadrilateralSolver(BaseSolver):
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
-        out.rb_saver_root = rb_root
+        if rb_root is None:
+            # try to generate from saver_root
+            if (rb_root := out.gen_rb_root_from_saver_root).exists():
+                out.rb_saver_root = rb_root
+        else:
+            out.rb_saver_root = rb_root
         out._from_root()
         return out
 
@@ -979,7 +986,12 @@ class DraggableCornerRectangleSolver(QuadrilateralSolver):
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
-        out.rb_saver_root = rb_root
+        if rb_root is None:
+            # try to generate from saver_root
+            if (rb_root := out.gen_rb_root_from_saver_root).exists():
+                out.rb_saver_root = rb_root
+        else:
+            out.rb_saver_root = rb_root
         out._from_root()
         return out
 
@@ -1016,7 +1028,12 @@ class ScalableRectangleSolver(QuadrilateralSolver):
     def from_root(cls, root: Path, rb_root: Optional[Path] = None):
         out = cls(2, 0)
         out.saver_root = root
-        out.rb_saver_root = rb_root
+        if rb_root is None:
+            # try to generate from saver_root
+            if (rb_root := out.gen_rb_root_from_saver_root).exists():
+                out.rb_saver_root = rb_root
+        else:
+            out.rb_saver_root = rb_root
         out._from_root()
         return out
 
