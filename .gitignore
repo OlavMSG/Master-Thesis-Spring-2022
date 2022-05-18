@@ -205,4 +205,6 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /src/fem_quadrilateral/test_storage_DR1
 /src/fem_quadrilateral/test_storage_SR1
 
+/DR_final_analysis/save_log.txt
+
 /make_plots/Lagrange_basis_plots
