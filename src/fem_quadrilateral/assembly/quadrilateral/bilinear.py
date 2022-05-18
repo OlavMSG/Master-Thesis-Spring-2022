@@ -7,11 +7,11 @@ based on Specialization-Project-fall-2021
 import numpy as np
 import scipy.sparse as sp
 
-from src.fem_quadrilateral.assembly.quadrilateral.gauss_quadrature import quadrature2D, quadrature2D_vector
-from src.fem_quadrilateral.helpers import expand_index, index_map
+from .gauss_quadrature import quadrature2D, quadrature2D_vector
+from ...helpers import expand_index, index_map
 
 # should be accessible form this file, so import it
-from src.fem_quadrilateral.assembly.neumann.linear import assemble_f_neumann
+from ..neumann.linear import assemble_f_neumann
 
 __all__ = [
     "assemble_f_neumann",
