@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import tqdm
-# we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage, Snapshot
 
 from .base_solver import BaseSolver
@@ -21,7 +20,7 @@ class RBModelSaver:
     def __init__(self, root: Path):
         self.root = root
         self.storage = DiskStorage(root)
-        # for now
+
         assert len(self.storage) == 0
 
     def __call__(self, solver: BaseSolver, pod_v: np.ndarray):
@@ -52,7 +51,7 @@ class RBModelLoader:
     def __init__(self, root: Path):
         self.root = root
         self.storage = DiskStorage(root)
-        # for now
+
         assert len(self.storage) != 0
 
     def __call__(self, solver: BaseSolver) -> np.ndarray:

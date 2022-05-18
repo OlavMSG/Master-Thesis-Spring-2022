@@ -114,10 +114,13 @@ class BaseSolver(Protocol):
     def matrix_lsq_setup(self, mls_order: Optional[int] = 2):
         ...
 
-    def matrix_lsq(self, root: Path):
+    def matrix_lsq(self, root: Optional[Path] = None):
         ...
 
-    def build_rb_model(self, root: Path, eps_pod: Optional[float] = None):
+    def build_rb_model(self, root: Optional[Path] = None, eps_pod: Optional[float] = None):
+        ...
+
+    def save_rb_model(self, root: Optional[Path] = None):
         ...
 
     def assemble(self, mu1: float, mu2: float, mu3: float, mu4: float, mu5: float, mu6: float):

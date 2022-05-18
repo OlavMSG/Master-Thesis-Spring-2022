@@ -12,7 +12,6 @@ import tqdm
 
 from . import default_constants, helpers
 from .base_solver import BaseSolver
-# we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage, Snapshot
 from itertools import product, repeat
 from scipy.stats.qmc import LatinHypercube
@@ -48,7 +47,6 @@ class SnapshotSaver:
         if nu_poisson_range is not None:
             self.nu_poisson_range = nu_poisson_range
 
-        # for now
         assert len(self.storage) == 0
 
     def __call__(self, solver: BaseSolver):
@@ -60,7 +58,7 @@ class SnapshotSaver:
         solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
         data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
         a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
-        # for now save
+        # save
         grid_params = np.array([self.geo_grid, self.material_grid, len(solver.sym_geo_params)])
         ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
         mode_and_element = np.array([self.mode, solver.element])

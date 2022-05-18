@@ -3,18 +3,24 @@
 @author: Olav M.S. Gran
 based on Specialization-Project-fall-2021
 """
+from __future__ import annotations
+
+from typing import Union, Tuple, Callable
 import numpy as np
+import scipy.sparse as sp
+
+Matrix = Union[np.ndarray, sp.spmatrix]
 
 
-def index_map(i, d):
+def index_map(i: Union[int, np.ndarray], d: Union[int, np.ndarray]) -> Union[int, np.ndarray]:
     """
     The index map used mapping the from 2D index to 1D index
 
     Parameters
     ----------
-    i : int, np.array
+    i : int, np.ndarray
         the index in the 2D case.
-    d : int, np.array
+    d : int, np.ndarray
         the dimension to use for the 2D index.
 
     Returns
@@ -26,7 +32,7 @@ def index_map(i, d):
     return 2 * i + d
 
 
-def inv_index_map(k):
+def inv_index_map(k: int) -> int:
     """
     The inverse index map used mapping the from 1D index to 2D index
 
@@ -46,18 +52,18 @@ def inv_index_map(k):
     return divmod(k, 2)
 
 
-def expand_index(index):
+def expand_index(index: np.ndarray) -> np.ndarray:
     """
     Expand an array of 2D indexes to the corresponding array of 1D indexes
 
     Parameters
     ----------
-    index : np.array
+    index : np.ndarray
         array of 2D indexes.
 
     Returns
     -------
-    expanded_index : np.array
+    expanded_index : np.ndarray
         corresponding array of 1D indexes.
 
     """
@@ -68,22 +74,22 @@ def expand_index(index):
     return expanded_index
 
 
-def get_lambda_mu(e_young, nu_poisson):
+def get_lambda_mu(e_young: float, nu_poisson: float) -> Tuple[float, float]:
     """
     Get 2D plane stress Lame coefficients lambda and mu from the young's module and the poisson ratio
 
     Parameters
     ----------
-    e_young : float, np.float, np.ndarray
+    e_young : float
         young's module.
-    nu_poisson : float, np.float, np.ndarray
+    nu_poisson : float
         poisson ratio.
 
     Returns
     -------
-    mu : float, np.array
+    mu : float
         Lame coefficient mu.
-    lambda_bar : float, np.array
+    lambda_bar : float
         Lame coefficient lambda.
 
     """
@@ -96,16 +102,16 @@ def get_lambda_mu(e_young, nu_poisson):
     return mu, lambda_bar
 
 
-def get_e_young_nu_poisson(mu, lambda_bar):
+def get_e_young_nu_poisson(mu: float, lambda_bar: float) -> Tuple[float, float]:
     """
     Get the young's module and the poisson ratio from 2D plane stress Lame coefficients lambda and mu
     (Note: used formulas in get_lambda_mu and solved for e_young and nu_poisson)
 
     Parameters
     ----------
-    mu : float, np.float
+    mu : float
         Lame coefficient mu.
-    lambda_bar : float, np.float
+    lambda_bar : float
         Lame coefficient lambda.
 
     Returns
@@ -121,7 +127,7 @@ def get_e_young_nu_poisson(mu, lambda_bar):
     return e_young, nu_poisson
 
 
-def compute_a(e_young, nu_poisson, a1, a2):
+def compute_a(e_young: float, nu_poisson: float, a1: Matrix, a2: Matrix) -> Matrix:
     """
     Compute the matrix a from the triangle elasticity problem,
     depending on the young's module and the poisson ratio,
@@ -129,18 +135,18 @@ def compute_a(e_young, nu_poisson, a1, a2):
 
     Parameters
     ----------
-    e_young : float, np.float
+    e_young : float
         young's module.
-    nu_poisson : float, np.float
+    nu_poisson : float
         poisson ratio.
-    a1 : scipy.sparse.dox_matrix, np.array
+    a1 : Matrix
         bilinar form matrix a1.
-    a2 : scipy.sparse.dox_matrix, np.array
+    a2 : Matrix
         bilinar form matrix a2.
 
     Returns
     -------
-    scipy.sparse.dox_matrix, np.array
+    Matrix
         bilinar form matrix a depending on the young's module and the poisson ratio.
 
     """
@@ -150,20 +156,20 @@ def compute_a(e_young, nu_poisson, a1, a2):
     return 2 * mu * a1 + lambda_bar * a2
 
 
-def get_u_exact(p, u_exact_func):
+def get_u_exact(p: np.ndarray, u_exact_func: Callable) -> FunctionValues2D:
     """
     Get a FunctionValues2D representation of the exact solution
 
     Parameters
     ----------
-    p : np.array
+    p : np.ndarray
         Nodal points, (x,y)-coordinates for point i given in row i.
-    u_exact_func : function
+    u_exact_func : Callable
         function representing the exact solution of the problem.
 
     Returns
     -------
-    np.array
+    FunctionValues2D
         the FunctionValues2D representation of the exact solution, form [x1, y1, x2, y2, ...].
 
     """
@@ -174,12 +180,12 @@ def get_u_exact(p, u_exact_func):
     return u_exact
 
 
-def get_vec_from_range(range_, m, mode):
+def get_vec_from_range(range_: Union[Tuple[float, float], np.ndarray], m: int, mode: str) -> np.ndarray:
     """
     Get vector of m uniform or Gauss-Lobatto points from range_
     Parameters
     ----------
-    range_ : tuple
+    range_ : tuple, np.ndarray
         the range of numbers to consider.
     m : int
         number of points in vector.
@@ -191,7 +197,7 @@ def get_vec_from_range(range_, m, mode):
         if sample_mode is not uniform or Gauss-Lobatto.
     Returns
     -------
-    np.array
+    np.ndarray
         array of sampling points.
     """
     if mode.lower() == "uniform":
@@ -208,13 +214,13 @@ def get_vec_from_range(range_, m, mode):
 # class to vectorized input functions
 class VectorizedFunction2D:
 
-    def __init__(self, func_non_vec):
+    def __init__(self, func_non_vec: Callable):
         """
         Set up to vectorized a function with 2D input and output
 
         Parameters
         ----------
-        func_non_vec : function
+        func_non_vec : Callable
             function to vectorize.
 
         Returns
@@ -223,20 +229,20 @@ class VectorizedFunction2D:
 
         """
 
-        def vectorize_func_2d(x_vec, y_vec):
+        def vectorize_func_2d(x_vec: np.ndarray, y_vec: np.ndarray) -> np.ndarray:
             """
             Vectorize a function with 2D input and output
 
             Parameters
             ----------
-            x_vec : np.array
+            x_vec : np.ndarray
                 array of x-point.
-            y_vec : np.array
+            y_vec : np.ndarray
                 array of y-point.
 
             Returns
             -------
-            np.array
+            np.ndarray
                 matrix, row 0: x-values, row 1: y-values.
 
             """
@@ -252,20 +258,20 @@ class VectorizedFunction2D:
 
         self._func_vec = vectorize_func_2d
 
-    def __call__(self, x_vec, y_vec):
+    def __call__(self, x_vec: np.ndarray, y_vec: np.ndarray) -> np.ndarray:
         """
         Vectorize a function with 2D input and output
 
         Parameters
         ----------
-        x_vec : np.array
+        x_vec : np.ndarray
             array of x-point.
-        y_vec : np.array
+        y_vec : np.ndarray
             array of y-point.
 
         Returns
         -------
-        np.array
+        np.ndarray
             matrix, row 0: x-values, row 1: y-values.
 
         """
@@ -292,13 +298,13 @@ class FunctionValues2D:
     def __str__(self):
         return self._values.__str__()
 
-    def _set_from_nx2(self, values):
+    def _set_from_nx2(self, values: np.ndarray):
         """
         set from values of shape (_n,2)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (_n,2).
 
         Returns
@@ -310,13 +316,13 @@ class FunctionValues2D:
         self._values = np.asarray(values, dtype=float)
         self._n = self._values.shape[0]
 
-    def _set_from_2xn(self, values):
+    def _set_from_2xn(self, values: np.ndarray):
         """
         set from values of shape (2,_n)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (2,_n).
 
         Returns
@@ -327,13 +333,13 @@ class FunctionValues2D:
         self._values = np.asarray(values.T, dtype=float)
         self._n = self._values.shape[0]
 
-    def _set_from_1x2n(self, values):
+    def _set_from_1x2n(self, values: np.ndarray):
         """
         set from values of shape (1, k=2n)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (1, k=2n).
 
         Raises
@@ -355,13 +361,13 @@ class FunctionValues2D:
         self._values[:, 1] = values[np.arange(1, m, 2)]
 
     @classmethod
-    def from_nx2(cls, values):
+    def from_nx2(cls, values: np.ndarray):
         """
         Make FunctionValues2D from values of shape (_n, 2)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (_n,2).
 
         Returns
@@ -375,13 +381,13 @@ class FunctionValues2D:
         return out
 
     @classmethod
-    def from_2xn(cls, values):
+    def from_2xn(cls, values: np.ndarray):
         """
         Make FunctionValues2D from values of shape (2, _n)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (_n,2).
 
         Returns
@@ -395,13 +401,13 @@ class FunctionValues2D:
         return out
 
     @classmethod
-    def from_1x2n(cls, values):
+    def from_1x2n(cls, values: np.ndarray):
         """
         Make FunctionValues2D from values of shape (1, k=2n)
 
         Parameters
         ----------
-        values : np.array
+        values : np.ndarray
             function values in shape (1,2n).
 
         Returns
@@ -415,7 +421,7 @@ class FunctionValues2D:
         return out
 
     @property
-    def values(self):
+    def values(self) -> np.ndarray:
         """
         Values
 
@@ -428,7 +434,7 @@ class FunctionValues2D:
         return self._values
 
     @property
-    def x(self):
+    def x(self) -> np.ndarray:
         """
         x-values
 
@@ -441,7 +447,7 @@ class FunctionValues2D:
         return self._values[:, 0]
 
     @property
-    def y(self):
+    def y(self) -> np.ndarray:
         """
         y-values
 
@@ -454,7 +460,7 @@ class FunctionValues2D:
         return self._values[:, 1]
 
     @property
-    def flatt_values(self):
+    def flatt_values(self) -> np.ndarray:
         """
         The flattened values
 
@@ -468,7 +474,7 @@ class FunctionValues2D:
         return self._values.reshape((self._n * 2,)).ravel()
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         """
         Dimension
 
@@ -481,7 +487,7 @@ class FunctionValues2D:
         return 2
 
     @property
-    def n(self):
+    def n(self) -> int:
         """
         Number of (x,y)-values
 
@@ -494,7 +500,7 @@ class FunctionValues2D:
         return self._n
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         """
         Shape
 

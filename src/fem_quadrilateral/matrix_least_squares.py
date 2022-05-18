@@ -6,25 +6,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, List, Tuple, Callable, Union, Iterable
+from typing import List, Union, Iterable
 import numpy as np
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
-import sympy as sym
 from scipy.sparse.linalg import norm as spnorm
-# we choose to not update to Compressed versions
 from matrix_lsq import LeastSquares, Storage, DiskStorage
 
 Matrix = Union[np.ndarray, sp.spmatrix]
-
-"""for nice representation of plots"""
-
-sym.init_printing()
-fontsize = 20
-new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
-              'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize, 'figure.titlesize': fontsize,
-              'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
-plt.rcParams.update(new_params)
 
 
 def norm(mat: Matrix) -> float:
@@ -80,6 +68,4 @@ class MatrixLSQ:
             self.f1_dir_list = self.fitter("f1_dir")
             self.f2_dir_list = self.fitter("f2_dir")
 
-        # for now!
         self.num_kept = len(self.a1_list)
-

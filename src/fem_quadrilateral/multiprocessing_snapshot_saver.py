@@ -53,9 +53,6 @@ class MultiprocessingSnapshotSaver:
         if nu_poisson_range is not None:
             self.nu_poisson_range = nu_poisson_range
 
-        # for now
-        # assert len(self.storage) == 0
-
     def __call__(self, solver: BaseSolver, power_divider=3):
         root_mean = self.root / "mean"
         if not root_mean.exists():
@@ -68,7 +65,7 @@ class MultiprocessingSnapshotSaver:
             solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
             data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
             a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)
-            # for now save
+            # save
             grid_params = np.array([self.geo_grid, self.material_grid, len(solver.sym_geo_params)])
             ranges = np.array([self.geo_range, self.e_young_range, self.nu_poisson_range])
             mode_and_element = np.array([self.mode, solver.element])

@@ -2,6 +2,8 @@
 """
 @author: Olav M.S. Gran
 """
+from __future__ import annotations
+
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,6 +33,13 @@ def plot_mesh(solver: BaseSolver, *geo_params: float):
         ax.add_collection(pc)
         ax.autoscale()
     plt.grid()
+    xb, xt = plt.xlim()
+    yb, yt = plt.ylim()
+    xy_min = min(xb, yb)
+    xy_max = max(xt, yt)
+    plt.xlim(xy_min, xy_max)
+    plt.ylim(xy_min, xy_max)
+    print("Please call plt.show() to show the plot.")
 
 
 def plot_pod_mode(solver: BaseSolver, i: int):
@@ -55,12 +64,19 @@ def plot_pod_mode(solver: BaseSolver, i: int):
         ax.add_collection(pc)
         ax.autoscale()
     plt.grid()
+    xb, xt = plt.xlim()
+    yb, yt = plt.ylim()
+    xy_min = min(xb, yb)
+    xy_max = max(xt, yt)
+    plt.xlim(xy_min, xy_max)
+    plt.ylim(xy_min, xy_max)
+    print("Please call plt.show() to show the plot.")
 
 
 def plot_hf_displacment(solver: BaseSolver):
     # set nice plotting
     fontsize = 20
-    new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
+    new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (7, 7),
                   'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
                   'figure.titlesize': fontsize,
                   'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
@@ -88,6 +104,13 @@ def plot_hf_displacment(solver: BaseSolver):
         ax.add_collection(pc2)
         ax.autoscale()
     plt.grid()
+    xb, xt = plt.xlim()
+    yb, yt = plt.ylim()
+    xy_min = min(xb, yb)
+    xy_max = max(xt, yt)
+    plt.xlim(xy_min, xy_max)
+    plt.ylim(xy_min, xy_max)
+    print("Please call plt.show() to show the plot.")
 
 
 def plot_rb_displacment(solver: BaseSolver):
@@ -121,6 +144,13 @@ def plot_rb_displacment(solver: BaseSolver):
         ax.add_collection(pc2)
         ax.autoscale()
     plt.grid()
+    xb, xt = plt.xlim()
+    yb, yt = plt.ylim()
+    xy_min = min(xb, yb)
+    xy_max = max(xt, yt)
+    plt.xlim(xy_min, xy_max)
+    plt.ylim(xy_min, xy_max)
+    print("Please call plt.show() to show the plot.")
 
 
 def _quadrilaterals_to_triangles(quads: np.ndarray) -> np.ndarray:
@@ -150,6 +180,7 @@ def plot_hf_von_mises(solver: BaseSolver):
     plt.grid()
     plt.xlim(np.min(p_non_ref[:, 0] + solver.uh.x) - 0.05, np.max(p_non_ref[:, 0] + solver.uh.x) + 0.05)
     plt.ylim(np.min(p_non_ref[:, 1] + solver.uh.y) - 0.05, np.max(p_non_ref[:, 1] + solver.uh.y) + 0.05)
+    print("Please call plt.show() to show the plot.")
 
 
 def plot_rb_von_mises(solver: BaseSolver):
@@ -170,3 +201,4 @@ def plot_rb_von_mises(solver: BaseSolver):
     plt.grid()
     plt.xlim(np.min(p_non_ref[:, 0] + solver.uh_rom.x) - 0.05, np.max(p_non_ref[:, 0] + solver.uh_rom.x) + 0.05)
     plt.ylim(np.min(p_non_ref[:, 1] + solver.uh_rom.y) - 0.05, np.max(p_non_ref[:, 1] + solver.uh_rom.y) + 0.05)
+    print("Please call plt.show() to show the plot.")

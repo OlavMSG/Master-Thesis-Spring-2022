@@ -551,7 +551,7 @@ class QuadrilateralSolver(BaseSolver):
             if self.has_non_homo_dirichlet:
                 f_load -= helpers.compute_a(e_young, nu_poisson, self.f1_dir, self.f2_dir)
         elif self.is_assembled_and_free_from_root:
-            raise ValueError("Matrices and vectors are assembled from saved data, _geo_params must therefor be given.")
+            raise ValueError("Matrices and vectors are assembled from saved data, geo_params must therefor be given.")
         else:
             raise ValueError("Matrices and vectors are not assembled.")
 
@@ -604,7 +604,6 @@ class QuadrilateralSolver(BaseSolver):
                 raise ValueError("Pod is not computed. Can not solve.")
 
             if (n_rom is None) or (self._pod.n_rom == n_rom):
-                # for now, may be changed
                 data = self.mls_funcs(*geo_params)
                 a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
                 a2_fit_rom = mls_compute_from_fit(data, self.a2_rom_list)
@@ -615,7 +614,6 @@ class QuadrilateralSolver(BaseSolver):
                     f2_dir_fit_rom = mls_compute_from_fit(data, self.f2_dir_rom_list)
                     f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
             else:
-                # for now, may be changed
                 if (self._last_n_rom != n_rom) or (self._a1_set_n_rom_list is None):
                     self._a1_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a1_list]
                     self._a2_set_n_rom_list = [self._pod.compute_rom(obj, n_rom=n_rom) for obj in self._mls.a2_list]
@@ -755,19 +753,28 @@ class QuadrilateralSolver(BaseSolver):
         self._sym_mls_params_setup()
         self.mls_has_been_setup = True
 
-    def matrix_lsq(self, root: Path):
-        self.saver_root = root
+    def matrix_lsq(self, root: Optional[Path] = None):
+        if root is not None:
+            self.saver_root = root
+        else:
+            if self.saver_root is None:
+                raise ValueError("saver_root is None, root must be given.")
+
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        self._mls = MatrixLSQ(root)
+        self._mls = MatrixLSQ(self.saver_root)
         self._mls()
         self._mls_is_computed = True
 
-    def build_rb_model(self, root: Path, eps_pod: Optional[float] = None):
-        self.saver_root = root
+    def build_rb_model(self, root: Optional[Path] = None, eps_pod: Optional[float] = None):
+        if root is not None:
+            self.saver_root = root
+        else:
+            if self.saver_root is None:
+                raise ValueError("saver_root is None, root must be given.")
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
-        self._pod = PodWithEnergyNorm(root, eps_pod=eps_pod)
+        self._pod = PodWithEnergyNorm(self.saver_root, eps_pod=eps_pod)
         self._pod()
         self._pod_is_computed = True
         if not self._mls_is_computed:
@@ -782,11 +789,17 @@ class QuadrilateralSolver(BaseSolver):
             self.f2_dir_rom_list = [self._pod.compute_rom(obj) for obj in self._mls.f2_dir_list]
         self.is_rb_from_root = False
 
-    def save_rb_model(self, root: Path):
+    def save_rb_model(self, root: Optional[Path] = None):
+        if root is None:
+            self.rb_saver_root = self.gen_rb_root_from_saver_root
+        else:
+            self.rb_saver_root = root
+        if self.rb_saver_root == self.saver_root:
+            raise ValueError(f"root can not be equal to saver_root: {self.saver_root}.")
         if not self._pod_is_computed:
             raise ValueError("Pod is not computed.")
-        self.rb_saver_root = root
-        rb_saver = RBModelSaver(root)
+
+        rb_saver = RBModelSaver(self.rb_saver_root)
         rb_saver(self, self._pod.v)
 
     def plot_pod_singular_values(self):
@@ -801,8 +814,13 @@ class QuadrilateralSolver(BaseSolver):
 
     def plot_mesh(self, *geo_params: Optional[float]):
         if not self.is_assembled_and_free:
-            raise ValueError("Is not assembled.")
+            if self.element in ("triangle triangle", "lt"):
+                self.p, self.tri, self.edge = assembly.triangle.get_plate.getPlate(self._n)
+            else:
+                self.p, self.tri, self.edge = assembly.quadrilateral.get_plate.getPlate(self._n)
         if len(geo_params) == 0:
+            if self._geo_params is None:
+                raise ValueError("No saved geo_params, geo_params must be given.")
             plot_mesh(self, *self._geo_params)
         else:
             plot_mesh(self, *geo_params)

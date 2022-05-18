@@ -13,7 +13,6 @@ from .base_solver import BaseSolver
 import scipy.sparse as sp
 
 from . import default_constants, helpers
-# we choose to not update to Compressed versions
 from matrix_lsq import Storage, DiskStorage, Snapshot
 import numpy as np
 

@@ -2,6 +2,10 @@
 """
 @author: Olav M.S. Gran
 """
+from __future__ import annotations
+
+from typing import Union, Tuple
+import numpy as np
 
 from .default_constants import default_tol
 from .helpers import FunctionValues2D
@@ -25,13 +29,13 @@ class SolutionFunctionValues2D(FunctionValues2D):
         self._nodal_stress = None
         self._von_mises = None
 
-    def set_geo_params(self, geo_params):
+    def set_geo_params(self, geo_params: Union[np.ndarray, Tuple[float, ...]]):
         """
         set which geometry parameters that was used
 
         Parameters
         ----------
-        geo_params : tuple
+        geo_params : np.ndarray, tuple
             geometry parameters
 
         Returns
@@ -41,7 +45,7 @@ class SolutionFunctionValues2D(FunctionValues2D):
         """
         self._geo_params = geo_params
 
-    def set_e_young_and_nu_poisson(self, e_young, nu_poisson):
+    def set_e_young_and_nu_poisson(self, e_young: float, nu_poisson: float):
         """
         set which young's module and poisson ratio that was uses
 
@@ -60,7 +64,7 @@ class SolutionFunctionValues2D(FunctionValues2D):
         self._e_young = e_young
         self._nu_poisson = nu_poisson
 
-    def check_e_young_and_nu_poisson(self, e_young, nu_poisson):
+    def check_e_young_and_nu_poisson(self, e_young: float, nu_poisson: float) -> bool:
         """
         Check if input young's module and poisson ratio is what was used
 
@@ -84,13 +88,13 @@ class SolutionFunctionValues2D(FunctionValues2D):
         else:
             return False
 
-    def set_nodal_stress(self, nodal_stress):
+    def set_nodal_stress(self, nodal_stress: np.ndarray):
         """
         set the nodal stess property of the class
 
         Parameters
         ----------
-        nodal_stress : np.array
+        nodal_stress : np.ndarray
             nodal stress.
 
         Returns
@@ -100,13 +104,13 @@ class SolutionFunctionValues2D(FunctionValues2D):
         """
         self._nodal_stress = nodal_stress
 
-    def set_von_mises(self, von_mises):
+    def set_von_mises(self, von_mises: np.ndarray):
         """
         set the von mises yield property of the class
 
         Parameters
         ----------
-        von_mises : np.array
+        von_mises : np.ndarray
             von mises yield.
 
         Returns
@@ -117,20 +121,20 @@ class SolutionFunctionValues2D(FunctionValues2D):
         self._von_mises = von_mises
 
     @property
-    def geo_params(self):
+    def geo_params(self) -> Union[np.ndarray, Tuple[float, ...]]:
         """
         The geometry parameters
 
         Returns
         -------
-        tuple
+        np.ndarray, tuple
             the geometry parameters
 
         """
         return self._geo_params
 
     @property
-    def e_young(self):
+    def e_young(self) -> float:
         """
         The Young's module E
 
@@ -143,7 +147,7 @@ class SolutionFunctionValues2D(FunctionValues2D):
         return self._e_young
 
     @property
-    def nu_poisson(self):
+    def nu_poisson(self) -> float:
         """
         The Poisson ratio nu
 
@@ -156,26 +160,26 @@ class SolutionFunctionValues2D(FunctionValues2D):
         return self._nu_poisson
 
     @property
-    def nodal_stress(self):
+    def nodal_stress(self) -> np.ndarray:
         """
         The nodal stress
 
         Returns
         -------
-        np.array
+        np.ndarray
             nodal stress.
 
         """
         return self._nodal_stress
 
     @property
-    def von_mises(self):
+    def von_mises(self) -> np.ndarray:
         """
         Von Mises stress
 
         Returns
         -------
-        np.array
+        np.ndarray
             von Mises stress.
 
         """
