@@ -11,6 +11,8 @@ import numpy as np
 import scipy.sparse as sp
 
 from .solution_function_class import SolutionFunctionValues2D
+from .pod import PodWithEnergyNorm
+from .matrix_least_squares import MatrixLSQ
 
 symengine_is_found = (find_spec("symengine") is not None)
 if symengine_is_found:
@@ -45,6 +47,8 @@ class BaseSolver(Protocol):
     f1_dir: np.ndarray
     f2_dir: np.ndarray
     rg: np.ndarray
+    pod: PodWithEnergyNorm
+    mls: MatrixLSQ
     # a1_dir: sp.spmatrix
     # a2_dir: sp.spmatrix
     p: np.ndarray
@@ -115,6 +119,9 @@ class BaseSolver(Protocol):
         ...
 
     def matrix_lsq(self, root: Optional[Path] = None):
+        ...
+
+    def save_matrix_lsq(self, root: Optional[Path] = None):
         ...
 
     def build_rb_model(self, root: Optional[Path] = None, eps_pod: Optional[float] = None):

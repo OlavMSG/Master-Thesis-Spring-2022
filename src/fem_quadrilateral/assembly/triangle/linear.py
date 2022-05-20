@@ -3,7 +3,8 @@
 @author: Olav M.S. Gran
 based on Specialization-Project-fall-2021
 """
-
+from __future__ import annotations
+from typing import Optional, Tuple, Callable, Union
 import numpy as np
 import scipy.sparse as sp
 
@@ -24,18 +25,18 @@ __all__ = [
 ]
 
 
-def get_basis_coef(p_vec):
+def get_basis_coef(p_vec: np.ndarray) -> np.ndarray:
     """
     Calculate the basis function coef. matrix. for triangle element
 
     Parameters
     ----------
-    p_vec : np.array
+    p_vec : np.ndarray
          vertexes of the triangle element.
 
     Returns
     -------
-    np.array
+    np.ndarray
         basis function coef. matrix.
 
     """
@@ -44,24 +45,24 @@ def get_basis_coef(p_vec):
     return np.linalg.inv(mk)  # here faster than solving Mk @ Ck = I_3
 
 
-def phi(x, y, ck, i):
+def phi(x: Union[np.ndarray, float], y: Union[np.ndarray, float], ck: np.ndarray, i: int) -> Union[np.ndarray, float]:
     """
     The triangle basis functions on a triangle
 
     Parameters
     ----------
-    x : np.array
+    x : np.ndarray, float
         x-values.
-    y : np.array
+    y : np.ndarray, float
         y-values.
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray, float
         basis function in the points (x,y).
 
     """
@@ -75,12 +76,12 @@ def phi(x, y, ck, i):
     return ck[0, i] + ck[1, i] * x + ck[2, i] * y
 
 
-def nabla_grad(ck, i, d):
+def nabla_grad(ck: np.ndarray, i: int, d: int) -> np.ndarray:
     """
 
     Parameters
     ----------
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
@@ -101,28 +102,29 @@ def nabla_grad(ck, i, d):
                          [0., ck[2, i]]], dtype=float)
 
 
-def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq):
+def assemble_a1_a2_local(ck: np.ndarray, z_mat_funcs: np.ndarray, geo_params: np.ndarray,
+                         p_mat: np.ndarray, nq: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Assemble the local contributions to an element.
 
     Parameters
     ----------
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     z_mat_funcs: np.ndarray
         array of functions for z matrix.
-    geo_params: np.array
+    geo_params: np.ndarray
         geometry parameters
-    p_mat : np.array
+    p_mat : np.ndarray
         vertexes of the triangle element.
     nq : int
         quadrature scheme order.
 
     Returns
     -------
-    a1_local : np.array
+    a1_local : np.ndarray
         local contribution to matrix a1.
-    a2_local : np.array
+    a2_local : np.ndarray
         local contribution to matrix a2.
 
     """
@@ -133,10 +135,10 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq):
     z_mat = np.zeros((4, 4), dtype=float)
     for i in range(4):
         for j in range(4):
-            def z_mat_funcs_ij(x, y):
+            def z_mat_funcs_ij(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return z_mat_funcs[i, j](x, y, *geo_params)
 
-            z_mat[i, j] = quadrature2D(*p_mat, z_mat_funcs_ij, nq)
+            z_mat[i, j] = quadrature2D(*p_mat, g=z_mat_funcs_ij, nq=nq)
 
     # matrices are symmetric by construction, so only compute on part.
     d = np.array([0, 1])
@@ -203,41 +205,43 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq):
     return a1_local, a2_local
 
 
-def assemble_f_local(ck, f_func, p_mat, nq):
+def assemble_f_local(ck: np.ndarray, f_func: Callable, p_mat: np.ndarray, nq: int):
     """
     Assemble the local contribution to the f_load_lv for the triangle element
 
     Parameters
     ----------
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
-    f_func : function, VectorizedFunction2D
+    f_func : Callable
         load function.
-    p_mat : np.array
+    p_mat : np.ndarray
         vertexes of the triangle element.
     nq : int
         quadrature scheme order.
 
     Returns
     -------
-    np.array
+    np.ndarray
         local contribution to f_load_lv.
 
     """
     f_local = np.zeros(6, dtype=float)
     d = np.array([0, 1])
     for i in range(3):
-        def f_phi(x, y):
+        def f_phi(x: np.ndarray, y: np.ndarray) -> np.ndarray:
             # f = [f0, f2]
             # phi_i0 = [phi_i, 0], phi_i1 = [0, phi_i]
             return f_func(x, y) * phi(x, y, ck, i)
 
         ki0, ki1 = index_map(i, d)
-        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, f_phi, nq)
+        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, g=f_phi, nq=nq)
     return f_local
 
 
-def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq=4):
+def assemble_a1_a2_and_f_body_force(n: int, p: np.ndarray, tri: np.ndarray, z_mat_funcs: np.ndarray,
+                                    geo_params: np.ndarray, f_func: Callable, f_func_is_not_zero: bool,
+                                    nq: Optional[int] = 4) -> Tuple[sp.spmatrix, sp.spmatrix, np.ndarray]:
     """
     Assemble the a1 and a2 matrices and the body force load vector
 
@@ -245,15 +249,15 @@ def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, 
     ----------
     n : int
         number of node along one axis.
-    p : np.array
+    p : np.ndarray
         list of points.
-    tri : np.array
+    tri : np.ndarray
         triangulation of the points in p.
     z_mat_funcs: np.ndarray
         array of functions for z matrix.
-    geo_params: np.array
+    geo_params: np.ndarray
         geometry parameters
-    f_func : function, VectorizedFunction2D
+    f_func : Callable
         load function.
     f_func_is_not_zero : bool
         True if f_func does not return (0,0) for all (x,y)
@@ -262,11 +266,11 @@ def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, 
 
     Returns
     -------
-    a1 : np.array
+    a1 : sp.spmatrix
         full matrix a1.
-    a2 : np.array
+    a2 : sp.spmatrix
         full matrix a2.
-    f_body_force : np.array
+    f_body_force : np.ndarray
         load vector for the triangle form.
 
     """

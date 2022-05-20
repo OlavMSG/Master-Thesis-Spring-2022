@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot, DiskStorage
 
-from src.fem_quadrilateral import ScalableRectangleSolver
-from src.fem_quadrilateral import helpers
+from fem_quadrilateral import ScalableRectangleSolver
+from fem_quadrilateral import helpers
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing as mp

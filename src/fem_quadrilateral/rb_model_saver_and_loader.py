@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import tqdm
@@ -23,10 +24,10 @@ class RBModelSaver:
 
         assert len(self.storage) == 0
 
-    def __call__(self, solver: BaseSolver, pod_v: np.ndarray):
-        v_root = self.root / "pod_v"
+    def __call__(self, solver: BaseSolver):
+        v_root = self.root / "pod_special"
         v_root.mkdir(parents=True, exist_ok=True)
-        Snapshot(v_root, pod_v=pod_v)
+        Snapshot(v_root, v=solver.pod.v, v_mat_n_max=solver.pod.v_mat_n_max, sigma2_vec=solver.pod.sigma2_vec)
         if solver.has_non_homo_dirichlet:
             for a1_rom, a2_rom, f0_rom, f1_dir_rom, f2_dir_rom in tqdm.tqdm(zip(solver.a1_rom_list,
                                                                                 solver.a2_rom_list,
@@ -54,7 +55,7 @@ class RBModelLoader:
 
         assert len(self.storage) != 0
 
-    def __call__(self, solver: BaseSolver) -> np.ndarray:
+    def __call__(self, solver: BaseSolver):
         solver.a1_rom_list = [0] * len(self.storage)
         solver.a2_rom_list = [0] * len(self.storage)
         solver.f0_rom_list = [0] * len(self.storage)
@@ -68,5 +69,10 @@ class RBModelLoader:
             if solver.has_non_homo_dirichlet:
                 solver.f1_dir_rom_list[i] = snapshot["f1_dir_rom"]
                 solver.f2_dir_rom_list[i] = snapshot["f2_dir_rom"]
-        v_root = self.root / "pod_v"
-        return Snapshot(v_root)["pod_v"]
+        v_root = self.root / "pod_special"
+        snapshot = Snapshot(v_root)
+        solver.pod.v = snapshot["v"]
+        solver.pod.v_mat_n_max = snapshot["v_mat_n_max"]
+        solver.pod.sigma2_vec = snapshot["sigma2_vec"]
+        solver.pod.n_rom = solver.pod.v.shape[1]
+        solver.pod.n_rom_max = solver.pod.v_mat_n_max.shape[1]

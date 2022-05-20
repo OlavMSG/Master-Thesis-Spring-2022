@@ -3,7 +3,8 @@
 @author: Olav M.S. Gran
 based on Specialization-Project-fall-2021
 """
-
+from __future__ import annotations
+from typing import Callable, Union, Tuple, Optional
 import numpy as np
 import scipy.sparse as sp
 
@@ -26,18 +27,18 @@ __all__ = [
 ]
 
 
-def get_basis_coef(p_vec):
+def get_basis_coef(p_vec: np.ndarray) -> np.ndarray:
     """
-    Calculate the basis function coef. matrix. for quadrilateral element
+    Calculate the basis function coef. matrix. for rectangle element
 
     Parameters
     ----------
-    p_vec : np.array
-        vertexes of the quadrilateral element.
+    p_vec : np.ndarray
+        vertexes of the rectangle element.
 
     Returns
     -------
-    np.array
+    np.ndarray
         basis function coef. matrix.
 
     """
@@ -46,24 +47,24 @@ def get_basis_coef(p_vec):
     return np.linalg.inv(mk)  # here faster than solving Mk @ Ck = I_4
 
 
-def phi(x, y, ck, i):
+def phi(x: Union[float, np.ndarray], y: Union[float, np.ndarray], ck: np.ndarray, i: int) -> Union[float, np.ndarray]:
     """
-    The triangle basis functions on a quadrilateral
+    The triangle basis functions on a rectangle
 
     Parameters
     ----------
-    x : np.array
+    x : np.ndarray, float
         x-values.
-    y : np.array
+    y : np.ndarray, float
         y-values.
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray, float
         basis function in the points (x,y).
 
     """
@@ -79,24 +80,25 @@ def phi(x, y, ck, i):
     return ck[0, i] + ck[1, i] * x + ck[2, i] * y + ck[3, i] * x * y
 
 
-def ddx_phi(x, y, ck, i):
+def ddx_phi(x: Union[float, np.ndarray], y: Union[float, np.ndarray],
+            ck: np.ndarray, i: int) -> Union[float, np.ndarray]:
     """
-    The triangle basis functions on a quadrilateral
+    The triangle basis functions on a rectangle
 
     Parameters
     ----------
-    x : np.array
+    x : np.ndarray, float
         x-values.
-    y : np.array
+    y : np.ndarray, float
         y-values.
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray, float
         basis function in the points (x,y).
 
     """
@@ -112,24 +114,25 @@ def ddx_phi(x, y, ck, i):
     return ck[1, i] + ck[3, i] * y
 
 
-def ddy_phi(x, y, ck, i):
+def ddy_phi(x: Union[float, np.ndarray], y: Union[float, np.ndarray],
+            ck: np.ndarray, i: int) -> Union[float, np.ndarray]:
     """
-    The triangle basis functions on a quadrilateral
+    The triangle basis functions on a rectangle
 
     Parameters
     ----------
-    x : np.array
+    x : np.ndarray, float
         x-values.
-    y : np.array
+    y : np.ndarray, float
         y-values.
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray, float
         basis function in the points (x,y).
 
     """
@@ -145,7 +148,7 @@ def ddy_phi(x, y, ck, i):
     return ck[2, i] + ck[3, i] * x
 
 
-def nabla_grad(x, y, ck, i, d):
+def nabla_grad(x: float, y: float, ck: np.ndarray, i: int, d: int) -> np.ndarray:
     """
 
     Parameters
@@ -154,7 +157,7 @@ def nabla_grad(x, y, ck, i, d):
         x-value.
     y : float
         y-value.
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     i : int
         which basis function to use.
@@ -162,7 +165,7 @@ def nabla_grad(x, y, ck, i, d):
         which dimension.
     Returns
     -------
-    np.array
+    np.ndarray
         reference gradient.
     """
     if d == 0:
@@ -175,20 +178,21 @@ def nabla_grad(x, y, ck, i, d):
                          [0., ddy_phi(x, y, ck, i)]], dtype=float)
 
 
-def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
+def assemble_a1_a2_local(ck: np.ndarray, z_mat_funcs: np.ndarray, geo_params: np.ndarray,
+                         p_mat: np.ndarray, nq_x: int, nq_y: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Assemble the local contributions to an element.
 
     Parameters
     ----------
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
     z_mat_funcs: np.ndarray
         array of functions for z matrix.
-    geo_params: np.array
+    geo_params: np.ndarray
         geometry parameters
-    p_mat : np.array
-        vertexes of the quadrilateral element.
+    p_mat : np.ndarray
+        vertexes of the rectangle element.
     nq_x : int
         scheme order in x.
     nq_y : int
@@ -196,9 +200,9 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
 
     Returns
     -------
-    a1_local : np.array
+    a1_local : np.ndarray
         local contribution to matrix a1.
-    a2_local : np.array
+    a2_local : np.ndarray
         local contribution to matrix a2.
 
     """
@@ -216,16 +220,16 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
 
             # [u_i1*v_j1, u_i1*v_j2, u_i2*v_j1, u_i2*v_j2]
 
-            def cij_func0(x, y):
+            def cij_func0(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return ddx_phi(x, y, ck, i) * ddx_phi(x, y, ck, j)
 
-            def cij_func1(x, y):
+            def cij_func1(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return ddx_phi(x, y, ck, i) * ddy_phi(x, y, ck, j)
 
-            def cij_func2(x, y):
+            def cij_func2(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return ddy_phi(x, y, ck, i) * ddx_phi(x, y, ck, j)
 
-            def cij_func3(x, y):
+            def cij_func3(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return ddy_phi(x, y, ck, i) * ddy_phi(x, y, ck, j)
 
             # construct local ints
@@ -233,20 +237,20 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
             # u 1-comp is nonzero, di = 0
             # v 1-comp is nonzero, dj = 0
             # [u_11*v_11, u_11*v_12, u_12*v_11, u_12*v_12]
-            def int1_00_func(x, y):
+            def int1_00_func(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return cij_func0(x, y) * z_mat_funcs[0, 0](x, y, *geo_params) \
                        + cij_func1(x, y) * z_mat_funcs[1, 0](x, y, *geo_params) \
                        + cij_func2(x, y) * z_mat_funcs[2, 0](x, y, *geo_params) \
                        + cij_func3(x, y) * z_mat_funcs[3, 0](x, y, *geo_params)
 
-            def int2_00_func(x, y):
+            def int2_00_func(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return cij_func0(x, y) * z_mat_funcs[0, 3](x, y, *geo_params) \
                        + cij_func1(x, y) * z_mat_funcs[1, 3](x, y, *geo_params) \
                        + cij_func2(x, y) * z_mat_funcs[2, 3](x, y, *geo_params) \
                        + cij_func3(x, y) * z_mat_funcs[3, 3](x, y, *geo_params)
 
-            int1_00 = quadrature2D(*p_mat, int1_00_func, nq_x, nq_y)
-            int2_00 = quadrature2D(*p_mat, int2_00_func, nq_x, nq_y)
+            int1_00 = quadrature2D(*p_mat, g=int1_00_func, nq_x=nq_x, nq_y=nq_y)
+            int2_00 = quadrature2D(*p_mat, g=int2_00_func, nq_x=nq_x, nq_y=nq_y)
 
             a1_local[ki0, kj0] = int1_00 + 0.5 * int2_00
             a2_local[ki0, kj0] = int1_00
@@ -257,21 +261,21 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
             # u 1-comp is nonzero, di = 0
             # v 2-comp is nonzero, dj = 1
             # [u_11*v_21, u_11*v_22, u_12*v_21, u_12*v_22]
-            def int3_01_func(x, y):
+            def int3_01_func(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return cij_func0(x, y) * z_mat_funcs[0, 2](x, y, *geo_params) \
                        + cij_func3(x, y) * z_mat_funcs[3, 2](x, y, *geo_params)
 
-            def int4_01_func(x, y):
+            def int4_01_func(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return cij_func1(x, y) * z_mat_funcs[1, 2](x, y, *geo_params) \
                        + cij_func2(x, y) * z_mat_funcs[1, 1](x, y, *geo_params)
 
-            def int5_01_func(x, y):
+            def int5_01_func(x: np.ndarray, y: np.ndarray) -> np.ndarray:
                 return cij_func1(x, y) * z_mat_funcs[1, 1](x, y, *geo_params) \
                        + cij_func2(x, y) * z_mat_funcs[1, 2](x, y, *geo_params)
 
-            int3_01 = quadrature2D(*p_mat, int3_01_func, nq_x, nq_y)
-            int4_01 = quadrature2D(*p_mat, int4_01_func, nq_x, nq_y)
-            int5_01 = quadrature2D(*p_mat, int5_01_func, nq_x, nq_y)
+            int3_01 = quadrature2D(*p_mat, g=int3_01_func, nq_x=nq_x, nq_y=nq_y)
+            int4_01 = quadrature2D(*p_mat, g=int4_01_func, nq_x=nq_x, nq_y=nq_y)
+            int5_01 = quadrature2D(*p_mat, g=int5_01_func, nq_x=nq_x, nq_y=nq_y)
 
             a1_local[ki0, kj1] = 0.5 * (int3_01 + int4_01)
             a2_local[ki0, kj1] = int3_01 + int5_01
@@ -309,19 +313,20 @@ def assemble_a1_a2_local(ck, z_mat_funcs, geo_params, p_mat, nq_x, nq_y):
     return a1_local, a2_local
 
 
-def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
+def assemble_f_local(ck: np.ndarray, f_func: Callable,
+                     p_mat: np.ndarray, nq_x: int, nq_y: int) -> np.ndarray:
     """
-    Assemble the local contribution to the f_load_lv for the quadrilateral
+    Assemble the local contribution to the f_load_lv for the rectangle
      element
 
     Parameters
     ----------
-    ck : np.array
+    ck : np.ndarray
         basis function coef. matrix.
-    f_func : function, VectorizedFunction2D
+    f_func : Callable
         load function.
-    p_mat : np.array
-        vertexes of the quadrilateral element.
+    p_mat : np.ndarray
+        vertexes of the rectangle element.
     nq_x : int
         scheme order in x.
     nq_y : int
@@ -329,7 +334,7 @@ def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
 
     Returns
     -------
-    np.array
+    np.ndarray
         local contribution to f_load_lv.
 
     """
@@ -342,11 +347,13 @@ def assemble_f_local(ck, f_func, p_mat, nq_x, nq_y):
             return f_func(x, y) * phi(x, y, ck, i)
 
         ki0, ki1 = index_map(i, d)
-        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, f_phi, nq_x, nq_y)
+        f_local[[ki0, ki1]] = quadrature2D_vector(*p_mat, g=f_phi, nq_x=nq_x, nq_y=nq_y)
     return f_local
 
 
-def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, f_func_is_not_zero, nq_x=2, nq_y=None):
+def assemble_a1_a2_and_f_body_force(n: int, p: np.ndarray, tri: np.ndarray, z_mat_funcs: np.ndarray,
+                                    geo_params: np.ndarray, f_func: Callable, f_func_is_not_zero: bool, nq_x: int = 2,
+                                    nq_y: Optional[int] = None) -> Tuple[sp.spmatrix, sp.spmatrix, np.ndarray]:
     """
     Assemble the a1 and a2 matrices and the body force load vector
 
@@ -354,30 +361,30 @@ def assemble_a1_a2_and_f_body_force(n, p, tri, z_mat_funcs, geo_params, f_func, 
     ----------
     n : int
         number of node along one axis.
-    p : np.array
+    p : np.ndarray
         list of points.
-    tri : np.array
+    tri : np.ndarray
         triangulation of the points in p.
     z_mat_funcs: np.ndarray
         array of functions for z matrix.
-    geo_params: np.array
+    geo_params: np.ndarray
         geometry parameters
-    f_func : function, VectorizedFunction2D
+    f_func : Callable
         load function.
     f_func_is_not_zero : bool
         True if f_func does not return (0,0) for all (x,y)
     nq_x : int, optional
-        quadrilateral quadrature scheme order in x. The default is 2
+        rectangle quadrature scheme order in x. The default is 2
     nq_y : int, optional
-        quadrilateral quadrature scheme order in y, equal to nq_x if None. The default is None.
+        rectangle quadrature scheme order in y, equal to nq_x if None. The default is None.
 
     Returns
     -------
-    a1 : np.array
+    a1 : sp.spmatrix
         full matrix a1.
-    a2 : np.array
+    a2 : sp.spmatrix
         full matrix a2.
-    f_body_force : np.array
+    f_body_force : np.ndarray
         load vector for the triangle form.
     """
     if nq_y is None:

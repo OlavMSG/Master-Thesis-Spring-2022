@@ -8,7 +8,7 @@ import numpy as np
 # we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage
 
-from src.fem_quadrilateral import DraggableCornerRectangleSolver, default_constants
+from fem_quadrilateral import DraggableCornerRectangleSolver, default_constants
 from datetime import datetime
 
 # rho_steal = 8e3  # kg/m^3

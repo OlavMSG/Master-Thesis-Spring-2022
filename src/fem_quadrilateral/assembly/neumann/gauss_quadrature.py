@@ -3,29 +3,30 @@
 @author: Olav M.S. Gran
 from Specialization-Project-fall-2021
 """
-
+from __future__ import annotations
+from typing import Callable
 import numpy as np
 from scipy.special import roots_legendre
 
 
-def line_integral_with_linear_basis(a, b, g, nq):
+def line_integral_with_linear_basis(a: np.ndarray, b: np.ndarray, g: Callable, nq: int) -> np.ndarray:
     """
     Line integral with local triangle basis functions on the line from a to b
 
     Parameters
     ----------
-    a : np.array
+    a : np.ndarray
         point a.
-    b : np.array
+    b : np.ndarray
         point b.
-    g : function
+    g : Callable
         the function to integrate (times basis functions).
     nq : int
         scheme order.
 
     Returns
     -------
-    line_ints : np.array
+    line_ints : np.ndarray
         array of line integrals.
 
     """

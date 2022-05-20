@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from fem_quadrilateral import QuadrilateralSolver
 
 def main():
-    n = 80
+    n = 10
     q = QuadrilateralSolver(n, 0)
     mu1, mu2, mu3, mu4, mu5, mu6 = -0.16, -0.16, 0.16, 0.16, -0.16, -0.16
     q.plot_mesh(mu1, mu2, mu3, mu4, mu5, mu6)

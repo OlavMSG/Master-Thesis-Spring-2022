@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import Snapshot, DiskStorage
 
-from src.fem_quadrilateral import QuadrilateralSolver
-from src.fem_quadrilateral import helpers
+from fem_quadrilateral import QuadrilateralSolver
+from fem_quadrilateral import helpers
 from datetime import datetime
 from tqdm import tqdm
 import multiprocessing as mp
@@ -161,11 +161,13 @@ def plot_pod_errors(p_order):
     print(dict(zip(n_roms, mean_errors)))
     print(np.all(n_roms - 1 - np.arange(len(n_roms)) == 0))
 
+    n_stop = 100
+    n_stop += 1
     plt.figure("err-1")
     plt.title("Relative Errors, $\\|\\|u_h(\\mu)-Vu_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
-    plt.semilogy(n_roms, max_errors, "x--", label="max")
-    plt.semilogy(n_roms, mean_errors, "x--", label="mean")
-    plt.semilogy(n_roms, min_errors, "x--", label="min")
+    plt.semilogy(n_roms[:n_stop], max_errors[:n_stop], "x--", label="max")
+    plt.semilogy(n_roms[:n_stop], mean_errors[:n_stop], "x--", label="mean")
+    plt.semilogy(n_roms[:n_stop], min_errors[:n_stop], "x--", label="min")
     plt.xlabel("$N$")
     plt.grid()
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)

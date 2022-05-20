@@ -62,6 +62,7 @@ class MultiprocessingSnapshotSaver:
             e_mean = np.mean(self.e_young_range)
             nu_mean = np.mean(self.nu_poisson_range)
             # make the data
+            print("Saving mean")
             solver.assemble(*repeat(geo_mean, len(solver.sym_geo_params)))
             data_mean = solver.mls_funcs(*repeat(geo_mean, len(solver.sym_geo_params))).ravel()
             a_mean = helpers.compute_a(e_mean, nu_mean, solver.a1, solver.a2)

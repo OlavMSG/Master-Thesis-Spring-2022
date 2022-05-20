@@ -17,12 +17,13 @@
 #   from https://wiki.math.ntnu.no/tma4220/2020h/project : getplate.py
 #
 # code taken from Specialization-Project-fall-2021
-
+from __future__ import annotations
+from typing import Optional, Tuple
 import numpy as np
 from ..get_plate_base import make_p, make_edge
 
 
-def getPlate(n, a=0, b=1):
+def getPlate(n: int, a: Optional[float] = 0, b: Optional[float] = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Get the plate (a,b)^2, Rectangle Elements
 
@@ -37,11 +38,11 @@ def getPlate(n, a=0, b=1):
 
     Returns
     -------
-    p : np.array
+    p : np.ndarray
         Nodal points, (x,y)-coordinates for point i given in row i.
-    tri : np.array
+    tri : np.ndarray
         Elements. Index to the three corners of element i given in row i.
-    edge : np.array
+    edge : np.ndarray
         Index list of all nodal points on the outer edge.
 
     """
@@ -53,7 +54,7 @@ def getPlate(n, a=0, b=1):
     n12 = (n - 1) * (n - 1)
     tri = np.zeros((n12, 4), dtype=int)
 
-    def index_map(i, j):
+    def index_map(i: int, j: int) -> int:
         return i + n * j
 
     k = 0
@@ -69,4 +70,3 @@ def getPlate(n, a=0, b=1):
     tri = tri[arg]
     edge = make_edge(n)
     return p, tri, edge
-

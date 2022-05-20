@@ -3,26 +3,27 @@
 @author: Olav M.S. Gran
 from Specialization-Project-fall-2021
 """
-
+from __future__ import annotations
+from typing import Tuple, Callable
 import numpy as np
 
 
-def barycentric_to_r2(p1, p2, p3, z):
+def barycentric_to_r2(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray, z: np.ndarray) -> np.ndarray:
     # mapping (xhi1, xhi2, xhi3) to (x, y) given matrix of xhi-s Z
     return np.multiply.outer(p1, z[:, 0]) + np.multiply.outer(p2, z[:, 1]) + np.multiply.outer(p3, z[:, 2])
 
 
-def get_area(p1, p2, p3):
+def get_area(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
     """
     Get the area of the triangle with vertices in p1, p2 and p3
 
     Parameters
     ----------
-    p1 : np.array
+    p1 : np.ndarray
         point p1.
-    p2 : np.array
+    p2 : np.ndarray
         point p2.
-    p3 : np.array
+    p3 : np.ndarray
         point p3.
 
     Returns
@@ -35,7 +36,7 @@ def get_area(p1, p2, p3):
     return 0.5 * abs(det_jac)
 
 
-def get_points_and_weights_quad_2D(nq):
+def get_points_and_weights_quad_2D(nq: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get Gauss quadrature points and weighs in 2D
 
@@ -99,26 +100,26 @@ def get_points_and_weights_quad_2D(nq):
     return z, rho
 
 
-def quadrature2D(p1, p2, p3, g, nq):
+def quadrature2D(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray, g: Callable, nq: int) -> np.ndarray:
     """
     Integral over the triangle with vertices in p1, p2 and p3
 
     Parameters
     ----------
-    p1 : np.array
+    p1 : np.ndarray
         point p1.
-    p2 : np.array
+    p2 : np.ndarray
         point p2.
-    p3 : np.array
+    p3 : np.ndarray
         point p3.
-    g : function
+    g : Callable
         the function to integrate.
     nq : int
         scheme order.
 
     Returns
     -------
-    float
+    np.ndarray
         value of integral.
 
     """
@@ -129,17 +130,17 @@ def quadrature2D(p1, p2, p3, g, nq):
     return get_area(p1, p2, p3) * np.sum(rho * g(*barycentric_to_r2(p1, p2, p3, z)))
 
 
-def quadrature2D_vector(p1, p2, p3, g, nq):
+def quadrature2D_vector(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray, g: Callable, nq: int) -> np.ndarray:
     """
     Integrals over the triangle with vertices in p1, p2 and p3, assuming that g = [g1, g2], return int g1 and int g2
 
     Parameters
     ----------
-    p1 : np.array
+    p1 : np.ndarray
         point p1.
-    p2 : np.array
+    p2 : np.ndarray
         point p2.
-    p3 : np.array
+    p3 : np.ndarray
         point p3.
     g : function
         the vector function g = [g1, g2] to integrate.
@@ -148,7 +149,7 @@ def quadrature2D_vector(p1, p2, p3, g, nq):
 
     Returns
     -------
-    np.array
+    np.ndarray
         values of the integrals' int g1 and int g2.
 
     """

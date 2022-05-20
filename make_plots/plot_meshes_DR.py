@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from fem_quadrilateral import DraggableCornerRectangleSolver
 
 def main():
-    n = 1
+    n = 10
     d = DraggableCornerRectangleSolver(n, 0)
     mu1, mu2 = -0.5, -0.5
     d.plot_mesh(mu1, mu2)

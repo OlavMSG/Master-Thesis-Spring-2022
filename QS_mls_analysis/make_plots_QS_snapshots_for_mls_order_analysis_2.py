@@ -7,9 +7,10 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matrix_lsq import DiskStorage, Snapshot
-from src.fem_quadrilateral import QuadrilateralSolver
-from src.fem_quadrilateral.matrix_least_squares import mls_compute_from_fit, MatrixLSQ, norm
+from matplotlib.ticker import MaxNLocator
+
+from fem_quadrilateral import QuadrilateralSolver
+from fem_quadrilateral.matrix_least_squares import MatrixLSQ, norm
 from datetime import datetime
 from tqdm import tqdm
 
@@ -66,21 +67,29 @@ def main():
         save_dict = "".join(("plots_", str(root)))
         Path(save_dict).mkdir(parents=True, exist_ok=True)
 
+        x = np.arange(n)
+        dimw = 0.8 / 2
         plt.figure("a - 2")
-        plt.title(f"a - relnorm - order = {p_order}")
-        plt.semilogy(a1_mean_norms, "x--", label="$\\|\\|g_qA_{1q}\\|\\|/\\|\\|A_1(\\mu)\\|\\|$")
-        plt.semilogy(a2_mean_norms, "x--", label="$\\|\\|g_qA_{2q}\\|\\|/\\|\\|A_2(\\mu)\\|\\|$")
+        plt.title(f"Relative contribution per term")
+        plt.bar(x - dimw / 2, a1_mean_norms, dimw, label="$\\|\\|g_q(\\mu)A_{1q}\\|\\|/\\|\\|A_1(\\mu)\\|\\|$")
+        plt.bar(x + dimw / 2, a2_mean_norms, dimw, label="$\\|\\|g_q(\\mu)A_{2q}\\|\\|/\\|\\|A_2(\\mu)\\|\\|$")
+        plt.yscale("log")
         plt.xlabel("$q$")
         plt.grid()
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
         plt.savefig("".join((save_dict, "\\rel-a-norm.pdf")), bbox_inches='tight')
         plt.show()
 
         plt.figure("f - 2")
-        plt.title(f"f - relnorm - order = {p_order}")
-        plt.semilogy(f1_mean_norms, "x--", label="$\\|\\|g_qf_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
+        plt.title(f"Relative contribution per term")
+        plt.bar(x, f1_mean_norms, dimw, label="$\\|\\|g_q(\\mu)f_{0q}\\|\\|/\\|\\|f_0(\\mu)\\|\\|$")
+        plt.yscale("log")
         plt.xlabel("$q$")
         plt.grid()
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
         plt.savefig("".join((save_dict, "\\rel-f-norm.pdf")), bbox_inches='tight')
         plt.show()

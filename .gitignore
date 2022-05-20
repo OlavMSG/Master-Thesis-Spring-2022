@@ -132,20 +132,10 @@ dmypy.json
 .idea
 test_storage1
 mls_log.txt
-/DR_mls_analysis_old/plots_DR_mls_order_analysis_old
-DR_mls_analysis_old/DR_snapshots_for_mls_order_analysis_log.txt
-DR_mls_analysis_old/DR_snapshots_for_mls_order_analysis_log2.txt
-/DR_mls_analysis_old/DR_mls_order_analysis_old
-
-/DR_mls_analysis_old/plots_DR_mls_order_analysis
-/DR_mls_analysis_old/DR_mls_order_analysis
-/DR_mls_analysis_old/plots_DR_mls_error_analysis
-/DR_mls_analysis_old/plots_pod
-
+DR_final_analysis/pod_log_old_data_n80.txt
 
 DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log.txt
 DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log2.txt
-
 /DR_mls_analysis_old_2/plots_DR_mls_order_analysis
 /DR_mls_analysis_old_2/DR_mls_order_analysis
 /DR_mls_analysis_old_2/plots_DR_mls_error_analysis
@@ -154,7 +144,6 @@ DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log2.txt
 /DR_mls_analysis_old_2/POD_errors_19_log.txt
 
 DR_mls_analysis_new/DR_snapshots_for_mls_order_analysis_log.txt
-
 /DR_mls_analysis_new/plots_DR_mls_order_analysis
 /DR_mls_analysis_new/DR_mls_order_analysis
 /DR_mls_analysis_new/plots_DR_mls_error_analysis
@@ -164,7 +153,6 @@ DR_mls_analysis_new/DR_snapshots_for_mls_order_analysis_log.txt
 
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log.txt
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log2.txt
-
 /DR_mls_analysis_EX/plots_DR_mls_order_analysis
 /DR_mls_analysis_EX/DR_mls_order_analysis
 /DR_mls_analysis_EX/plots_DR_mls_error_analysis
@@ -193,18 +181,15 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /QS_mls_analysis/pod_errors_2
 /QS_mls_analysis/POD_errors_2_log.txt
 
-/QS_mls_analysis_ex/QS_snapshots_for_mls_order_analysis_log.txt
-/QS_mls_analysis_ex/plots_QS_mls_order_analysis
-/QS_mls_analysis_ex/QS_mls_order_analysis
-/QS_mls_analysis_ex/QS_mls_order_analysis_old
-/QS_mls_analysis_ex/plots_QS_mls_error_analysis
-/QS_mls_analysis_ex/plots_pod
-/QS_mls_analysis_ex/pod_errors_4
-/QS_mls_analysis_ex/hf_errors
-
 /src/fem_quadrilateral/test_storage_DR1
 /src/fem_quadrilateral/test_storage_SR1
 
-/DR_final_analysis/save_log.txt
+/DR_final_analysis/log_old_data_n80.txt
+/DR_final_analysis/log.txt
+/DR_final_analysis/pod_errors_19
+/DR_final_analysis/DR_mls_order_analysis
+/DR_final_analysis/hf_error_19
 
 /make_plots/Lagrange_basis_plots
+/checks/plots
+

@@ -40,6 +40,20 @@ class PodWithEnergyNorm:
         assert len(self.storage) != 0
 
     def __call__(self):
+        # NOTE
+        # known limitations:
+        # eigh - scipy.linalg.eigh is not compliantly stable, stable enough here
+        #      - it can also be quite slow
+        # fractional_matrix_power - scipy.linalg.fractional_matrix_power is really slow (is in else)
+        #                         - at least slower than eigh
+        #                         - sparsity of a_mean is lost in input where a_mean.A is called giving the np.array
+        #                         - function can use much RAM if a_mean is large ~ 10_000 x 10_000
+        # testing if case against each other on case with n_free = 12_960 and ns = 15_625
+        #                         - gives 3:44 in eigh for corr_mat (times in mm:ss)
+        #                         - gives 20:02 in fractional_matrix_power and 2:09 in eigh for k_mat
+        # if ns <= n_free - is not necessary because corr_mat and k_mat have the same eigenvalues
+        #                - but it gives the smallest matrix between corr_mat and k_mat
+
         # get mean matrix
         root_mean = self.root / "mean"
         mean_snapshot = Snapshot(root_mean)
@@ -48,7 +62,7 @@ class PodWithEnergyNorm:
         geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
         m = material_grid ** 2
         ns = geo_gird ** num_geo_param * m
-
+        # print(f"ns: {ns}, n_free: {n_free}, ns <= n_free: {ns <= n_free}.")
         s_mat = np.zeros((n_free, ns), dtype=float)
 
         for i, snapshot in tqdm.tqdm(enumerate(self.storage), desc="Loading data"):
@@ -77,10 +91,10 @@ class PodWithEnergyNorm:
 
         else:
             x05 = fractional_matrix_power(a_mean.A, 0.5)
-            # build correlation matrix
-            corr_mat = x05 @ s_mat @ s_mat.T @ x05
+            # build matrix
+            k_mat = x05 @ s_mat @ s_mat.T @ x05
             # find the eigenvalues and eigenvectors of it
-            self.sigma2_vec, zeta_mat = eigh(corr_mat)
+            self.sigma2_vec, zeta_mat = eigh(k_mat)
             # reverse arrays because they are in ascending order
             self.sigma2_vec = self.sigma2_vec[::-1]
             zeta_mat = zeta_mat[:, ::-1]

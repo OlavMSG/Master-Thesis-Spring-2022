@@ -5,10 +5,9 @@
 from pathlib import Path
 
 import numpy as np
-# we choose to not update to Compressed versions
 from matrix_lsq import DiskStorage
 
-from src.fem_quadrilateral import DraggableCornerRectangleSolver, default_constants
+from fem_quadrilateral import DraggableCornerRectangleSolver, default_constants
 from datetime import datetime
 
 # rho_steal = 8e3  # kg/m^3
@@ -56,7 +55,7 @@ def save_snapshots(n, mu_grid, root, p_order, power_divider=3):
 def main():
     p_order = 19
     power_divider = 3
-    n = 80
+    n = 90
     mu_grid = 25
     main_root = Path("DR_mls_order_analysis")
     print(datetime.now().time())

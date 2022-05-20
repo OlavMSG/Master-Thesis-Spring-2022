@@ -5,8 +5,8 @@
 
 import numpy as np
 
-from src.fem_quadrilateral import DraggableCornerRectangleSolver
-from src.fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
+from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
 
 
 def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt", nq=None):
@@ -89,10 +89,10 @@ def main(run_for=False):
     n = 2
     tol = 1e-14
 
-    case_1(n, tol, element="bq")
-    case_2(n, tol, element="bq")
-    case_3(n, tol, element="bq")
-    case_4(n, tol, element="bq")
+    case_1(n, tol, element="br")
+    case_2(n, tol, element="br")
+    case_3(n, tol, element="br")
+    case_4(n, tol, element="br")
 
     print("*" * 40)
     if run_for:

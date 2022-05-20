@@ -2,7 +2,7 @@
 """
 @author: Olav M.S. Gran
 """
-from . import quadrilateral, triangle
+from . import rectangle, triangle
 
 __all__ = [
     "quadrilateral",

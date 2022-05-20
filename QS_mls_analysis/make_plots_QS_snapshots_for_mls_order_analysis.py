@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matrix_lsq import DiskStorage, Snapshot
-from src.fem_quadrilateral import QuadrilateralSolver
-from src.fem_quadrilateral.matrix_least_squares import mls_compute_from_fit, MatrixLSQ, norm
+from fem_quadrilateral import QuadrilateralSolver
+from fem_quadrilateral.matrix_least_squares import mls_compute_from_fit, MatrixLSQ, norm
 from datetime import datetime
 from tqdm import tqdm
 

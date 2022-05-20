@@ -9,10 +9,11 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from matrix_lsq import Snapshot
 
-from src.fem_quadrilateral import DraggableCornerRectangleSolver
-from src.fem_quadrilateral import helpers
+from fem_quadrilateral import DraggableCornerRectangleSolver
+from fem_quadrilateral import helpers
 from datetime import datetime
 from tqdm import tqdm
 
@@ -71,6 +72,8 @@ def main():
     plt.semilogy(x, min_errors, "x--", label="min")
     plt.xlabel("$p$, order")
     plt.grid()
+    ax = plt.gca()
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
     plt.savefig("".join((save_dict, "\\relative_errors.pdf")), bbox_inches='tight')
     plt.show()

@@ -20,7 +20,7 @@ def sigma_bq(e_young: float, nu_poisson: float, ck: np.ndarray, i: int, d: int, 
              x: float, y: float):
     # get Lambert's coeffs.
     mu, lambda_bar = get_lambda_mu(e_young, nu_poisson)
-    nabla_grad_non_ref = phi_jac_inv.T @ assembly.quadrilateral.bilinear.nabla_grad(x, y, ck, i, d)
+    nabla_grad_non_ref = phi_jac_inv.T @ assembly.rectangle.bilinear.nabla_grad(x, y, ck, i, d)
     return mu * (nabla_grad_non_ref + nabla_grad_non_ref.T) + lambda_bar * np.trace(nabla_grad_non_ref) * np.identity(2)
 
 
@@ -28,8 +28,8 @@ def get_element_stress(solver: BaseSolver, compute_for_rb: bool = False) -> np.n
     n_el = solver.tri.shape[0]
     element_stress = np.zeros((n_el, 2, 2))
     for el_nr, nk in enumerate(solver.tri):
-        # nk : node-numbers for the k'th triangle or quadrilateral
-        # the points of the triangle or quadrilateral
+        # nk : node-numbers for the k'th triangle or rectangle
+        # the points of the triangle or rectangle
         # p1 = p[nk[0], :], uh1 = uh.values[nk[0], :]
         # p2 = p[nk[1], :], uh2 = uh.values[nk[1], :]
         # p3 = p[nk[2], :], uh3 = uh.values[nk[2], :]
@@ -56,7 +56,7 @@ def get_element_stress(solver: BaseSolver, compute_for_rb: bool = False) -> np.n
                                                                   solver.uh.nu_poisson,
                                                                   ck, i, d, jac_phi_inv)
         else:
-            ck = assembly.quadrilateral.bilinear.get_basis_coef(solver.p[nk, :])
+            ck = assembly.rectangle.bilinear.get_basis_coef(solver.p[nk, :])
             for i in range(4):
                 if compute_for_rb:
                     jac_phi_inv = solver.jac_phi_inv(*solver.p[nk[i], :], *solver.uh_rom.geo_params)

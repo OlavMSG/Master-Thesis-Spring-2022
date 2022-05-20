@@ -5,8 +5,8 @@
 
 import numpy as np
 
-from src.fem_quadrilateral import ScalableRectangleSolver
-from src.fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
+from fem_quadrilateral import ScalableRectangleSolver
+from fem_quadrilateral.default_constants import e_young_range, nu_poisson_range
 
 
 def base(n, tol, dirichlet_bc_func, u_exact_func, f=None, element="lt"):
@@ -91,10 +91,10 @@ def main():
     case_3(n, tol, element="lt")
     case_4(n, tol, element="lt")
     print("*"*40)
-    case_1(n, tol, element="bq")
-    case_2(n, tol, element="bq")
-    case_3(n, tol, element="bq")
-    case_4(n, tol, element="bq")
+    case_1(n, tol, element="br")
+    case_2(n, tol, element="br")
+    case_3(n, tol, element="br")
+    case_4(n, tol, element="br")
 
 
 if __name__ == '__main__':
