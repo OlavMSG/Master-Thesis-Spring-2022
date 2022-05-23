@@ -216,8 +216,8 @@ def scaling_of_rectangle():
     print(phi.evalf(subs={x1: 1, x2: 1}))
     print(phi.evalf(subs={x1: -1, x2: 1}))
     """phi = Matrix([
-        lx * x1,
-        ly * x2
+        mu1 * x1,
+        mu2 * x2
     ])
     print(phi.evalf(subs={x1: 0., x2: 0.}))
     print(phi.evalf(subs={x1: 1., x2: 0.}))

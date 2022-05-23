@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 import os
+import sys
 
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -106,6 +107,11 @@ class MultiprocessingSnapshotSaver:
             min_k = n_min + num * k
             max_k = min_k + num
             pool = mp.Pool(num, maxtasksperchild=1)
+
+            def kill_pool(err_msg):
+                print(err_msg, file=sys.stderr)
+                pool.terminate()
+
             for i in tqdm.tqdm(range(min_k, max_k), desc=f"Saving batch {k + 1} of {it + 1}."):
                 input_i = [i, self.root, geo_mat[i, :], self.mode, self.material_grid, self.e_young_range,
                            self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
@@ -113,7 +119,7 @@ class MultiprocessingSnapshotSaver:
                            solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
                            solver.bcs_are_on_reference_domain, solver.geo_param_range,
                            solver.element, solver.lower_left_corner]
-                pool.apply_async(one_snapshot_saver, input_i)
+                pool.apply_async(one_snapshot_saver, input_i, error_callback=kill_pool)
             pool.close()
             pool.join()
             del pool
@@ -124,6 +130,11 @@ class MultiprocessingSnapshotSaver:
                                  f"{max_k}.")
 
         pool = mp.Pool(num, maxtasksperchild=1)
+
+        def kill_pool(err_msg):
+            print(err_msg, file=sys.stderr)
+            pool.terminate()
+
         for i in tqdm.tqdm(range(n_min + it * num, n_min + it * num + r), desc=f"Saving batch {it + 1} of {it + 1}"):
             input_i = [i, self.root, geo_mat[i, :], self.mode, self.material_grid, self.e_young_range,
                        self.nu_poisson_range, solver.mls_order, solver.solver_type, solver.n,
@@ -131,7 +142,7 @@ class MultiprocessingSnapshotSaver:
                        solver.input_get_dirichlet_edge_func, solver.input_neumann_bc_func,
                        solver.bcs_are_on_reference_domain, solver.geo_param_range,
                        solver.element, solver.lower_left_corner]
-            pool.apply_async(one_snapshot_saver, input_i)
+            pool.apply_async(one_snapshot_saver, input_i, error_callback=kill_pool)
         pool.close()
         pool.join()
         del pool

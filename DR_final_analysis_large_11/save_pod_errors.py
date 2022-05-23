@@ -79,7 +79,7 @@ def save_pod_errors(p_order, power_divider=3):
     mean_snapshot = Snapshot(root_mean)
     a_mean = mean_snapshot["a"]
     n_free = a_mean.shape[0]
-    ns = 25 ** 2 * 5 ** 2
+    ns = 25 ** 2 * 11 ** 2
     print(f"ns: {ns}, n_free: {n_free}, ns <= n_free: {ns <= n_free}.")
 
     n_rom_max = d.n_rom_max

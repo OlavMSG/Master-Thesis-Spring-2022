@@ -189,7 +189,15 @@ SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /DR_final_analysis/pod_errors_19
 /DR_final_analysis/DR_mls_order_analysis
 /DR_final_analysis/hf_error_19
+/DR_final_analysis/plots_pod
+
+/DR_final_analysis_large_11/log.txt
+/DR_final_analysis_large_11/pod_errors_19
+/DR_final_analysis_large_11/DR_mls_order_analysis
+/DR_final_analysis_large_11/hf_error_19
+/DR_final_analysis_large_11/plots_pod
 
 /make_plots/Lagrange_basis_plots
+/make_plots/plots
 /checks/plots
 

@@ -339,6 +339,8 @@ class QuadrilateralSolver(BaseSolver):
         return np.column_stack((x_vals, y_vals))
 
     def _sym_mls_params_setup(self):
+        # The construction and thereby the evaluation of the Legendre Polynomials is not optimal,
+        # however, rewriting this is out of scoop for the current thesis.
         ant = len(self.sym_geo_params)
         # get c
         c_orders = np.array(list(product(*repeat(np.arange(self.mls_order + 2), ant))))
