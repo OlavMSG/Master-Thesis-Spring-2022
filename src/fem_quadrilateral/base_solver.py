@@ -102,8 +102,7 @@ class BaseSolver(Protocol):
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,
-                       nu_poisson_range: Optional[Tuple[float, float]] = None,
-                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                       nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
     def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
@@ -111,8 +110,7 @@ class BaseSolver(Protocol):
                                        mode: str = "uniform",
                                        material_grid: Optional[int] = None,
                                        e_young_range: Optional[Tuple[float, float]] = None,
-                                       nu_poisson_range: Optional[Tuple[float, float]] = None,
-                                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
         ...
 
     def matrix_lsq_setup(self, mls_order: Optional[int] = 2):

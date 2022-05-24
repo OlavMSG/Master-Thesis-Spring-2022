@@ -14,7 +14,6 @@ from . import default_constants, helpers
 from .base_solver import BaseSolver
 from matrix_lsq import DiskStorage, Snapshot
 from itertools import product, repeat
-from scipy.stats.qmc import LatinHypercube
 
 
 class SnapshotSaver:
@@ -31,15 +30,13 @@ class SnapshotSaver:
                  mode: str = "uniform",
                  material_grid: Optional[int] = None,
                  e_young_range: Optional[Tuple[float, float]] = None,
-                 nu_poisson_range: Optional[Tuple[float, float]] = None,
-                 use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                 nu_poisson_range: Optional[Tuple[float, float]] = None):
         self.root = root
         self.storage = DiskStorage(root)
         self.geo_grid = geo_grid
         self.geo_range = geo_range
         self.mode = mode
-        self.use_latin_hypercube = use_latin_hypercube
-        self.latin_hypercube_seed = latin_hypercube_seed
+
         if material_grid is not None:
             self.material_grid = material_grid
         if e_young_range is not None:
@@ -84,19 +81,11 @@ class SnapshotSaver:
                      mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
         print(f"Saved mean in {root_mean}")
 
-        # get all vectors from ranges
-        if self.use_latin_hypercube:
-            sampler = LatinHypercube(d=len(solver.sym_geo_params), seed=self.latin_hypercube_seed)
-            geo_mat = 0.5 * ((self.geo_range[1] - self.geo_range[0]) * sampler.random(n=self.geo_grid)
-                             + (self.geo_range[1] + self.geo_range[0]))
-        else:
-            geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_grid, self.mode)
-            geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))
-
+        geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_grid, self.mode)
         e_young_vec = helpers.get_vec_from_range(self.e_young_range, self.material_grid, self.mode)
         nu_poisson_vec = helpers.get_vec_from_range(self.nu_poisson_range, self.material_grid, self.mode)
         # make snapshots
-        for geo_params in tqdm.tqdm(geo_mat, desc="Saving"):
+        for geo_params in tqdm.tqdm(product(geo_vec, repeat=len(solver.sym_geo_params)), desc="Saving"):
             solver.assemble(*geo_params)
             # compute solution and a-norm-squared for all e_young and nu_poisson
             # put in solution matrix and anorm2 vector

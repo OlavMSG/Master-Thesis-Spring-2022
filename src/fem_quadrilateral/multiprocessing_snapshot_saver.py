@@ -21,7 +21,6 @@ from .base_solver import BaseSolver
 from matrix_lsq import DiskStorage, Snapshot
 from itertools import product, repeat
 import multiprocessing as mp
-from scipy.stats.qmc import LatinHypercube
 
 
 class MultiprocessingSnapshotSaver:
@@ -38,15 +37,12 @@ class MultiprocessingSnapshotSaver:
                  mode: str = "uniform",
                  material_grid: Optional[int] = None,
                  e_young_range: Optional[Tuple[float, float]] = None,
-                 nu_poisson_range: Optional[Tuple[float, float]] = None,
-                 use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                 nu_poisson_range: Optional[Tuple[float, float]] = None):
         self.root = root
         self.storage = DiskStorage(root)
         self.geo_grid = geo_grid
         self.geo_range = geo_range
         self.mode = mode
-        self.use_latin_hypercube = use_latin_hypercube
-        self.latin_hypercube_seed = latin_hypercube_seed
         if material_grid is not None:
             self.material_grid = material_grid
         if e_young_range is not None:
@@ -90,15 +86,9 @@ class MultiprocessingSnapshotSaver:
                          mode_and_element=mode_and_element, mls_order_and_llc=mls_order_and_llc)
             print(f"Saved mean in {root_mean}")
 
-        if self.use_latin_hypercube:
-            sampler = LatinHypercube(d=len(solver.sym_geo_params), seed=self.latin_hypercube_seed)
-            geo_mat = 0.5 * ((self.geo_range[1] - self.geo_range[0]) * sampler.random(n=self.geo_grid)
-                             + (self.geo_range[1] + self.geo_range[0]))
-            n_max = self.geo_grid
-        else:
-            geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_grid, self.mode)
-            geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))
-            n_max = self.geo_grid ** len(solver.sym_geo_params)
+        geo_vec = helpers.get_vec_from_range(self.geo_range, self.geo_grid, self.mode)
+        geo_mat = np.array(list(product(geo_vec, repeat=len(solver.sym_geo_params))))
+        n_max = self.geo_grid ** len(solver.sym_geo_params)
         n_min = len(self.storage)
         # only use "1/power_divider power"
         num = max(mp.cpu_count() // power_divider, 1)

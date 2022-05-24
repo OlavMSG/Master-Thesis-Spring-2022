@@ -713,8 +713,7 @@ class QuadrilateralSolver(BaseSolver):
                        mode: str = "uniform",
                        material_grid: Optional[int] = None,
                        e_young_range: Optional[Tuple[float, float]] = None,
-                       nu_poisson_range: Optional[Tuple[float, float]] = None,
-                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                       nu_poisson_range: Optional[Tuple[float, float]] = None):
         self.hf_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
@@ -722,9 +721,7 @@ class QuadrilateralSolver(BaseSolver):
                               mode=mode,
                               material_grid=material_grid,
                               e_young_range=e_young_range,
-                              nu_poisson_range=nu_poisson_range,
-                              use_latin_hypercube=use_latin_hypercube,
-                              latin_hypercube_seed=latin_hypercube_seed)
+                              nu_poisson_range=nu_poisson_range)
         saver(self)
 
     def multiprocessing_save_snapshots(self, root: Path, geo_grid: int,
@@ -732,8 +729,7 @@ class QuadrilateralSolver(BaseSolver):
                                        mode: str = "uniform",
                                        material_grid: Optional[int] = None,
                                        e_young_range: Optional[Tuple[float, float]] = None,
-                                       nu_poisson_range: Optional[Tuple[float, float]] = None,
-                                       use_latin_hypercube: bool = False, latin_hypercube_seed: Optional[int] = None):
+                                       nu_poisson_range: Optional[Tuple[float, float]] = None):
         self.hf_root = root
         if not self.mls_has_been_setup:
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
@@ -742,9 +738,7 @@ class QuadrilateralSolver(BaseSolver):
                                              mode=mode,
                                              material_grid=material_grid,
                                              e_young_range=e_young_range,
-                                             nu_poisson_range=nu_poisson_range,
-                                             use_latin_hypercube=use_latin_hypercube,
-                                             latin_hypercube_seed=latin_hypercube_seed)
+                                             nu_poisson_range=nu_poisson_range)
         saver(self, power_divider=power_divider)
         import sys
         print(f"warning: Environmental variables have been set. This may effect further use of the solver.",
