@@ -134,22 +134,17 @@ test_storage1
 mls_log.txt
 DR_final_analysis/pod_log_old_data_n80.txt
 
-DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log.txt
-DR_mls_analysis_old_2/DR_snapshots_for_mls_order_analysis_log2.txt
 /DR_mls_analysis_old_2/plots_DR_mls_order_analysis
 /DR_mls_analysis_old_2/DR_mls_order_analysis
 /DR_mls_analysis_old_2/plots_DR_mls_error_analysis
 /DR_mls_analysis_old_2/plots_pod
 /DR_mls_analysis_old_2/pod_errors_19
-/DR_mls_analysis_old_2/POD_errors_19_log.txt
 
-DR_mls_analysis_new/DR_snapshots_for_mls_order_analysis_log.txt
 /DR_mls_analysis_new/plots_DR_mls_order_analysis
 /DR_mls_analysis_new/DR_mls_order_analysis
 /DR_mls_analysis_new/plots_DR_mls_error_analysis
 /DR_mls_analysis_new/plots_pod
 /DR_mls_analysis_new/pod_errors_19
-/DR_mls_analysis_new/POD_errors_19_log.txt
 
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log.txt
 DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log2.txt
@@ -158,34 +153,24 @@ DR_mls_analysis_EX/DR_snapshots_for_mls_order_analysis_log2.txt
 /DR_mls_analysis_EX/plots_DR_mls_error_analysis
 /DR_mls_analysis_EX/plots_pod
 
-/SR_mls_analysis/plots_SR_mls_order_analysis
-SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log.txt
-SR_mls_analysis/SR_snapshots_for_mls_order_analysis_log2.txt
-/SR_mls_analysis/SR_mls_order_analysis/
-/SR_mls_analysis/plots_pod
 
 /SR_mls_analysis_2/plots_SR_mls_order_analysis
-SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log.txt
-SR_mls_analysis_2/SR_snapshots_for_mls_order_analysis_log2.txt
 /SR_mls_analysis_2/SR_mls_order_analysis/
 /SR_mls_analysis_2/plots_pod
 /SR_mls_analysis_2/pod_errors_2
 /SR_mls_analysis_2/pod_errors_8
 
-/QS_mls_analysis/QS_snapshots_for_mls_order_analysis_log.txt
 /QS_mls_analysis/plots_QS_mls_order_analysis
 /QS_mls_analysis/QS_mls_order_analysis
 /QS_mls_analysis/QS_mls_order_analysis_old
 /QS_mls_analysis/plots_QS_mls_error_analysis
 /QS_mls_analysis/plots_pod
 /QS_mls_analysis/pod_errors_2
-/QS_mls_analysis/POD_errors_2_log.txt
 
 /src/fem_quadrilateral/test_storage_DR1
 /src/fem_quadrilateral/test_storage_SR1
 
 /DR_final_analysis/log_old_data_n80.txt
-/DR_final_analysis/log.txt
 /DR_final_analysis/pod_errors_19
 /DR_final_analysis/DR_mls_order_analysis
 /DR_final_analysis/hf_error_19

@@ -1,4 +1,4 @@
-C:\Users\Xilva98\anaconda3\python.exe "C:/Users/Xilva98/Documents/Masteroppgave - Vår 2022/Master-Thesis-Spring-2022/QS_mls_analysis/save_QS_snapshots_for_mls_order_analysis_multi.py"
+save_QS_snapshots_for_mls_order_analysis_multi.py"
 18:45:11.236714
 p-order: 1
 Ant comp: 7

@@ -54,6 +54,14 @@ def main():
     # plt.savefig("plots/patch_test_SR2.pdf", bbox_inches='tight')
     plt.show()
 
+    rec = ScalableRectangleSolver(2, 0)
+    rec.plot_mesh(0.1, 5.1)
+    # plt.savefig("plots/SR2_01_51.pdf", bbox_inches="tight")
+    plt.show()
+    rec.plot_mesh(5.1, 0.1)
+    # plt.savefig("plots/SR2_51_01.pdf", bbox_inches="tight")
+    plt.show()
+
 
 if __name__ == '__main__':
     main()

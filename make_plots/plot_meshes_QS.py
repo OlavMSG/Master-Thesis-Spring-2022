@@ -53,6 +53,14 @@ def main():
     # plt.savefig("plots/patch_test_QS2.pdf", bbox_inches='tight')
     plt.show()
 
+    rec = QuadrilateralSolver(20, 0)
+    rec.plot_mesh(-0.1, -0.1, 0.1, 0.1, -0.1, -0.1)
+    # plt.savefig("plots/QS20_m01.pdf", bbox_inches="tight")
+    plt.show()
+    rec.plot_mesh(0.1, 0.1, -0.1, -0.1, 0.1, 0.1)
+    # plt.savefig("plots/QS20_p01.pdf", bbox_inches="tight")
+    plt.show()
+
 
 if __name__ == '__main__':
     main()

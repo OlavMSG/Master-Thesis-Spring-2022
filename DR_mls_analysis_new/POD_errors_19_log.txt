@@ -1,4 +1,4 @@
-C:\Users\Xilva98\anaconda3\python.exe "C:/Users/Xilva98/Documents/Masteroppgave - Vår 2022/Master-Thesis-Spring-2022/DR_mls_analysis_new/save_pod_errors.py"
+save_pod_errors.py"
 12:18:50.708906
 DR_mls_order_analysis\p_order_19
 pod_errors_19

@@ -53,6 +53,30 @@ def main():
     # plt.savefig("plots/patch_test_DR2.pdf", bbox_inches='tight')
     plt.show()
 
+    rec = DraggableCornerRectangleSolver(20, 0)
+    rec.plot_mesh(-0.5, -0.5)
+    # plt.savefig("plots/DR20_m05.pdf", bbox_inches="tight")
+    plt.show()
+    rec.plot_mesh(0.5, 0.5)
+    # plt.savefig("plots/DR20_p05.pdf", bbox_inches="tight")
+    plt.show()
+
+    rec = DraggableCornerRectangleSolver(2, 0)
+    rec.plot_mesh(-0.49, -0.49)
+    # plt.savefig("plots/DR2_m049.pdf", bbox_inches="tight")
+    plt.show()
+    rec.plot_mesh(0.49, 0.49)
+    # plt.savefig("plots/DR2_p049.pdf", bbox_inches="tight")
+    plt.show()
+
+    rec = DraggableCornerRectangleSolver(20, 0)
+    rec.plot_mesh(-0.3, -0.3)
+    # plt.savefig("plots/DR20_m03.pdf", bbox_inches="tight")
+    plt.show()
+    rec.plot_mesh(0.3, 0.3)
+    # plt.savefig("plots/DR20_p03.pdf", bbox_inches="tight")
+    plt.show()
+
 
 if __name__ == '__main__':
     main()

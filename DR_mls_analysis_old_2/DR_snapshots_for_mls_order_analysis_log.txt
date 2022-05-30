@@ -1,0 +1,253 @@
+save_DR_snapshots_for_mls_order_analysis.py"
+22:55:25.588717
+p-order: 1
+Ant comp: 3
+Ant snapshots: 625
+Ratio: 0.0048
+root: DR_mls_order_analysis\p_order_1
+Interpolating: 625it [00:03, 177.08it/s]
+Interpolating: 625it [00:03, 181.26it/s]
+Interpolating: 625it [00:00, 985.05it/s]
+{0: 1.0, 1: 2.04081632653061*mu2, 2: 2.04081632653061*mu1}
+--------------------------------------------------
+p-order: 2
+Ant comp: 6
+Ant snapshots: 625
+Ratio: 0.0096
+root: DR_mls_order_analysis\p_order_2
+Interpolating: 625it [00:04, 147.39it/s]
+Interpolating: 625it [00:04, 153.45it/s]
+Interpolating: 625it [00:00, 892.24it/s]
+{0: 1.0, 1: 2.04081632653061*mu2, 2: 2.04081632653061*mu1, 3: 1.0*(-0.5 + 6.24739691795085*mu2**2), 4: 4.1649312786339*mu2*mu1, 5: 1.0*(-0.5 + 6.24739691795085*mu1**2)}
+--------------------------------------------------
+p-order: 3
+Ant comp: 10
+Ant snapshots: 625
+Ratio: 0.016
+root: DR_mls_order_analysis\p_order_3
+Interpolating: 625it [00:04, 132.35it/s]
+Interpolating: 625it [00:04, 127.82it/s]
+Interpolating: 625it [00:00, 1045.14it/s]
+{0: 1.0, 1: 2.04081632653061*mu2, 2: 2.04081632653061*mu1, 3: 1.0*(-0.5 + 6.24739691795085*mu2**2), 4: 4.1649312786339*mu2*mu1, 5: 1.0*(-0.5 + 6.24739691795085*mu1**2), 6: 1.0*(-3.06122448979592*mu2 + 21.2496493807852*mu2**3), 7: 2.04081632653061*mu1*(-0.5 + 6.24739691795085*mu2**2), 8: 2.04081632653061*mu2*(-0.5 + 6.24739691795085*mu1**2), 9: 1.0*(-3.06122448979592*mu1 + 21.2496493807852*mu1**3)}
+--------------------------------------------------
+p-order: 4
+Ant comp: 15
+Ant snapshots: 625
+Ratio: 0.024
+root: DR_mls_order_analysis\p_order_4
+Interpolating: 625it [00:06, 104.12it/s]
+Interpolating: 625it [00:05, 107.77it/s]
+Interpolating: 625it [00:00, 847.49it/s]
+{0: 1.0, 1: 2.04081632653061*mu2, 2: 2.04081632653061*mu1, 3: 1.0*(-0.5 + 6.24739691795085*mu2**2), 4: 4.1649312786339*mu2*mu1, 5: 1.0*(-0.5 + 6.24739691795085*mu1**2), 6: 1.0*(-3.06122448979592*mu2 + 21.2496493807852*mu2**3), 7: 2.04081632653061*mu1*(-0.5 + 6.24739691795085*mu2**2), 8: 2.04081632653061*mu2*(-0.5 + 6.24739691795085*mu1**2), 9: 1.0*(-3.06122448979592*mu1 + 21.2496493807852*mu1**3), 10: 1.0*(0.375 - 15.6184922948771*mu2**2 + 75.8916049313758*mu2**4), 11: 2.04081632653061*mu1*(-3.06122448979592*mu2 + 21.2496493807852*mu2**3), 12: (-0.5 + 6.24739691795085*mu1**2)*(-0.5 + 6.24739691795085*mu2**2), 13: 2.04081632653061*mu2*(-3.06122448979592*mu1 + 21.2496493807852*mu1**3), 14: 1.0*(0.375 - 15.6184922948771*mu1**2 + 75.8916049313758*mu1**4)}
+--------------------------------------------------
+p-order: 5
+Ant comp: 21
+Ant snapshots: 625
+Ratio: 0.0336
+root: DR_mls_order_analysis\p_order_5
+Interpolating: 625it [00:07, 87.84it/s]
+Interpolating: 625it [00:07, 88.58it/s]
+Interpolating: 625it [00:00, 773.52it/s]
+{0: 1.0, 1: 2.04081632653061*mu2, 2: 2.04081632653061*mu1, 3: 1.0*(-0.5 + 6.24739691795085*mu2**2), 4: 4.1649312786339*mu2*mu1, 5: 1.0*(-0.5 + 6.24739691795085*mu1**2), 6: 1.0*(-3.06122448979592*mu2 + 21.2496493807852*mu2**3), 7: 2.04081632653061*mu1*(-0.5 + 6.24739691795085*mu2**2), 8: 2.04081632653061*mu2*(-0.5 + 6.24739691795085*mu1**2), 9: 1.0*(-3.06122448979592*mu1 + 21.2496493807852*mu1**3), 10: 1.0*(0.375 - 15.6184922948771*mu2**2 + 75.8916049313758*mu2**4), 11: 1.0*(0.375 - 15.6184922948771*mu1**2 + 75.8916049313758*mu1**4), 12: 2.04081632653061*mu1*(-3.06122448979592*mu2 + 21.2496493807852*mu2**3), 13: (-0.5 + 6.24739691795085*mu1**2)*(-0.5 + 6.24739691795085*mu2**2), 14: 2.04081632653061*mu2*(-3.06122448979592*mu1 + 21.2496493807852*mu1**3), 15: (-3.06122448979592*mu1 + 21.2496493807852*mu1**3)*(-0.5 + 6.24739691795085*mu2**2), 16: 2.04081632653061*mu1*(0.375 - 15.6184922948771*mu2**2 + 75.8916049313758*mu2**4), 17: 2.04081632653061*mu2*(0.375 - 15.6184922948771*mu1**2 + 75.8916049313758*mu1**4), 18: 1.0*(3.8265306122449*mu2 - 74.3737728327483*mu2**3 + 278.785487503013*mu2**5), 19: (-3.06122448979592*mu2 + 21.2496493807852*mu2**3)*(-0.5 + 6.24739691795085*mu1**2), 20: 1.0*(3.8265306122449*mu1 - 74.3737728327483*mu1**3 + 278.785487503013*mu1**5)}
+--------------------------------------------------
+p-order: 6
+Ant comp: 28
+Ant snapshots: 625
+Ratio: 0.0448
+root: DR_mls_order_analysis\p_order_6
+Interpolating: 625it [00:08, 72.17it/s]
+Interpolating: 625it [00:08, 72.83it/s]
+Interpolating: 625it [00:00, 863.26it/s]
+--------------------------------------------------
+p-order: 7
+Ant comp: 36
+Ant snapshots: 625
+Ratio: 0.0576
+root: DR_mls_order_analysis\p_order_7
+Interpolating: 625it [00:09, 62.85it/s]
+Interpolating: 625it [00:10, 61.18it/s]
+Interpolating: 625it [00:00, 763.12it/s]
+--------------------------------------------------
+p-order: 8
+Ant comp: 45
+Ant snapshots: 625
+Ratio: 0.072
+root: DR_mls_order_analysis\p_order_8
+Interpolating: 625it [00:11, 53.76it/s]
+Interpolating: 625it [00:11, 52.15it/s]
+Interpolating: 625it [00:00, 782.22it/s]
+--------------------------------------------------
+p-order: 9
+Ant comp: 55
+Ant snapshots: 625
+Ratio: 0.088
+root: DR_mls_order_analysis\p_order_9
+Interpolating: 625it [00:13, 46.03it/s]
+Interpolating: 625it [00:13, 46.29it/s]
+Interpolating: 625it [00:00, 734.87it/s]
+--------------------------------------------------
+p-order: 10
+Ant comp: 66
+Ant snapshots: 625
+Ratio: 0.1056
+root: DR_mls_order_analysis\p_order_10
+Interpolating: 625it [00:15, 39.50it/s]
+Interpolating: 625it [00:15, 39.44it/s]
+Interpolating: 625it [00:00, 730.14it/s]
+--------------------------------------------------
+p-order: 11
+Ant comp: 78
+Ant snapshots: 625
+Ratio: 0.1248
+root: DR_mls_order_analysis\p_order_11
+Interpolating: 625it [00:17, 35.13it/s]
+Interpolating: 625it [00:18, 34.21it/s]
+Interpolating: 625it [00:00, 657.55it/s]
+--------------------------------------------------
+p-order: 12
+Ant comp: 91
+Ant snapshots: 625
+Ratio: 0.1456
+root: DR_mls_order_analysis\p_order_12
+Interpolating: 625it [00:20, 30.02it/s]
+Interpolating: 625it [00:20, 30.73it/s]
+Interpolating: 625it [00:01, 569.21it/s]
+--------------------------------------------------
+p-order: 13
+Ant comp: 105
+Ant snapshots: 625
+Ratio: 0.168
+root: DR_mls_order_analysis\p_order_13
+Interpolating: 625it [00:23, 26.99it/s]
+Interpolating: 625it [00:23, 26.89it/s]
+Interpolating: 625it [00:01, 623.13it/s]
+--------------------------------------------------
+p-order: 14
+Ant comp: 120
+Ant snapshots: 625
+Ratio: 0.192
+root: DR_mls_order_analysis\p_order_14
+Interpolating: 625it [00:26, 23.84it/s]
+Interpolating: 625it [00:26, 23.81it/s]
+Interpolating: 625it [00:01, 545.37it/s]
+--------------------------------------------------
+p-order: 15
+Ant comp: 136
+Ant snapshots: 625
+Ratio: 0.2176
+root: DR_mls_order_analysis\p_order_15
+Interpolating: 625it [00:30, 20.75it/s]
+Interpolating: 625it [00:29, 20.88it/s]
+Interpolating: 625it [00:01, 529.66it/s]
+--------------------------------------------------
+p-order: 16
+Ant comp: 153
+Ant snapshots: 625
+Ratio: 0.2448
+root: DR_mls_order_analysis\p_order_16
+Interpolating: 625it [00:33, 18.74it/s]
+Interpolating: 625it [00:32, 19.04it/s]
+Interpolating: 625it [00:01, 460.24it/s]
+--------------------------------------------------
+p-order: 17
+Ant comp: 171
+Ant snapshots: 625
+Ratio: 0.2736
+root: DR_mls_order_analysis\p_order_17
+Interpolating: 625it [00:36, 16.97it/s]
+Interpolating: 625it [00:37, 16.81it/s]
+Interpolating: 625it [00:01, 441.39it/s]
+--------------------------------------------------
+p-order: 18
+Ant comp: 190
+Ant snapshots: 625
+Ratio: 0.304
+root: DR_mls_order_analysis\p_order_18
+Interpolating: 625it [00:40, 15.54it/s]
+Interpolating: 625it [00:40, 15.30it/s]
+Interpolating: 625it [00:01, 417.08it/s]
+--------------------------------------------------
+p-order: 19
+Ant comp: 210
+Ant snapshots: 625
+Ratio: 0.336
+root: DR_mls_order_analysis\p_order_19
+Interpolating: 625it [00:45, 13.86it/s]
+Interpolating: 625it [00:42, 14.85it/s]
+Interpolating: 625it [00:01, 397.71it/s]
+--------------------------------------------------
+p-order: 20
+Ant comp: 231
+Ant snapshots: 625
+Ratio: 0.3696
+root: DR_mls_order_analysis\p_order_20
+warning: data matrix may be ill conditioned: 3.33e+05
+Interpolating: 625it [00:45, 13.77it/s]
+warning: data matrix may be ill conditioned: 3.33e+05
+Interpolating: 625it [00:46, 13.48it/s]
+warning: data matrix may be ill conditioned: 3.33e+05
+Interpolating: 625it [00:01, 390.99it/s]
+--------------------------------------------------
+p-order: 21
+Ant comp: 253
+Ant snapshots: 625
+Ratio: 0.4048
+root: DR_mls_order_analysis\p_order_21
+warning: data matrix may be ill conditioned: 2.98e+06
+Interpolating: 625it [00:51, 12.13it/s]
+warning: data matrix may be ill conditioned: 2.98e+06
+Interpolating: 625it [00:52, 11.91it/s]
+warning: data matrix may be ill conditioned: 2.98e+06
+Interpolating: 625it [00:01, 366.25it/s]
+--------------------------------------------------
+p-order: 22
+Ant comp: 276
+Ant snapshots: 625
+Ratio: 0.4416
+root: DR_mls_order_analysis\p_order_22
+warning: data matrix may be ill conditioned: 3.89e+07
+Interpolating: 625it [00:56, 10.99it/s]
+warning: data matrix may be ill conditioned: 3.89e+07
+Interpolating: 625it [00:57, 10.85it/s]
+warning: data matrix may be ill conditioned: 3.89e+07
+Interpolating: 625it [00:01, 350.93it/s]
+--------------------------------------------------
+p-order: 23
+Ant comp: 300
+Ant snapshots: 625
+Ratio: 0.48
+root: DR_mls_order_analysis\p_order_23
+warning: data matrix may be ill conditioned: 7.53e+08
+Interpolating: 625it [01:00, 10.31it/s]
+warning: data matrix may be ill conditioned: 7.53e+08
+Interpolating: 625it [00:43, 14.52it/s]
+warning: data matrix may be ill conditioned: 7.53e+08
+Interpolating: 625it [00:01, 472.23it/s]
+--------------------------------------------------
+p-order: 24
+Ant comp: 325
+Ant snapshots: 625
+Ratio: 0.52
+root: DR_mls_order_analysis\p_order_24
+warning: data matrix may be ill conditioned: 3.17e+10
+Interpolating: 625it [01:09,  8.97it/s]
+warning: data matrix may be ill conditioned: 3.17e+10
+Interpolating: 625it [01:16,  8.18it/s]
+warning: data matrix may be ill conditioned: 3.17e+10
+Interpolating: 625it [00:02, 287.89it/s]
+--------------------------------------------------
+p-order: 25
+Ant comp: 351
+Ant snapshots: 625
+Ratio: 0.5616
+root: DR_mls_order_analysis\p_order_25
+warning: data matrix may be ill conditioned: 1.19e+17
+Interpolating: 625it [01:22,  7.60it/s]
+warning: data matrix may be ill conditioned: 1.19e+17
+Interpolating: 625it [01:19,  7.85it/s]
+warning: data matrix may be ill conditioned: 1.19e+17
+Interpolating: 625it [00:02, 258.42it/s]
+--------------------------------------------------
+23:21:00.254718
+
+Process finished with exit code 0

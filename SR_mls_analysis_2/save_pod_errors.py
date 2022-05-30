@@ -162,14 +162,19 @@ def plot_pod_errors(p_order):
     print(np.all(n_roms - 1 - np.arange(len(n_roms)) == 0))
 
     plt.figure("err-1")
-    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-Vu_N(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
+    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-Vu_N(\\mu)\\|\\|_a/\\|\\|u_h(\\mu)\\|\\|_a$")
     plt.semilogy(n_roms, max_errors, "x--", label="max")
     plt.semilogy(n_roms, mean_errors, "x--", label="mean")
     plt.semilogy(n_roms, min_errors, "x--", label="min")
+    xb, xt = plt.xlim()
+    yb, yt = plt.ylim()
+    plt.vlines(d.n_rom, ymin=0, ymax=100, color="k", linestyles="dashed", label=f"N={d.n_rom}")
+    plt.xlim(xb, xt)
+    plt.ylim(yb, yt)
     plt.xlabel("$N$")
     plt.grid()
     plt.legend(loc=9, bbox_to_anchor=(0.5, -.13), ncol=2)
-    plt.savefig("".join((save_dict, f"\\pod_errors_p_order_{p_order}.pdf")), bbox_inches='tight')
+    # plt.savefig("".join((save_dict, f"\\pod_errors_p_order_{p_order}.pdf")), bbox_inches='tight')
     plt.show()
 
 

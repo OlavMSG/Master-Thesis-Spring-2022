@@ -66,7 +66,7 @@ def main():
     Path(save_dict).mkdir(parents=True, exist_ok=True)
     x = np.arange(max_order) + 1
     plt.figure("err-1")
-    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-u_{h,mls}(\\mu)\\|\\|_a/\\|u_h(\\mu)\\|\\|_a$")
+    plt.title("Relative Errors, $\\|\\|u_h(\\mu)-u_{h,mls}(\\mu)\\|\\|_a/\\|\\|u_h(\\mu)\\|\\|_a$")
     plt.semilogy(x, max_errors, "x--", label="max")
     plt.semilogy(x, mean_errors, "x--", label="mean")
     plt.semilogy(x, min_errors, "x--", label="min")
