@@ -1,4 +1,4 @@
-save_DR_snapshots_multi.py
+10save_DR_snapshots_multi.py
 20:37:17.831932
 mu_range: (-0.3, 0.3)
 p-order: 19
@@ -48,13 +48,15 @@ ns: 15625, n_free: 16380, ns <= n_free: True.
 --------------------------------------------------
 Interpolating: 625it [04:26,  2.34it/s]
 Interpolating: 625it [04:27,  2.34it/s]
-Interpolating: 625it [00:01, 418.06it/s]
-Saving MLS matrices and vectors: 210it [00:52,  4.01it/s]
+Interpolating: 625it [00:01, 418.06it/s] => MLS fit 9 min
+Saving MLS matrices and vectors: 210it [00:52,  4.01it/s] => Q=210
 Loading data: 625it [00:01, 387.84it/s]
-Saving RB model: 210it [00:00, 311.11it/s]
+Saving RB model: 210it [00:00, 311.11it/s] 
 15:43:51.380291
 
 Process finished with exit code 0
+
+build rb model => 24 min
 
 save_pod_errors.py (2 run)
 00:08:37.599486

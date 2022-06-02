@@ -30,6 +30,7 @@ class PodWithEnergyNorm:
     i_n: np.ndarray = None
     v_mat_n_max: np.ndarray = None
     v: np.ndarray = None
+    ns: int = None
 
     def __init__(self, root: Path, eps_pod: Optional[float] = None):
         self.root = root
@@ -61,9 +62,9 @@ class PodWithEnergyNorm:
         n_free = a_mean.shape[0]
         geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
         m = material_grid ** 2
-        ns = geo_gird ** num_geo_param * m
+        self.ns = geo_gird ** num_geo_param * m
         # print(f"ns: {ns}, n_free: {n_free}, ns <= n_free: {ns <= n_free}.")
-        s_mat = np.zeros((n_free, ns), dtype=float)
+        s_mat = np.zeros((n_free, self.ns), dtype=float)
 
         for i, snapshot in tqdm.tqdm(enumerate(self.storage), desc="Loading data"):
             s_mat[:, i * m:(i + 1) * m] = snapshot["s_mat"]
@@ -73,7 +74,7 @@ class PodWithEnergyNorm:
                          + "where two last may be None."
             raise ValueError(error_text)
 
-        if ns <= n_free:
+        if self.ns <= n_free:
             # build correlation matrix
             corr_mat = s_mat.T @ a_mean @ s_mat
             # find the eigenvalues and eigenvectors of it

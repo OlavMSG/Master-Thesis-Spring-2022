@@ -111,6 +111,7 @@ class QuadrilateralSolver(BaseSolver):
                  neumann_bc_func: Optional[Callable] = None, bcs_are_on_reference_domain: bool = True,
                  element: str = "br", x0: float = 0, y0: float = 0):
 
+        self._uh_rom_non_recovered = None
         self._geo_params = None
         self._a1_set_n_rom_list = None
         self._a2_set_n_rom_list = None
@@ -267,6 +268,8 @@ class QuadrilateralSolver(BaseSolver):
             self.pod = PodWithEnergyNorm(self.hf_root)
             rb_loader = RBModelLoader(self.rb_root)
             rb_loader(self)
+            geo_gird, material_grid, num_geo_param = mean_snapshot["grid_params"]
+            self.pod.ns = geo_gird ** num_geo_param * material_grid ** 2
             self.is_rb_from_root = True
         # load mls
         if self.mls_root is not None:
@@ -510,6 +513,7 @@ class QuadrilateralSolver(BaseSolver):
         self._assemble(np.array([mu1, mu2, mu3, mu4, mu5, mu6]))
 
     def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
+        start_time = perf_counter()
         if len(geo_params) != 0:
             if len(geo_params) != len(self.sym_geo_params):
                 raise ValueError(
@@ -546,13 +550,12 @@ class QuadrilateralSolver(BaseSolver):
 
         # initialize uh
         uh = np.zeros(self.n_full)
-        start_time = perf_counter()
         # solve system
         uh[self.expanded_free_index] = spsolve(a, f_load)
-        if print_info:
-            print("Solved a @ uh = f_load in {:.6f} sec".format(perf_counter() - start_time))
         if self.has_non_homo_dirichlet:
             uh[self.expanded_dirichlet_edge_index] = self.rg
+        if print_info:
+            print("Solved a @ uh = f_load in {:.6f} sec".format(perf_counter() - start_time))
         # set uh, and save it in a nice way.
         self.uh = SolutionFunctionValues2D.from_1x2n(uh)
         self.uh.set_geo_params(self._geo_params)
@@ -561,9 +564,9 @@ class QuadrilateralSolver(BaseSolver):
             print("Get solution by the property uh, uh_free or uh_full of the class.\n" +
                   "The property uh, extra properties values, x and y are available.\n")
 
-    def rbsolve(self, e_young: float, nu_poisson: float, *geo_params: float, n_rom: Optional[int] = None,
-                print_info: bool = True):
-        # for now
+    def rbsolve_uh_rom_non_recovered(self, e_young: float, nu_poisson: float, *geo_params: float,
+                                     n_rom: Optional[int] = None, print_info: bool = True):
+        start_time = perf_counter()
         if len(geo_params) != len(self.sym_geo_params):
             raise ValueError(
                 f"To many geometry parameters, got {len(geo_params)} expected {len(self.sym_geo_params)}.")
@@ -574,7 +577,6 @@ class QuadrilateralSolver(BaseSolver):
             raise ValueError("Matrix LSQ data functions have not been setup, please call matrix_lsq_setup.")
         if self.is_rb_from_root:
             if n_rom is None:
-                # for now, may be changed
                 data = self.mls_funcs(*geo_params)
                 a1_fit_rom = mls_compute_from_fit(data, self.a1_rom_list)
                 a2_fit_rom = mls_compute_from_fit(data, self.a2_rom_list)
@@ -626,16 +628,21 @@ class QuadrilateralSolver(BaseSolver):
                     f_load_rom -= helpers.compute_a(e_young, nu_poisson, f1_dir_fit_rom, f2_dir_fit_rom)
         # set last n_rom
         self._last_n_rom = n_rom
-        # initialize uh
-        uh_rom = np.zeros(self.n_full)
-        start_time = perf_counter()
         # solve and project rb solution
-        if n_rom is None:
-            uh_rom[self.expanded_free_index] = self.pod.v @ np.linalg.solve(a_rom, f_load_rom)
-        else:
-            uh_rom[self.expanded_free_index] = self.pod.get_v_mat(n_rom) @ np.linalg.solve(a_rom, f_load_rom)
+        self._uh_rom_non_recovered = np.linalg.solve(a_rom, f_load_rom)
         if print_info:
             print("Solved a_rom @ uh_rom = f_load_rom in {:.6f} sec".format(perf_counter() - start_time))
+
+    def rbsolve_uh_rom_recovered(self, e_young: float, nu_poisson: float, *geo_params: float,
+                                 n_rom: Optional[int] = None, print_info: bool = True):
+        self.rbsolve_uh_rom_non_recovered(e_young, nu_poisson, *geo_params, n_rom=n_rom, print_info=print_info)
+        # initialize uh
+        uh_rom = np.zeros(self.n_full)
+        # project rb solution
+        if n_rom is None:
+            uh_rom[self.expanded_free_index] = self.pod.v @ self._uh_rom_non_recovered
+        else:
+            uh_rom[self.expanded_free_index] = self.pod.get_v_mat(n_rom) @ self._uh_rom_non_recovered
         if self.has_non_homo_dirichlet:  # for now
             # lifting function
             uh_rom[self.expanded_dirichlet_edge_index] = self.rg
@@ -646,6 +653,11 @@ class QuadrilateralSolver(BaseSolver):
         if print_info:
             print("Get solution by the property uh_rom, uh_rom_free or uh_rom_full of the class.\n" +
                   "The property uh_rom, extra properties values, x and y are available.\n")
+
+    def rbsolve(self, e_young: float, nu_poisson: float, *geo_params: float, n_rom: Optional[int] = None,
+                print_info: bool = True):
+        # short for rbsolve_uh_rom_recovered
+        self.rbsolve_uh_rom_recovered(e_young, nu_poisson, *geo_params, n_rom=n_rom, print_info=print_info)
 
     def hferror(self, e_young: float, nu_poisson: float, *geo_params: Optional[float],
                 root: Optional[Path] = None) -> float:
@@ -860,28 +872,29 @@ class QuadrilateralSolver(BaseSolver):
             raise ValueError("Reduced Order Problem has not been solved.")
         plot_rb_displacment(self)
 
-    def hf_plot_von_mises(self):
+    def hf_plot_von_mises(self, levels: Optional[np.ndarray] = None):
         if self.uh.von_mises is None:
             self.hf_von_mises_stress(print_info=False)
-        plot_hf_von_mises(self)
+        plot_hf_von_mises(self, levels=levels)
 
-    def rb_plot_von_mises(self):
+    def rb_plot_von_mises(self, levels: Optional[np.ndarray] = None):
         if self.uh_rom.von_mises is None:
             self.rb_von_mises_stress(print_info=False)
-        plot_rb_von_mises(self)
+        plot_rb_von_mises(self, levels=levels)
 
     def rb_pod_mode(self, i: int) -> SolutionFunctionValues2D:
+        assert i >= 1
         pod_mode = np.zeros(self.n_full)
         # get mode form V matrix
         if not (self._pod_is_computed or self.is_rb_from_root):
             raise ValueError("POD is not computed or no reduced order model from root.")
-        pod_mode[self.expanded_free_index] = self.pod.v_mat_n_max[:, i]
+        pod_mode[self.expanded_free_index] = self.pod.v_mat_n_max[:, i - 1]
 
         # lifting function
         if self.has_non_homo_dirichlet:
             pod_mode[self.expanded_dirichlet_edge_index] = self.rg
         pod_mode = SolutionFunctionValues2D.from_1x2n(pod_mode)
-        pod_mode.set_geo_params(self._geo_params)
+        pod_mode.set_geo_params(tuple([float(np.mean(self.geo_param_range)), float(np.mean(self.geo_param_range))]))
         return pod_mode
 
     def rb_plot_pod_mode(self, i: int):
@@ -945,6 +958,13 @@ class QuadrilateralSolver(BaseSolver):
         if not (self._pod_is_computed or self.is_rb_from_root):
             raise ValueError("POD is not computed or no reduced order model from root.")
         return self.pod.n_rom
+
+    @property
+    def ns_rom(self) -> int:
+        if not (self._pod_is_computed or self.is_rb_from_root):
+            raise ValueError("POD is not computed or no reduced order model from root.")
+        return self.pod.ns
+
 
     @property
     def n_rom_max(self) -> int:

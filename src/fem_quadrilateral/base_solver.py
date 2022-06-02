@@ -86,8 +86,17 @@ class BaseSolver(Protocol):
     def hfsolve(self, e_young: float, nu_poisson: float, *geo_params: Optional[float], print_info: bool = True):
         ...
 
+    def rbsolve_uh_rom_non_recovered(self, e_young: float, nu_poisson: float, *geo_params: float,
+                                     n_rom: Optional[int] = None, print_info: bool = True):
+        ...
+
+    def rbsolve_uh_rom_recovered(self, e_young: float, nu_poisson: float, *geo_params: float,
+                                 n_rom: Optional[int] = None, print_info: bool = True):
+        ...
+
     def rbsolve(self, e_young: float, nu_poisson: float, *geo_params: float, n_rom: Optional[int] = None,
                 print_info: bool = True):
+        # short for rbsolve_uh_rom_recovered
         ...
 
     def hferror(self, e_young: float, nu_poisson: float, *geo_params: Optional[float],
@@ -156,6 +165,10 @@ class BaseSolver(Protocol):
 
     @property
     def n_rom(self) -> int:
+        return -1
+
+    @property
+    def ns_rom(self) -> int:
         return -1
 
     @property

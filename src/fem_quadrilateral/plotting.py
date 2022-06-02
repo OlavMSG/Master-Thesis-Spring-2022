@@ -3,6 +3,7 @@
 @author: Olav M.S. Gran
 """
 from __future__ import annotations
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,20 +54,13 @@ def plot_pod_mode(solver: BaseSolver, i: int):
     ax = plt.gca()
     ax.add_collection(pc)
     ax.autoscale()
-    # plt.grid()
-    xb, xt = plt.xlim()
-    yb, yt = plt.ylim()
-    """xy_min = min(xb, yb)
-    xy_max = max(xt, yt)
-    plt.xlim(xy_min, xy_max)
-    plt.ylim(xy_min, xy_max)"""
     print("Please call plt.show() to show the plot.")
 
 
 def plot_hf_displacment(solver: BaseSolver):
     # set nice plotting
     fontsize = 20
-    new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (7, 7),
+    new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
                   'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
                   'figure.titlesize': fontsize,
                   'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
@@ -76,19 +70,12 @@ def plot_hf_displacment(solver: BaseSolver):
     p_non_ref = solver.vectorized_phi(solver.p[:, 0], solver.p[:, 1], *solver.uh.geo_params)
     ax = plt.gca()
     verts1 = (p_non_ref + solver.uh.values)[solver.tri]
-    pc1 = PolyCollection(verts1, linewidths=2, color="gray", edgecolor="darkgray", alpha=0.9)
+    pc1 = PolyCollection(verts1, linewidths=2, color="lightgray", edgecolor="gray", alpha=0.8)
     ax.add_collection(pc1)
     verts2 = p_non_ref[solver.tri]
-    pc2 = PolyCollection(verts2, linewidths=2, color="none", edgecolor="black", alpha=0.5)
+    pc2 = PolyCollection(verts2, linewidths=2, color="none", edgecolor="black", alpha=0.23)
     ax.add_collection(pc2)
     ax.autoscale()
-    # plt.grid()
-    xb, xt = plt.xlim()
-    yb, yt = plt.ylim()
-    """xy_min = min(xb, yb)
-    xy_max = max(xt, yt)
-    plt.xlim(xy_min, xy_max)
-    plt.ylim(xy_min, xy_max)"""
     print("Please call plt.show() to show the plot.")
 
 
@@ -105,19 +92,12 @@ def plot_rb_displacment(solver: BaseSolver):
     p_non_ref = solver.vectorized_phi(solver.p[:, 0], solver.p[:, 1], *solver.uh_rom.geo_params)
     ax = plt.gca()
     verts1 = (p_non_ref + solver.uh_rom.values)[solver.tri]
-    pc1 = PolyCollection(verts1, linewidths=2, color="gray", edgecolor="darkgray", alpha=0.9)
+    pc1 = PolyCollection(verts1, linewidths=2, color="lightgray", edgecolor="gray", alpha=0.8)
     ax.add_collection(pc1)
     verts2 = p_non_ref[solver.tri]
-    pc2 = PolyCollection(verts2, linewidths=2, color="none", edgecolor="black", alpha=0.5)
+    pc2 = PolyCollection(verts2, linewidths=2, color="none", edgecolor="black", alpha=0.23)
     ax.add_collection(pc2)
     ax.autoscale()
-    # plt.grid()
-    xb, xt = plt.xlim()
-    yb, yt = plt.ylim()
-    """xy_min = min(xb, yb)
-    xy_max = max(xt, yt)
-    plt.xlim(xy_min, xy_max)
-    plt.ylim(xy_min, xy_max)"""
     print("Please call plt.show() to show the plot.")
 
 
@@ -130,14 +110,15 @@ def _quadrilaterals_to_triangles(quads: np.ndarray) -> np.ndarray:
     return tris
 
 
-def plot_hf_von_mises(solver: BaseSolver):
+def plot_hf_von_mises(solver: BaseSolver, levels: Optional[np.ndarray] = None):
     fontsize = 20
     new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
                   'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
                   'figure.titlesize': fontsize,
                   'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
     plt.rcParams.update(new_params)
-    levels = np.linspace(0, np.max(solver.uh.von_mises), 25)
+    if levels is None:
+        levels = np.linspace(0, np.max(solver.uh.von_mises), 25)
     plt.figure("Hf von mises")
     p_non_ref = solver.vectorized_phi(solver.p[:, 0], solver.p[:, 1], *solver.uh.geo_params)
     if solver.element in ("triangle triangle", "lt"):
@@ -159,14 +140,15 @@ def plot_hf_von_mises(solver: BaseSolver):
     print("Please call plt.show() to show the plot.")
 
 
-def plot_rb_von_mises(solver: BaseSolver):
+def plot_rb_von_mises(solver: BaseSolver, levels: Optional[np.ndarray] = None):
     fontsize = 20
     new_params = {'axes.titlesize': fontsize, 'axes.labelsize': fontsize, 'figure.figsize': (12, 7),
                   'lines.linewidth': 2, 'lines.markersize': 7, 'ytick.labelsize': fontsize,
                   'figure.titlesize': fontsize,
                   'xtick.labelsize': fontsize, 'legend.fontsize': fontsize, 'legend.handlelength': 1.5}
     plt.rcParams.update(new_params)
-    levels = np.linspace(0, np.max(solver.uh_rom.von_mises), 25)
+    if levels is None:
+        levels = np.linspace(0, np.max(solver.uh_rom.von_mises), 25)
     plt.figure("RB von mises")
     p_non_ref = solver.vectorized_phi(solver.p[:, 0], solver.p[:, 1], *solver.uh_rom.geo_params)
     if solver.element in ("triangle triangle", "lt"):
