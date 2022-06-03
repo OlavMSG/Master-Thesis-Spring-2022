@@ -58,8 +58,6 @@ class SaveOneSnapshotSimulator:
         if nu_poisson_range is not None:
             self.nu_poisson_range = nu_poisson_range
 
-        assert len(self.storage) == 0
-
     def __call__(self, solver: DraggableCornerRectangleSolver, *geo_params):
         geo_vec = helpers.get_vec_from_range(DraggableCornerRectangleSolver.geo_param_range, 25, self.mode)
         e_young_vec = helpers.get_vec_from_range(self.e_young_range, self.material_grid, self.mode)
@@ -98,6 +96,11 @@ if __name__ == '__main__':
         main_root = Path("DR_mls_order_analysis")
         root = main_root / f"p_order_{p_order}"
         print(f"root: {root}")
+        # for saving one snapshot
+        timeing_root = main_root / f"timeing_{p_order}"
+        print(f"timeing_root:", timeing_root)
+        storage = DiskStorage(timeing_root)
+        assert len(storage) == 0
         # Degrees of freedom info
         rec = DraggableCornerRectangleSolver.from_root(root)
         print("Degrees of freedom info")
@@ -122,7 +125,6 @@ if __name__ == '__main__':
         print("-" * 50)
 
         # save one snapshot
-        timeing_root = main_root / f"timing_{p_order}"
         num11 = 50  # x "2 min" = 1 hour 40 min
         setup = "d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc, " \
                 "bcs_are_on_reference_domain=False); d.matrix_lsq_setup(p_order); " \
@@ -132,12 +134,14 @@ if __name__ == '__main__':
         print("Save One Snapshot:")
         print(f"total : {time11}  sec, mean time: {time11 / num11} sec, runs: {num11}")
         print("-" * 50)
+        # vipe storage
+        storage.vipe(user_confirm=False)
 
         # Solve HF system, do not use saved data
         num2 = 1_000  # x "0.9s" = 15 min
         setup = "d = DraggableCornerRectangleSolver(n, f_func=f, get_dirichlet_edge_func=clamped_bc, " \
                 "bcs_are_on_reference_domain=False); d.assemble(mu1, mu2)"
-        code = "d.hfsolve(e_mean, nu_mean)"
+        code = "d.hfsolve(e_mean, nu_mean, print_info=False)"
         time2 = timeit.timeit(code, number=num2, globals=globals(), setup=setup)
         print("Solve HF system:")
         print(f"total : {time2} sec, mean time: {time2 / num2} sec, runs: {num2}")
@@ -164,7 +168,7 @@ if __name__ == '__main__':
         # Solve RB system, do not use saved data
         num4 = 1_000  # x "1.6 ms" = less than 2 s
         setup = "d = DraggableCornerRectangleSolver.from_root(root); d.matrix_lsq_setup(p_order)"
-        code = "d.rbsolve_uh_rom_non_recovered(e_mean, nu_mean, mu1, mu2)"
+        code = "d.rbsolve_uh_rom_non_recovered(e_mean, nu_mean, mu1, mu2, print_info=False)"
         time4 = timeit.timeit(code, number=num4, globals=globals(), setup=setup)
         print("Solve RB system:")
         print(f"total : {time4} sec, mean time: {time4 / num4} sec, runs: {num4}")

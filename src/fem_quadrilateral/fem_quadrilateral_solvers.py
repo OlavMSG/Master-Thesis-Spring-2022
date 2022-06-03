@@ -643,7 +643,7 @@ class QuadrilateralSolver(BaseSolver):
             uh_rom[self.expanded_free_index] = self.pod.v @ self._uh_rom_non_recovered
         else:
             uh_rom[self.expanded_free_index] = self.pod.get_v_mat(n_rom) @ self._uh_rom_non_recovered
-        if self.has_non_homo_dirichlet:  # for now
+        if self.has_non_homo_dirichlet:
             # lifting function
             uh_rom[self.expanded_dirichlet_edge_index] = self.rg
         # set uh_rom, save it in a nice way.
@@ -817,7 +817,6 @@ class QuadrilateralSolver(BaseSolver):
         if not self._mls_is_computed:
             # compute matrix_lsq from root
             self.matrix_lsq(root)
-        # for now, may be changed
         self.a1_rom_list = [self.pod.compute_rom(obj) for obj in self.mls.a1_list]
         self.a2_rom_list = [self.pod.compute_rom(obj) for obj in self.mls.a2_list]
         self.f0_rom_list = [self.pod.compute_rom(obj) for obj in self.mls.f0_list]
