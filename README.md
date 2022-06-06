@@ -5,6 +5,8 @@ Based on [Specialization-Project-fall-2021](https://github.com/OlavMSG/Specializ
 
 Project depends on [Matrix LSQ](https://github.com/OlavMSG/matrix-lsq-1)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6617578.svg)](https://doi.org/10.5281/zenodo.6617578)
+
 ## The Solvers
 Please see [Solvers](https://github.com/OlavMSG/Master-Thesis-Spring-2022/blob/main/src/fem_quadrilateral/fem_quadrilateral_solvers.py)
 for more documentation.
